@@ -32,6 +32,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Required to get the full git history for extracting the commit hash
+          submodules: recursive
 
       - name: Extract commit hash and define release metadata
         id: metadata
@@ -74,14 +75,9 @@ jobs:
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -archivePath "$(pwd)/build/$PROJECT_NAME.xcarchive" \
-            CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            PROVISIONING_PROFILE=""
-
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Package into Unsigned IPA
         run: |
@@ -104,3 +100,4 @@ jobs:
           draft: false
           prerelease: ${{ github.event_name == 'workflow_dispatch' }}
           target_commitish: ${{ github.sha }}
+          
