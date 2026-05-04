@@ -6,24 +6,17 @@
 //
 
 import SwiftUI
+import SwiftData
 import OSLog
 import TipKit
 import MeshtasticProtobufs
 
 struct Settings: View {
-	@Environment(\.managedObjectContext) var context
+	@Environment(\.modelContext) private var context
 	@Environment(\.colorScheme) private var colorScheme
 	@EnvironmentObject var accessoryManager: AccessoryManager
-	@FetchRequest(
-		sortDescriptors: [
-			NSSortDescriptor(key: "favorite", ascending: false),
-			NSSortDescriptor(key: "user.pkiEncrypted", ascending: false),
-			NSSortDescriptor(key: "viaMqtt", ascending: true),
-			NSSortDescriptor(key: "user.longName", ascending: true)
-		],
-		animation: .default
-	)
-	private var nodes: FetchedResults<NodeInfoEntity>
+	@Query(sort: \NodeInfoEntity.lastHeard, order: .reverse)
+	private var nodes: [NodeInfoEntity]
 
 	@State private var selectedNode: Int = 0
 	@State private var preferredNodeNum: Int = 0
@@ -400,6 +393,13 @@ struct Settings: View {
 						Image(systemName: "gearshape")
 					}
 				}
+				NavigationLink(value: SettingsNavigationState.localMeshDiscovery) {
+					Label {
+						Text("Local Mesh Discovery")
+					} icon: {
+						Image(systemName: "antenna.radiowaves.left.and.right")
+					}
+				}
 				NavigationLink(value: SettingsNavigationState.routes) {
 					Label {
 						Text("Routes")
@@ -585,6 +585,8 @@ struct Settings: View {
 					TAKServerConfig()
 				case .takConfig:
 					TAKModuleConfig(node: nodes.first(where: { $0.num == selectedNode }))
+				case .localMeshDiscovery:
+					DiscoveryScanView()
 				}
 			}
 			.onChange(of: UserDefaults.preferredPeripheralNum ) { _, newConnectedNode in

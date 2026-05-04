@@ -1,5 +1,5 @@
 import Combine
-import CoreData
+import SwiftData
 import OSLog
 import SwiftUI
 
@@ -21,37 +21,48 @@ class Router: ObservableObject {
 	@Published
 	var settingsState: SettingsNavigationState?
 
+	@Published
+	var discoveryShowHistory: Bool = false
+
 	/// Computed property that assembles the individual per-tab properties into a `NavigationState`.
 	/// Provided for backward compatibility (e.g. tests) and convenience.
-	/// Use the individual `@Published` properties to mutate navigation state.
 	var navigationState: NavigationState {
-		NavigationState(
-			selectedTab: selectedTab,
-			messages: messagesState,
-			nodeListSelectedNodeNum: nodeListSelectedNodeNum,
-			map: mapState,
-			settings: settingsState
-		)
+		get {
+			NavigationState(
+				selectedTab: selectedTab,
+				messages: messagesState,
+				nodeListSelectedNodeNum: nodeListSelectedNodeNum,
+				map: mapState,
+				settings: settingsState
+			)
+		}
+		set {
+			selectedTab = newValue.selectedTab
+			messagesState = newValue.messages
+			nodeListSelectedNodeNum = newValue.nodeListSelectedNodeNum
+			mapState = newValue.map
+			settingsState = newValue.settings
+		}
 	}
 
 	// MARK: Node Object ID Cache
 
-	/// In-memory cache mapping node numbers to their Core Data `NSManagedObjectID` for O(1) lookups.
+	/// In-memory cache mapping node numbers to their SwiftData `PersistentIdentifier` for O(1) lookups.
 	/// Thread-safe by virtue of Router's @MainActor isolation — all access is on the main thread.
-	private var nodeObjectIDCache: [Int64: NSManagedObjectID] = [:]
+	private var nodeObjectIDCache: [Int64: PersistentIdentifier] = [:]
 
 	/// Updates the node cache from a set of fetched nodes. Call this when the node list changes.
 	func updateNodeIndex<C: Collection>(from nodes: C) where C.Element: NodeInfoEntity {
 		nodeObjectIDCache = Dictionary(
-			nodes.map { ($0.num, $0.objectID) },
+			nodes.map { ($0.num, $0.persistentModelID) },
 			uniquingKeysWith: { _, new in new }
 		)
 	}
 
-	/// Looks up a node using the in-memory cache for O(1) performance, falling back to a Core Data fetch.
-	func cachedNodeInfo(id: Int64, context: NSManagedObjectContext) -> NodeInfoEntity? {
-		if let objectID = nodeObjectIDCache[id] {
-			if let node = try? context.existingObject(with: objectID) as? NodeInfoEntity {
+	/// Looks up a node using the in-memory cache for O(1) performance, falling back to a SwiftData fetch.
+	func cachedNodeInfo(id: Int64, context: ModelContext) -> NodeInfoEntity? {
+		if let persistentID = nodeObjectIDCache[id] {
+			if let node = context.model(for: persistentID) as? NodeInfoEntity {
 				return node
 			}
 			// Stale entry (object deleted or faulted) — evict and fall back to a fresh fetch
@@ -60,7 +71,7 @@ class Router: ObservableObject {
 		// Cache miss — fall back to standard fetch
 		let node = getNodeInfo(id: id, context: context)
 		if let node {
-			nodeObjectIDCache[id] = node.objectID
+			nodeObjectIDCache[id] = node.persistentModelID
 		}
 		return node
 	}
@@ -173,14 +184,19 @@ class Router: ObservableObject {
 	}
 
 	private func routeSettings(_ components: URLComponents) {
-		let settingFromPath = components.path
+		let segments = components.path
 			.split(separator: "/")
 			.dropFirst()
-			.first
-			.flatMap(String.init)
+			.map(String.init)
+
+		let settingFromPath = segments.first
 			.flatMap(SettingsNavigationState.init(rawValue:))
 
 		selectedTab = .settings
 		settingsState = settingFromPath
+
+		if settingFromPath == .localMeshDiscovery && segments.count > 1 && segments[1] == "history" {
+			discoveryShowHistory = true
+		}
 	}
 }

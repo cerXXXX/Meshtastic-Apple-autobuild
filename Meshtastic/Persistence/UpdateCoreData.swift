@@ -4,19 +4,12 @@
 //
 //  Copyright(c) Garth Vander Houwen 10/3/22.
 
-import CoreData
+import SwiftData
 import MeshtasticProtobufs
 import OSLog
 
 extension MeshPackets {
-	public func clearStaleNodes(nodeExpireDays: Int) async -> Bool {
-		let context = self.backgroundContext
-		return await context.perform {
-			return self.clearStaleNodes(nodeExpireDays: nodeExpireDays, context: context)
-		}
-	}
-	
-	nonisolated public func clearStaleNodes(nodeExpireDays: Int, context: NSManagedObjectContext) -> Bool {
+	public func clearStaleNodes(nodeExpireDays: Int) -> Bool {
 		var nodeExpireTime: TimeInterval {
 			return TimeInterval(-nodeExpireDays * 86400)
 		}
@@ -25,274 +18,212 @@ extension MeshPackets {
 		}
 		
 		if nodeExpireDays == 0 {
-			// Purge Disabled
 			Logger.data.info("💾 [NodeInfoEntity] Skip clearing stale nodes")
 			return false
 		}
-		let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "NodeInfoEntity")
-		fetchRequest.predicate = NSPredicate(format: "favorite == false AND ignored == false AND ((user.pkiEncrypted == NO AND lastHeard < %@) OR (user.pkiEncrypted == YES AND lastHeard < %@))",
-											 NSDate(timeIntervalSinceNow: nodeExpireTime), NSDate(timeIntervalSinceNow: nodePKIExpireTime))
-		let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-		batchDeleteRequest.resultType = .resultTypeCount
-		
+		let expireDate = Date(timeIntervalSinceNow: nodeExpireTime)
+		let pkiExpireDate = Date(timeIntervalSinceNow: nodePKIExpireTime)
+		let descriptor = FetchDescriptor<NodeInfoEntity>(
+			predicate: #Predicate<NodeInfoEntity> { node in
+				node.favorite == false && node.ignored == false && node.lastHeard != nil
+			}
+		)
 		do {
 			Logger.data.info("💾 [NodeInfoEntity] Clearing nodes older than \(nodeExpireDays) days")
-			if let batchDeleteResult = try context.execute(batchDeleteRequest) as? NSBatchDeleteResult {
-				try context.save()
-				let deletedNodes = batchDeleteResult.result as? Int ?? 0
-				Logger.data.info("💾 [NodeInfoEntity] Cleared \(deletedNodes) stale nodes")
-				if deletedNodes > 0 {
-					return true
+			let candidates = try modelContext.fetch(descriptor)
+			let staleNodes = candidates.filter { node in
+				guard let lastHeard = node.lastHeard else { return false }
+				if node.user?.pkiEncrypted == true {
+					return lastHeard < pkiExpireDate
+				} else {
+					return lastHeard < expireDate
 				}
-			} else {
-				Logger.data.error("💥 [NodeInfoEntity] bad delete results")
 			}
+			let deletedNodes = staleNodes.count
+			for node in staleNodes {
+				modelContext.delete(node)
+			}
+			try modelContext.save()
+			Logger.data.info("💾 [NodeInfoEntity] Cleared \(deletedNodes) stale nodes")
+			return deletedNodes > 0
 		} catch {
-			context.rollback()
 			Logger.data.error("💥 [NodeInfoEntity] Error deleting stale nodes")
 		}
 		return false
 	}
 	
-	func clearPax(destNum: Int64) async -> Bool {
-		let context = self.backgroundContext
-		return await context.perform {
-			return self.clearPax(destNum: destNum, context: context)
-		}
-	}
-	
-	nonisolated public func clearPax(destNum: Int64, context: NSManagedObjectContext) -> Bool {
-		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(destNum))
-		
+	func clearPax(destNum: Int64) -> Bool {
+		let num = destNum
+		var descriptor = FetchDescriptor<NodeInfoEntity>(
+			predicate: #Predicate<NodeInfoEntity> { $0.num == num }
+		)
+		descriptor.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
-			let newPax = [PaxCounterLog]()
-			fetchedNode[0].pax? = NSOrderedSet(array: newPax)
-			do {
-				try context.save()
+			if let node = try modelContext.fetch(descriptor).first {
+				node.pax = []
+				try modelContext.save()
 				return true
-				
-			} catch {
-				context.rollback()
-				return false
 			}
 		} catch {
 			Logger.data.error("💥 [NodeInfoEntity] fetch data error")
-			return false
 		}
+		return false
 	}
 	
-	public func clearPositions(destNum: Int64) async -> Bool {
-		let context = self.backgroundContext
-		return await context.perform {
-			return self.clearPositions(destNum: destNum, context: context)
-		}
-	}
-	
-	nonisolated public func clearPositions(destNum: Int64, context: NSManagedObjectContext) -> Bool {
-		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(destNum))
-		
+	public func clearPositions(destNum: Int64) -> Bool {
+		let num = destNum
+		var descriptor = FetchDescriptor<NodeInfoEntity>(
+			predicate: #Predicate<NodeInfoEntity> { $0.num == num }
+		)
+		descriptor.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
-			let newPostions = [PositionEntity]()
-			fetchedNode[0].positions? = NSOrderedSet(array: newPostions)
-			do {
-				try context.save()
+			if let node = try modelContext.fetch(descriptor).first {
+				node.positions = []
+				try modelContext.save()
 				return true
-				
-			} catch {
-				context.rollback()
-				return false
 			}
 		} catch {
 			Logger.data.error("💥 [NodeInfoEntity] fetch data error")
-			return false
 		}
+		return false
 	}
 	
-	public func clearTelemetry(destNum: Int64, metricsType: Int32) async -> Bool {
-		let context = self.backgroundContext
-		return await context.perform {
-			return self.clearTelemetry(destNum: destNum, metricsType: metricsType, context: context)
-		}
-	}
-	
-	nonisolated public func clearTelemetry(destNum: Int64, metricsType: Int32, context: NSManagedObjectContext) -> Bool {
-		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(destNum))
-		
+	public func clearTelemetry(destNum: Int64, metricsType: Int32) -> Bool {
+		let num = destNum
+		var descriptor = FetchDescriptor<NodeInfoEntity>(
+			predicate: #Predicate<NodeInfoEntity> { $0.num == num }
+		)
+		descriptor.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
-			let emptyTelemetry = [TelemetryEntity]()
-			fetchedNode[0].telemetries? = NSOrderedSet(array: emptyTelemetry)
-			do {
-				try context.save()
+			if let node = try modelContext.fetch(descriptor).first {
+				let toDelete = node.telemetries.filter { $0.metricsType == metricsType }
+				for entity in toDelete {
+					modelContext.delete(entity)
+				}
+				try modelContext.save()
 				return true
-				
-			} catch {
-				context.rollback()
-				return false
 			}
 		} catch {
 			Logger.data.error("💥 [NodeInfoEntity] fetch data error")
-			return false
 		}
+		return false
 	}
 	
-	public func deleteChannelMessages(channel: ChannelEntity) async {
-		let context = self.backgroundContext
-		let objectId = channel.objectID
-		await context.perform {
-			if let channelObject = context.object(with: objectId) as? ChannelEntity {
-				self.deleteChannelMessages(channel: channelObject, context: context)
+	public func deleteChannelMessages(channel: ChannelEntity) {
+		let channelIndex = channel.index
+		let descriptor = FetchDescriptor<MessageEntity>(
+			predicate: #Predicate<MessageEntity> { msg in
+				msg.channel == channelIndex && msg.toUser == nil && msg.isEmoji == false
 			}
-		}
-	}
-	
-	nonisolated public func deleteChannelMessages(channel: ChannelEntity, context: NSManagedObjectContext) {
+		)
 		do {
-			// Copied logic from ChannelEntity.allPrivateMessages, which is always on the MainActor
-			// But this code may not be on the MainActor.
-			let fetchRequest = MessageEntity.fetchRequest()
-			fetchRequest.predicate = NSPredicate(format: "channel == %ld AND toUser == nil AND isEmoji == false", channel.index)
-			let objects = (try? context.fetch(fetchRequest)) ?? [MessageEntity]()
-			
+			let objects = try modelContext.fetch(descriptor)
 			for object in objects {
-				context.delete(object)
+				modelContext.delete(object)
 			}
-			
-			try context.save()
-		} catch let error as NSError {
+			try modelContext.save()
+		} catch {
 			Logger.data.error("\(error.localizedDescription, privacy: .public)")
 		}
 	}
 	
-	public func deleteUserMessages(user: UserEntity) async {
-		let context = self.backgroundContext
-		let objectId = user.objectID
-		await context.perform {
-			if let userObject = context.object(with: objectId) as? UserEntity {
-				self.deleteUserMessages(user: userObject, context: context)
-			}
+	public func deleteUserMessages(user: UserEntity) {
+		let messages = (user.sentMessages ?? []) + (user.receivedMessages ?? [])
+		let filtered = messages.filter { msg in
+			msg.toUser != nil && msg.fromUser != nil && !msg.isEmoji && !msg.admin && msg.portNum != 10
 		}
-	}
-	
-	nonisolated public func deleteUserMessages(user: UserEntity, context: NSManagedObjectContext) {
+		for object in filtered {
+			modelContext.delete(object)
+		}
 		do {
-			// Fetch messages using the same context that will perform the deletes.
-			// user.messageList fetches from viewContext, which would cause a context-mismatch
-			// crash when this method is called with a background context.
-			let fetchRequest = MessageEntity.fetchRequest()
-			fetchRequest.predicate = user.messageFetchRequest.predicate
-			let objects = try context.fetch(fetchRequest)
-			for object in objects {
-				context.delete(object)
-			}
-			try context.save()
-		} catch let error as NSError {
+			try modelContext.save()
+		} catch {
 			Logger.data.error("\(error.localizedDescription, privacy: .public)")
 		}
 	}
 	
-	public func clearCoreDataDatabase(includeRoutes: Bool, includeAppLevelData: Bool = false) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.clearCoreDataDatabase(context: context, includeRoutes: includeRoutes, includeAppLevelData: includeAppLevelData)
+	public func clearDatabase(includeRoutes: Bool) {
+		// Delete entities that are on the inverse side of many-to-many
+		// relationships first to avoid constraint trigger violations.
+		do {
+			try modelContext.delete(model: DeviceHardwareTagEntity.self)
+			try modelContext.delete(model: DeviceHardwareImageEntity.self)
+		} catch {
+			Logger.data.error("\(error.localizedDescription, privacy: .public)")
 		}
-	}
-	
-	nonisolated public func clearCoreDataDatabase(context: NSManagedObjectContext, includeRoutes: Bool, includeAppLevelData: Bool = false) {
-		let persistenceController = PersistenceController.shared.container
-		for i in 0...persistenceController.managedObjectModel.entities.count-1 {
-			
-			let entity = persistenceController.managedObjectModel.entities[i]
-			let query = NSFetchRequest<NSFetchRequestResult>(entityName: entity.name!)
-			let entityName = entity.name ?? "UNK"
-			
-			if !includeRoutes, ["RouteEntity", "LocationEntity"].contains(entityName) {
+
+		let allModels: [any PersistentModel.Type] = MeshtasticSchema.allModels
+		for modelType in allModels {
+			let typeName = String(describing: modelType)
+			if !includeRoutes && (typeName.contains("Route") || typeName.contains("Location")) {
 				continue
 			}
-			
-			if !includeAppLevelData, ["DeviceHardwareEntity", "DeviceHardwareImageEntity", "DeviceHardwareTagEntity"].contains(entityName) {
-				// These are non-node-specific "app level" data, keep them even when switching nodes
-				continue
+			if modelType == DeviceHardwareTagEntity.self || modelType == DeviceHardwareImageEntity.self {
+				continue // already deleted above
 			}
-			
-			// Execute the delete for this entry
-			let deleteRequest = NSBatchDeleteRequest(fetchRequest: query)
 			do {
-				try context.executeAndMergeChanges(using: deleteRequest)
+				try modelContext.delete(model: modelType)
 			} catch {
 				Logger.data.error("\(error.localizedDescription, privacy: .public)")
 			}
 		}
-	}
-	
-	func updateAnyPacketFrom (packet: MeshPacket, activeDeviceNum: Int64) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.updateAnyPacketFrom(packet: packet, activeDeviceNum: activeDeviceNum, context: context)
+		do {
+			try modelContext.save()
+		} catch {
+			Logger.data.error("Failed to save after clearing database: \(error.localizedDescription, privacy: .public)")
 		}
 	}
 	
-	nonisolated func updateAnyPacketFrom (packet: MeshPacket, activeDeviceNum: Int64, context: NSManagedObjectContext) {
+	func updateAnyPacketFrom (packet: MeshPacket, activeDeviceNum: Int64) {
 		// Update NodeInfoEntity for any packet received. This mirrors the firmware's NodeDB::updateFrom, which sniffs ALL received packets and updates the radio's nodeDB with packet.from's:
 		// - last_heard (from rxTime)
 		// - snr
 		// - via_mqtt
 		// - hops_away
 		
-		// However, unlike the firmware, this function will NOT create a new NodeInfoEntity if we don't have it already. We'll leave that to the existing code paths.
-		
-		// We do NOT update fetchedNode[0].channel, because we may hear a node over multiple channels, and only some packet types should update what we consider the node's channel to be. (Example: primary private channel, secondary public channel. A text message on the secondary public channel should NOT change fetchedNode[0].channel.)
-		
 		guard packet.from > 0 else { return }
-		guard packet.from != activeDeviceNum else { return } // Ignore if packet is from our own node
+		guard packet.from != activeDeviceNum else { return }
 		
 		// Skip routing packets with no rxTime — these are locally-generated implicit ACKs
 		// that don't represent actual RF contact with the remote node.
 		let isImplicitAck = packet.decoded.portnum == .routingApp && packet.rxTime == 0
 		
-		let fetchNodeInfoAppRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoAppRequest.predicate = NSPredicate(format: "num == %lld", Int64(packet.from))
+		let num = Int64(packet.from)
+		var descriptor = FetchDescriptor<NodeInfoEntity>(
+			predicate: #Predicate<NodeInfoEntity> { $0.num == num }
+		)
+		descriptor.fetchLimit = 1
 		
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoAppRequest)
-			if fetchedNode.count >= 1 {
-				fetchedNode[0].id = Int64(packet.from)
-				fetchedNode[0].num = Int64(packet.from)
+			if let node = try modelContext.fetch(descriptor).first {
+				node.id = Int64(packet.from)
+				node.num = Int64(packet.from)
 				
 				if !isImplicitAck {
 					if packet.rxTime > 0 {
-						fetchedNode[0].lastHeard = Date(timeIntervalSince1970: TimeInterval(Int64(packet.rxTime)))
+						node.lastHeard = Date(timeIntervalSince1970: TimeInterval(Int64(packet.rxTime)))
 						Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) lastHeard from rxTime=\(packet.rxTime)")
 					} else {
-						fetchedNode[0].lastHeard = Date()
+						node.lastHeard = Date()
 						Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) lastHeard to now (rxTime==0)")
 					}
 				}
 				
-				fetchedNode[0].snr = packet.rxSnr
-				fetchedNode[0].rssi = packet.rxRssi
-				fetchedNode[0].viaMqtt = packet.viaMqtt
+				node.snr = packet.rxSnr
+				node.rssi = packet.rxRssi
+				node.viaMqtt = packet.viaMqtt
 				
 				if packet.hopStart != 0 && packet.hopLimit <= packet.hopStart {
-					fetchedNode[0].hopsAway = Int32(packet.hopStart - packet.hopLimit)
-					Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) hopsAway=\(fetchedNode[0].hopsAway)")
+					node.hopsAway = Int32(packet.hopStart - packet.hopLimit)
+					Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) hopsAway=\(node.hopsAway)")
 				}
 				
 				do {
-					try context.save()
-					Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(fetchedNode[0].num.toHex(), privacy: .public) snr=\(fetchedNode[0].snr), rssi=\(fetchedNode[0].rssi) from packet \(packet.id.toHex(), privacy: .public)")
+					try modelContext.save()
+					Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(node.num.toHex(), privacy: .public) snr=\(node.snr), rssi=\(node.rssi) from packet \(packet.id.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
-					Logger.data.error("💥 [updateAnyPacketFrom] Error Saving node \(fetchedNode[0].num.toHex(), privacy: .public) from packet \(packet.id.toHex(), privacy: .public)  \(nsError, privacy: .public)")
+					Logger.data.error("💥 [updateAnyPacketFrom] Error Saving node \(node.num.toHex(), privacy: .public) from packet \(packet.id.toHex(), privacy: .public)  \(nsError, privacy: .public)")
 				}
 			}
 		} catch {
@@ -300,29 +231,24 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertNodeInfoPacket (packet: MeshPacket, favorite: Bool = false) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertNodeInfoPacket(packet: packet, favorite: favorite, context: context)
-		}
-	}
-	
-	nonisolated func upsertNodeInfoPacket (packet: MeshPacket, favorite: Bool = false, context: NSManagedObjectContext) {
+	func upsertNodeInfoPacket (packet: MeshPacket, favorite: Bool = false) {
 		
 		let logString = String.localizedStringWithFormat("[NodeInfo] received for: %@".localized, packet.from.toHex())
 		Logger.mesh.info("📟 \(logString, privacy: .public)")
 		
 		guard packet.from > 0 else { return }
 		
-		let fetchNodeInfoAppRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoAppRequest.predicate = NSPredicate(format: "num == %lld", Int64(packet.from))
+		let fetchNum = Int64(packet.from)
+		var fetchNodeInfoAppRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+		fetchNodeInfoAppRequest.fetchLimit = 1
 		
 		do {
 			
-			let fetchedNode = try context.fetch(fetchNodeInfoAppRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoAppRequest)
 			if fetchedNode.count == 0 {
 				// Not Found Insert
-				let newNode = NodeInfoEntity(context: context)
+				let newNode = NodeInfoEntity()
+				modelContext.insert(newNode)
 				newNode.id = Int64(packet.from)
 				newNode.num = Int64(packet.from)
 				newNode.favorite = favorite
@@ -352,17 +278,18 @@ extension MeshPackets {
 					if newUserMessage.id.isEmpty {
 						if packet.from > Constants.minimumNodeNum {
 							do {
-								let newUser = try createUser(num: Int64(truncatingIfNeeded: packet.from), context: context)
+								let newUser = try createUser(num: Int64(truncatingIfNeeded: packet.from), context: modelContext)
 								newNode.user = newUser
-							} catch CoreDataError.invalidInput(let message) {
-								Logger.data.error("Error Creating a new Core Data UserEntity (Invalid Input) from node number: \(packet.from, privacy: .public) Error:  \(message, privacy: .public)")
+							} catch PersistenceError.invalidInput(let message) {
+								Logger.data.error("Error Creating a new UserEntity (Invalid Input) from node number: \(packet.from, privacy: .public) Error:  \(message, privacy: .public)")
 							} catch {
-								Logger.data.error("Error Creating a new Core Data UserEntity from node number: \(packet.from, privacy: .public) Error:  \(error.localizedDescription, privacy: .public)")
+								Logger.data.error("Error Creating a new UserEntity from node number: \(packet.from, privacy: .public) Error:  \(error.localizedDescription, privacy: .public)")
 							}
 						}
 					} else {
 						
-						let newUser = UserEntity(context: context)
+						let newUser = UserEntity()
+						modelContext.insert(newUser)
 						newUser.userId = newNode.num.toHex()
 						newUser.num = Int64(packet.from)
 						newUser.longName = newUserMessage.longName
@@ -387,10 +314,11 @@ extension MeshPackets {
 							newUser.publicKey = newUserMessage.publicKey
 						}
 						
-						let fetchRequest1 = DeviceHardwareEntity.fetchRequest()
-						fetchRequest1.predicate = NSPredicate(format: "hwModel == %d", newUser.hwModelId)
-						let fetchedHardware1 = (try? context.fetch(fetchRequest1)) ?? []
-						if let hardwareEntity = fetchedHardware1.first {
+						let fetchHwModel1 = Int64(newUser.hwModelId)
+						let hwDescriptor1 = FetchDescriptor<DeviceHardwareEntity>(
+							predicate: #Predicate { $0.hwModel == fetchHwModel1 }
+						)
+						if let hardwareEntity = try? modelContext.fetch(hwDescriptor1).first {
 							newUser.hwDisplayName = hardwareEntity.displayName
 						}
 						newNode.user = newUser
@@ -415,59 +343,43 @@ extension MeshPackets {
 				} else {
 					if packet.from > Constants.minimumNodeNum {
 						do {
-							let newUser = try createUser(num: Int64(truncatingIfNeeded: packet.from), context: context)
+							let newUser = try createUser(num: Int64(truncatingIfNeeded: packet.from), context: modelContext)
 							if !packet.publicKey.isEmpty {
 								newNode.user?.pkiEncrypted = true
 								newNode.user?.publicKey = packet.publicKey
 							}
 							newNode.user = newUser
-						} catch CoreDataError.invalidInput(let message) {
-							Logger.data.error("Error Creating a new Core Data UserEntity (Invalid Input) from node number: \(packet.from, privacy: .public) Error:  \(message, privacy: .public)")
+						} catch PersistenceError.invalidInput(let message) {
+							Logger.data.error("Error Creating a new UserEntity (Invalid Input) from node number: \(packet.from, privacy: .public) Error:  \(message, privacy: .public)")
 						} catch {
-							Logger.data.error("Error Creating a new Core Data UserEntity from node number: \(packet.from, privacy: .public) Error:  \(error.localizedDescription, privacy: .public)")
+							Logger.data.error("Error Creating a new UserEntity from node number: \(packet.from, privacy: .public) Error:  \(error.localizedDescription, privacy: .public)")
 						}
 					}
 				}
 				// User is messed up and has failed to create at least once, if this fails bail out
 				if newNode.user == nil && packet.from > Constants.minimumNodeNum {
 					do {
-						let newUser = try createUser(num: Int64(packet.from), context: context)
+						let newUser = try createUser(num: Int64(packet.from), context: modelContext)
 						newNode.user = newUser
-					} catch CoreDataError.invalidInput(let message) {
-						Logger.data.error("Error Creating a new Core Data UserEntity (Invalid Input) from node number: \(packet.from, privacy: .public) Error:  \(message, privacy: .public)")
-						context.rollback()
+					} catch PersistenceError.invalidInput(let message) {
+						Logger.data.error("Error Creating a new UserEntity (Invalid Input) from node number: \(packet.from, privacy: .public) Error:  \(message, privacy: .public)")
 						return
 					} catch {
-						Logger.data.error("Error Creating a new Core Data UserEntity from node number: \(packet.from, privacy: .public) Error:  \(error.localizedDescription, privacy: .public)")
-						context.rollback()
+						Logger.data.error("Error Creating a new UserEntity from node number: \(packet.from, privacy: .public) Error:  \(error.localizedDescription, privacy: .public)")
 						return
 					}
 				}
 				
-				let myInfoEntity = MyInfoEntity(context: context)
-				myInfoEntity.myNodeNum = Int64(packet.from)
-				myInfoEntity.rebootCount = 0
-				newNode.myInfo = myInfoEntity
-				
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [NodeInfo] Saved a NodeInfo for node number: \(packet.from.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [NodeInfoEntity] Error Inserting New Core Data: \(nsError, privacy: .public)")
 				}
 				
 			} else {
 				// Update an existing node
-				if packet.rxTime > 0 {
-					fetchedNode[0].lastHeard = Date(timeIntervalSince1970: TimeInterval(Int64(packet.rxTime)))
-				} else {
-					fetchedNode[0].lastHeard = Date()
-				}
-				fetchedNode[0].snr = packet.rxSnr
-				fetchedNode[0].rssi = packet.rxRssi
-				fetchedNode[0].viaMqtt = packet.viaMqtt
 				if packet.to == Constants.maximumNodeNum || packet.to == UserDefaults.preferredPeripheralNum {
 					fetchedNode[0].channel = Int32(packet.channel)
 				}
@@ -477,14 +389,13 @@ extension MeshPackets {
 					fetchedNode[0].hopsAway = Int32(nodeInfoMessage.hopsAway)
 					fetchedNode[0].favorite = nodeInfoMessage.isFavorite
 					if nodeInfoMessage.hasDeviceMetrics {
-						let telemetry = TelemetryEntity(context: context)
+						let telemetry = TelemetryEntity()
+						modelContext.insert(telemetry)
 						telemetry.batteryLevel = Int32(nodeInfoMessage.deviceMetrics.batteryLevel)
 						telemetry.voltage = nodeInfoMessage.deviceMetrics.voltage
 						telemetry.channelUtilization = nodeInfoMessage.deviceMetrics.channelUtilization
 						telemetry.airUtilTx = nodeInfoMessage.deviceMetrics.airUtilTx
-						var newTelemetries = [TelemetryEntity]()
-						newTelemetries.append(telemetry)
-						fetchedNode[0].telemetries? = NSOrderedSet(array: newTelemetries)
+						fetchedNode[0].telemetries.append(telemetry)
 					}
 					if nodeInfoMessage.hasUser {
 						fetchedNode[0].user?.userId = nodeInfoMessage.num.toHex()
@@ -511,10 +422,11 @@ extension MeshPackets {
 							fetchedNode[0].user?.publicKey = nodeInfoMessage.user.publicKey
 						}
 						if let user = fetchedNode.first?.user {
-							let fetchRequest2 = DeviceHardwareEntity.fetchRequest()
-							fetchRequest2.predicate = NSPredicate(format: "hwModel == %d", user.hwModelId)
-							let fetchedHardware2 = (try? context.fetch(fetchRequest2)) ?? []
-							if let hardwareEntity = fetchedHardware2.first {
+							let fetchHwModel2 = Int64(user.hwModelId)
+							let hwDescriptor2 = FetchDescriptor<DeviceHardwareEntity>(
+								predicate: #Predicate { $0.hwModel == fetchHwModel2 }
+							)
+							if let hardwareEntity = try? modelContext.fetch(hwDescriptor2).first {
 								user.hwDisplayName = hardwareEntity.displayName
 							}
 						}
@@ -522,7 +434,9 @@ extension MeshPackets {
 				} else if let userMessage = try? User(serializedBytes: packet.decoded.payload), !userMessage.id.isEmpty {
 					// Mesh broadcast sends a User protobuf (not wrapped in NodeInfo)
 					if fetchedNode[0].user == nil {
-						fetchedNode[0].user = UserEntity(context: context)
+						let newUser = UserEntity()
+						modelContext.insert(newUser)
+						fetchedNode[0].user = newUser
 					}
 					fetchedNode[0].user?.userId = packet.from.toHex()
 					fetchedNode[0].user?.num = Int64(packet.from)
@@ -542,44 +456,27 @@ extension MeshPackets {
 						fetchedNode[0].user?.pkiEncrypted = true
 						fetchedNode[0].user?.publicKey = userMessage.publicKey
 					}
-					if let user = fetchedNode.first?.user {
-						let fetchRequest2 = DeviceHardwareEntity.fetchRequest()
-						fetchRequest2.predicate = NSPredicate(format: "hwModel == %d", user.hwModelId)
-						let fetchedHardware2 = (try? context.fetch(fetchRequest2)) ?? []
-						if let hardwareEntity = fetchedHardware2.first {
-							user.hwDisplayName = hardwareEntity.displayName
-						}
-					}
 					if packet.hopStart != 0 && packet.hopLimit <= packet.hopStart {
 						fetchedNode[0].hopsAway = Int32(packet.hopStart - packet.hopLimit)
 					}
+
 				} else if packet.hopStart != 0 && packet.hopLimit <= packet.hopStart {
 					fetchedNode[0].hopsAway = Int32(packet.hopStart - packet.hopLimit)
 				}
 				if fetchedNode[0].user == nil {
 					do {
-						let newUser = try createUser(num: Int64(truncatingIfNeeded: packet.from), context: context)
+						let newUser = try createUser(num: Int64(truncatingIfNeeded: packet.from), context: modelContext)
 						fetchedNode[0].user = newUser
-					} catch CoreDataError.invalidInput(let message) {
-						Logger.data.error("Error Creating a new Core Data UserEntity on an existing node (Invalid Input) from node number: \(packet.from, privacy: .public) Error:  \(message, privacy: .public)")
+					} catch PersistenceError.invalidInput(let message) {
+						Logger.data.error("Error Creating a new UserEntity on an existing node (Invalid Input) from node number: \(packet.from, privacy: .public) Error:  \(message, privacy: .public)")
 					} catch {
-						Logger.data.error("Error Creating a new Core Data UserEntity on an existing node from node number: \(packet.from, privacy: .public) Error:  \(error.localizedDescription, privacy: .public)")
+						Logger.data.error("Error Creating a new UserEntity on an existing node from node number: \(packet.from, privacy: .public) Error:  \(error.localizedDescription, privacy: .public)")
 					}
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [NodeInfoEntity] Updated from Node Info App Packet For: \(fetchedNode[0].num.toHex(), privacy: .public)")
-					// Refresh the NodeInfoEntity on the viewContext so SwiftUI observes
-					// changes to related UserEntity fields (longName, shortName, etc.)
-					let objectID = fetchedNode[0].objectID
-					DispatchQueue.main.async {
-						let viewContext = PersistenceController.shared.container.viewContext
-						if let viewNode = try? viewContext.existingObject(with: objectID) {
-							viewContext.refresh(viewNode, mergeChanges: true)
-						}
-					}
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [NodeInfoEntity] Error Saving from NODEINFO_APP \(nsError, privacy: .public)")
 				}
@@ -589,42 +486,34 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertPositionPacket (packet: MeshPacket) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertPositionPacket(packet: packet, context: context)
-		}
-		resetContextIfNeeded()
-	}
-	
-	nonisolated func upsertPositionPacket (packet: MeshPacket, context: NSManagedObjectContext) {
+	func upsertPositionPacket (packet: MeshPacket) {
 		
 		let logString = String.localizedStringWithFormat("[Position] received from node: %@".localized, String(packet.from))
 		Logger.mesh.info("📍 \(logString, privacy: .public)")
 		
-		let fetchNodePositionRequest = NodeInfoEntity.fetchRequest()
-		fetchNodePositionRequest.predicate = NSPredicate(format: "num == %lld", Int64(packet.from))
-		
+		let fetchNum = Int64(packet.from)
+			var fetchNodePositionRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodePositionRequest.fetchLimit = 1
 		do {
 			
 			if let positionMessage = try? Position(serializedBytes: packet.decoded.payload) {
 				
 				/// Don't save empty position packets from null island or apple park
 				if (positionMessage.longitudeI != 0 && positionMessage.latitudeI != 0) && (positionMessage.latitudeI != 373346000 && positionMessage.longitudeI != -1220090000) {
-					let fetchedNode = try context.fetch(fetchNodePositionRequest)
+					let fetchedNode = try modelContext.fetch(fetchNodePositionRequest)
 					if fetchedNode.count == 1 {
 						
 						// Unset the current latest position for this node
-						let fetchCurrentLatestPositionsRequest = PositionEntity.fetchRequest()
-						fetchCurrentLatestPositionsRequest.predicate = NSPredicate(format: "nodePosition.num == %lld && latest = true", Int64(packet.from))
-						
-						let fetchedPositions = try context.fetch(fetchCurrentLatestPositionsRequest)
+						let posNum = Int64(packet.from)
+											let fetchCurrentLatestPositionsRequest = FetchDescriptor<PositionEntity>(predicate: #Predicate<PositionEntity> { $0.nodePosition?.num == posNum && $0.latest == true })
+						let fetchedPositions = try modelContext.fetch(fetchCurrentLatestPositionsRequest)
 						if fetchedPositions.count > 0 {
 							for position in fetchedPositions {
 								position.latest = false
 							}
 						}
-						let position = PositionEntity(context: context)
+						let position = PositionEntity()
+						modelContext.insert(position)
 						position.latest = true
 						position.snr = packet.rxSnr
 						position.rssi = packet.rxRssi
@@ -645,39 +534,39 @@ extension MeshPackets {
 						} else {
 							position.time = Date(timeIntervalSince1970: TimeInterval(Int64(positionMessage.time)))
 						}
-						guard let mutablePositions = fetchedNode[0].positions?.mutableCopy() as? NSMutableOrderedSet else {
-							return
-						}
+						var mutablePositions = fetchedNode[0].positions
 						/// Don't save nearly the same position over and over. If the next position is less than 10 meters from the new position, delete the previous position and save the new one.
 						if mutablePositions.count > 0 && (position.precisionBits == 32 || position.precisionBits == 0) {
-							if let mostRecent = mutablePositions.lastObject as? PositionEntity, mostRecent.coordinate.distance(from: position.coordinate) < 9.0 {
-								mutablePositions.remove(mostRecent)
+							if let mostRecentCoord = mutablePositions.last?.nodeCoordinate,
+							   let positionCoord = position.nodeCoordinate,
+							   mostRecentCoord.distance(from: positionCoord) < 9.0 {
+								mutablePositions.removeLast()
 							}
 						} else if mutablePositions.count > 0 {
 							/// Don't store any history for reduced accuracy positions, we will just show a circle
-							mutablePositions.removeAllObjects()
+							mutablePositions.removeAll()
 						}
-						mutablePositions.add(position)
+						mutablePositions.append(position)
 						
 						// Prune old positions to prevent unbounded memory growth
 						let maxPositionsPerNode = 500
 						while mutablePositions.count > maxPositionsPerNode {
-							if let oldest = mutablePositions.object(at: 0) as? PositionEntity, !oldest.latest {
-								context.delete(oldest)
-								mutablePositions.removeObject(at: 0)
+							let oldest = mutablePositions[0]
+							if !oldest.latest {
+								modelContext.delete(oldest)
+								mutablePositions.removeFirst()
 							} else {
 								break
 							}
 						}
 
 						fetchedNode[0].channel = Int32(packet.channel)
-						fetchedNode[0].positions = mutablePositions.copy() as? NSOrderedSet
+						fetchedNode[0].positions = mutablePositions
 						
 						do {
-							try context.save()
+							try modelContext.save()
 							Logger.data.info("💾 [Position] Saved from Position App Packet For: \(fetchedNode[0].num.toHex(), privacy: .public)")
 						} catch {
-							context.rollback()
 							let nsError = error as NSError
 							Logger.data.error("💥 Error Saving NodeInfoEntity from POSITION_APP \(nsError, privacy: .public)")
 						}
@@ -691,27 +580,21 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertBluetoothConfigPacket(config: Config.BluetoothConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertBluetoothConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertBluetoothConfigPacket(config: Config.BluetoothConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertBluetoothConfigPacket(config: Config.BluetoothConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Bluetooth config received: %@".localized, String(nodeNum))
 		Logger.mesh.info("📶 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Device Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].bluetoothConfig == nil {
-					let newBluetoothConfig = BluetoothConfigEntity(context: context)
+					let newBluetoothConfig = BluetoothConfigEntity()
+					modelContext.insert(newBluetoothConfig)
 					newBluetoothConfig.enabled = config.enabled
 					newBluetoothConfig.mode = Int32(config.mode.rawValue)
 					newBluetoothConfig.fixedPin = Int32(config.fixedPin)
@@ -726,10 +609,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [BluetoothConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [BluetoothConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -742,26 +624,20 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertDeviceConfigPacket(config: Config.DeviceConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertDeviceConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertDeviceConfigPacket(config: Config.DeviceConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertDeviceConfigPacket(config: Config.DeviceConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Device config received: %@".localized, String(nodeNum))
 		Logger.mesh.info("📟 \(logString, privacy: .public)")
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Device Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].deviceConfig == nil {
-					let newDeviceConfig = DeviceConfigEntity(context: context)
+					let newDeviceConfig = DeviceConfigEntity()
+					modelContext.insert(newDeviceConfig)
 					newDeviceConfig.role = Int32(config.role.rawValue)
 					newDeviceConfig.buttonGpio = Int32(config.buttonGpio)
 					newDeviceConfig.buzzerGpio =  Int32(config.buzzerGpio)
@@ -790,10 +666,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [DeviceConfigEntity] Updated Device Config for node number: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [DeviceConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -804,29 +679,23 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertDisplayConfigPacket(config: Config.DisplayConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertDisplayConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertDisplayConfigPacket(config: Config.DisplayConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertDisplayConfigPacket(config: Config.DisplayConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Display config received: %@".localized, nodeNum.toHex())
 		Logger.data.info("🖥️ \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Device Config
 			if !fetchedNode.isEmpty {
 				
 				if fetchedNode[0].displayConfig == nil {
 					
-					let newDisplayConfig = DisplayConfigEntity(context: context)
+					let newDisplayConfig = DisplayConfigEntity()
+					modelContext.insert(newDisplayConfig)
 					newDisplayConfig.screenOnSeconds = Int32(truncatingIfNeeded: config.screenOnSecs)
 					newDisplayConfig.screenCarouselInterval = Int32(truncatingIfNeeded: config.autoScreenCarouselSecs)
 					newDisplayConfig.compassNorthTop = config.compassNorthTop
@@ -854,11 +723,10 @@ extension MeshPackets {
 				}
 				do {
 					
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [DisplayConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 					
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [DisplayConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -872,27 +740,22 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertLoRaConfigPacket(config: Config.LoRaConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertLoRaConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertLoRaConfigPacket(config: Config.LoRaConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertLoRaConfigPacket(config: Config.LoRaConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("LoRa config received: %@".localized, nodeNum.toHex())
 		Logger.data.info("📻 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", nodeNum)
+		let fetchNum = nodeNum
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save LoRa Config
 			if fetchedNode.count > 0 {
 				if fetchedNode[0].loRaConfig == nil {
 					// No lora config for node, save a new lora config
-					let newLoRaConfig = LoRaConfigEntity(context: context)
+					let newLoRaConfig = LoRaConfigEntity()
+					modelContext.insert(newLoRaConfig)
 					newLoRaConfig.regionCode = Int32(config.region.rawValue)
 					newLoRaConfig.usePreset = config.usePreset
 					newLoRaConfig.modemPreset = Int32(config.modemPreset.rawValue)
@@ -934,10 +797,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [LoRaConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [LoRaConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -950,27 +812,21 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertNetworkConfigPacket(config: Config.NetworkConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertNetworkConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertNetworkConfigPacket(config: Config.NetworkConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertNetworkConfigPacket(config: Config.NetworkConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Network config received: %@".localized, String(nodeNum))
 		Logger.data.info("🌐 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save WiFi Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].networkConfig == nil {
-					let newNetworkConfig = NetworkConfigEntity(context: context)
+					let newNetworkConfig = NetworkConfigEntity()
+					modelContext.insert(newNetworkConfig)
 					newNetworkConfig.wifiEnabled = config.wifiEnabled
 					newNetworkConfig.wifiSsid = config.wifiSsid
 					newNetworkConfig.wifiPsk = config.wifiPsk
@@ -989,11 +845,10 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [NetworkConfigEntity] Updated Network Config for node: \(nodeNum.toHex(), privacy: .public)")
 					
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [NetworkConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1006,27 +861,21 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertPositionConfigPacket(config: Config.PositionConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertPositionConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertPositionConfigPacket(config: Config.PositionConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertPositionConfigPacket(config: Config.PositionConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Position config received: %@".localized, String(nodeNum))
 		Logger.data.info("🗺️ \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save LoRa Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].positionConfig == nil {
-					let newPositionConfig = PositionConfigEntity(context: context)
+					let newPositionConfig = PositionConfigEntity()
+					modelContext.insert(newPositionConfig)
 					newPositionConfig.smartPositionEnabled = config.positionBroadcastSmartEnabled
 					newPositionConfig.deviceGpsEnabled = config.gpsEnabled
 					newPositionConfig.gpsMode = Int32(truncatingIfNeeded: config.gpsMode.rawValue)
@@ -1061,10 +910,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [PositionConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [PositionConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1077,26 +925,20 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertPowerConfigPacket(config: Config.PowerConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertPowerConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertPowerConfigPacket(config: Config.PowerConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertPowerConfigPacket(config: Config.PowerConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		let logString = String.localizedStringWithFormat("Power config received: %@".localized, String(nodeNum))
 		Logger.data.info("🗺️ \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Power Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].powerConfig == nil {
-					let newPowerConfig = PowerConfigEntity(context: context)
+					let newPowerConfig = PowerConfigEntity()
+					modelContext.insert(newPowerConfig)
 					newPowerConfig.adcMultiplierOverride = config.adcMultiplierOverride
 					newPowerConfig.deviceBatteryInaAddress = Int32(config.deviceBatteryInaAddress)
 					newPowerConfig.isPowerSaving = config.isPowerSaving
@@ -1119,10 +961,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [PowerConfigEntity] Updated Power Config for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [PowerConfigEntity] Error Updating Core Data PowerConfigEntity: \(nsError, privacy: .public)")
 				}
@@ -1135,27 +976,21 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertSecurityConfigPacket(config: Config.SecurityConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertSecurityConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertSecurityConfigPacket(config: Config.SecurityConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertSecurityConfigPacket(config: Config.SecurityConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("mesh.log.security.config %@".localized, String(nodeNum))
 		Logger.data.info("🛡️ \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Security Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].securityConfig == nil {
-					let newSecurityConfig = SecurityConfigEntity(context: context)
+					let newSecurityConfig = SecurityConfigEntity()
+					modelContext.insert(newSecurityConfig)
 					newSecurityConfig.publicKey = config.publicKey
 					newSecurityConfig.privateKey = config.privateKey
 					if config.adminKey.count > 0 {
@@ -1188,11 +1023,10 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [SecurityConfigEntity] Updated Security Config for node: \(nodeNum.toHex(), privacy: .public)")
 					
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [SecurityConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1205,28 +1039,22 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertAmbientLightingModuleConfigPacket(config: ModuleConfig.AmbientLightingConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertAmbientLightingModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertAmbientLightingModuleConfigPacket(config: ModuleConfig.AmbientLightingConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertAmbientLightingModuleConfigPacket(config: ModuleConfig.AmbientLightingConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Ambient Lighting module config received: %@".localized, String(nodeNum))
 		Logger.data.info("🏮 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Ambient Lighting Config
 			if !fetchedNode.isEmpty {
 				
 				if fetchedNode[0].cannedMessageConfig == nil {
-					let newAmbientLightingConfig = AmbientLightingConfigEntity(context: context)
+					let newAmbientLightingConfig = AmbientLightingConfigEntity()
+					modelContext.insert(newAmbientLightingConfig)
 					newAmbientLightingConfig.ledState = config.ledState
 					newAmbientLightingConfig.current = Int32(config.current)
 					newAmbientLightingConfig.red = Int32(config.red)
@@ -1236,7 +1064,9 @@ extension MeshPackets {
 				} else {
 					
 					if fetchedNode[0].ambientLightingConfig == nil {
-						fetchedNode[0].ambientLightingConfig = AmbientLightingConfigEntity(context: context)
+						let newAmbientLighting = AmbientLightingConfigEntity()
+						modelContext.insert(newAmbientLighting)
+						fetchedNode[0].ambientLightingConfig = newAmbientLighting
 					}
 					fetchedNode[0].ambientLightingConfig?.ledState = config.ledState
 					fetchedNode[0].ambientLightingConfig?.current = Int32(config.current)
@@ -1249,10 +1079,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [AmbientLightingConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [AmbientLightingConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1265,28 +1094,22 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertCannedMessagesModuleConfigPacket(config: ModuleConfig.CannedMessageConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertCannedMessagesModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertCannedMessagesModuleConfigPacket(config: ModuleConfig.CannedMessageConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertCannedMessagesModuleConfigPacket(config: ModuleConfig.CannedMessageConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Canned Message module config received: %@".localized, String(nodeNum))
 		Logger.data.info("🥫 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Canned Message Config
 			if !fetchedNode.isEmpty {
 				
 				if fetchedNode[0].cannedMessageConfig == nil {
-					let newCannedMessageConfig = CannedMessageConfigEntity(context: context)
+					let newCannedMessageConfig = CannedMessageConfigEntity()
+					modelContext.insert(newCannedMessageConfig)
 					newCannedMessageConfig.enabled = config.enabled
 					newCannedMessageConfig.sendBell = config.sendBell
 					newCannedMessageConfig.rotary1Enabled = config.rotary1Enabled
@@ -1315,10 +1138,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [CannedMessageConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [CannedMessageConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1331,27 +1153,21 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertDetectionSensorModuleConfigPacket(config: ModuleConfig.DetectionSensorConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertDetectionSensorModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-
-	nonisolated func upsertDetectionSensorModuleConfigPacket(config: ModuleConfig.DetectionSensorConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertDetectionSensorModuleConfigPacket(config: ModuleConfig.DetectionSensorConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Detection Sensor module config received: %@".localized, String(nodeNum))
 		Logger.data.info("🕵️ \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Detection Sensor Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].detectionSensorConfig == nil {
-					let newConfig = DetectionSensorConfigEntity(context: context)
+					let newConfig = DetectionSensorConfigEntity()
+					modelContext.insert(newConfig)
 					newConfig.enabled = config.enabled
 					newConfig.sendBell = config.sendBell
 					newConfig.name = config.name
@@ -1376,11 +1192,10 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [DetectionSensorConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 					
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [DetectionSensorConfigEntity] Error Updating Core Data : \(nsError, privacy: .public)")
 				}
@@ -1395,28 +1210,22 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertExternalNotificationModuleConfigPacket(config: ModuleConfig.ExternalNotificationConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertExternalNotificationModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-
-	nonisolated func upsertExternalNotificationModuleConfigPacket(config: ModuleConfig.ExternalNotificationConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertExternalNotificationModuleConfigPacket(config: ModuleConfig.ExternalNotificationConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("External Notification module config received: %@".localized, String(nodeNum))
 		Logger.data.info("📣 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save External Notificaitone Config
 			if !fetchedNode.isEmpty {
 				
 				if fetchedNode[0].externalNotificationConfig == nil {
-					let newExternalNotificationConfig = ExternalNotificationConfigEntity(context: context)
+					let newExternalNotificationConfig = ExternalNotificationConfigEntity()
+					modelContext.insert(newExternalNotificationConfig)
 					newExternalNotificationConfig.enabled = config.enabled
 					newExternalNotificationConfig.usePWM = config.usePwm
 					newExternalNotificationConfig.alertBell = config.alertBell
@@ -1455,10 +1264,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [ExternalNotificationConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [ExternalNotificationConfigEntity] Error Updating Core Data : \(nsError, privacy: .public)")
 				}
@@ -1471,27 +1279,21 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertPaxCounterModuleConfigPacket(config: ModuleConfig.PaxcounterConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertPaxCounterModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertPaxCounterModuleConfigPacket(config: ModuleConfig.PaxcounterConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertPaxCounterModuleConfigPacket(config: ModuleConfig.PaxcounterConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("PAX Counter config received: %@".localized, String(nodeNum))
 		Logger.data.info("🧑‍🤝‍🧑 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save PAX Counter Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].paxCounterConfig == nil {
-					let newPaxCounterConfig = PaxCounterConfigEntity(context: context)
+					let newPaxCounterConfig = PaxCounterConfigEntity()
+					modelContext.insert(newPaxCounterConfig)
 					newPaxCounterConfig.enabled = config.enabled
 					newPaxCounterConfig.updateInterval = Int32(config.paxcounterUpdateInterval)
 					fetchedNode[0].paxCounterConfig = newPaxCounterConfig
@@ -1504,10 +1306,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [PaxCounterConfigEntity] Updated for node number: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [PaxCounterConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1520,27 +1321,21 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertRtttlConfigPacket(ringtone: String, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertRtttlConfigPacket(ringtone: ringtone, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertRtttlConfigPacket(ringtone: String, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertRtttlConfigPacket(ringtone: String, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("RTTTL Ringtone config received: %@".localized, String(nodeNum))
 		Logger.data.info("⛰️ \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save RTTTL Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].rtttlConfig == nil {
-					let newRtttlConfig = RTTTLConfigEntity(context: context)
+					let newRtttlConfig = RTTTLConfigEntity()
+					modelContext.insert(newRtttlConfig)
 					newRtttlConfig.ringtone = ringtone
 					fetchedNode[0].rtttlConfig = newRtttlConfig
 				} else {
@@ -1551,10 +1346,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [RtttlConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [RtttlConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1567,27 +1361,21 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertMqttModuleConfigPacket(config: ModuleConfig.MQTTConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertMqttModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertMqttModuleConfigPacket(config: ModuleConfig.MQTTConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertMqttModuleConfigPacket(config: ModuleConfig.MQTTConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("MQTT module config received: %@".localized, String(nodeNum))
 		Logger.data.info("🌉 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save MQTT Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].mqttConfig == nil {
-					let newMQTTConfig = MQTTConfigEntity(context: context)
+					let newMQTTConfig = MQTTConfigEntity()
+					modelContext.insert(newMQTTConfig)
 					newMQTTConfig.enabled = config.enabled
 					newMQTTConfig.proxyToClientEnabled = config.proxyToClientEnabled
 					newMQTTConfig.address = config.address
@@ -1621,10 +1409,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [MQTTConfigEntity] Updated for node number: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [MQTTConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1637,27 +1424,21 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertRangeTestModuleConfigPacket(config: ModuleConfig.RangeTestConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertRangeTestModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertRangeTestModuleConfigPacket(config: ModuleConfig.RangeTestConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertRangeTestModuleConfigPacket(config: ModuleConfig.RangeTestConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Range Test module config received: %@".localized, String(nodeNum))
 		Logger.data.info("⛰️ \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Device Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].rangeTestConfig == nil {
-					let newRangeTestConfig = RangeTestConfigEntity(context: context)
+					let newRangeTestConfig = RangeTestConfigEntity()
+					modelContext.insert(newRangeTestConfig)
 					newRangeTestConfig.sender = Int32(config.sender)
 					newRangeTestConfig.enabled = config.enabled
 					newRangeTestConfig.save = config.save
@@ -1672,10 +1453,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [RangeTestConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [RangeTestConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1688,27 +1468,21 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertSerialModuleConfigPacket(config: ModuleConfig.SerialConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertSerialModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertSerialModuleConfigPacket(config: ModuleConfig.SerialConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertSerialModuleConfigPacket(config: ModuleConfig.SerialConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Serial module config received: %@".localized, String(nodeNum))
 		Logger.data.info("🤖 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Device Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].serialConfig == nil {
-					let newSerialConfig = SerialConfigEntity(context: context)
+					let newSerialConfig = SerialConfigEntity()
+					modelContext.insert(newSerialConfig)
 					newSerialConfig.enabled = config.enabled
 					newSerialConfig.echo = config.echo
 					newSerialConfig.rxd = Int32(config.rxd)
@@ -1731,11 +1505,10 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [SerialConfigEntity]Updated Serial Module Config for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
 					
-					context.rollback()
 					
 					let nsError = error as NSError
 					Logger.data.error("💥 [SerialConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
@@ -1750,27 +1523,21 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertStoreForwardModuleConfigPacket(config: ModuleConfig.StoreForwardConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertStoreForwardModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertStoreForwardModuleConfigPacket(config: ModuleConfig.StoreForwardConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertStoreForwardModuleConfigPacket(config: ModuleConfig.StoreForwardConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Store & Forward module config received: %@".localized, String(nodeNum))
 		Logger.data.info("📬 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
-		
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Store & Forward Sensor Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].storeForwardConfig == nil {
-					let newConfig = StoreForwardConfigEntity(context: context)
+					let newConfig = StoreForwardConfigEntity()
+					modelContext.insert(newConfig)
 					newConfig.enabled = config.enabled
 					newConfig.heartbeat = config.heartbeat
 					newConfig.records = Int32(config.records)
@@ -1790,10 +1557,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [StoreForwardConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [StoreForwardConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1806,26 +1572,21 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertTelemetryModuleConfigPacket(config: ModuleConfig.TelemetryConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertTelemetryModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-	
-	nonisolated func upsertTelemetryModuleConfigPacket(config: ModuleConfig.TelemetryConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertTelemetryModuleConfigPacket(config: ModuleConfig.TelemetryConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Telemetry module config received: %@".localized, String(nodeNum))
 		Logger.data.info("📈 \(logString, privacy: .public)")
 		
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			// Found a node, save Telemetry Config
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].telemetryConfig == nil {
-					let newTelemetryConfig = TelemetryConfigEntity(context: context)
+					let newTelemetryConfig = TelemetryConfigEntity()
+					modelContext.insert(newTelemetryConfig)
 					newTelemetryConfig.deviceUpdateInterval = Int32(truncatingIfNeeded: config.deviceUpdateInterval)
 					newTelemetryConfig.deviceTelemetryEnabled = config.deviceTelemetryEnabled
 					newTelemetryConfig.environmentUpdateInterval = Int32(truncatingIfNeeded: config.environmentUpdateInterval)
@@ -1852,11 +1613,10 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [TelemetryConfigEntity] Updated Telemetry Module Config for node: \(nodeNum.toHex(), privacy: .public)")
 					
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [TelemetryConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}
@@ -1871,25 +1631,20 @@ extension MeshPackets {
 		}
 	}
 
-	func upsertTAKModuleConfigPacket(config: ModuleConfig.TAKConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) async {
-		let context = self.backgroundContext
-		await context.perform {
-			self.upsertTAKModuleConfigPacket(config: config, nodeNum: nodeNum, sessionPasskey: sessionPasskey, context: context)
-		}
-	}
-
-	nonisolated func upsertTAKModuleConfigPacket(config: ModuleConfig.TAKConfig, nodeNum: Int64, sessionPasskey: Data? = Data(), context: NSManagedObjectContext) {
+	func upsertTAKModuleConfigPacket(config: ModuleConfig.TAKConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 
 		let logString = String.localizedStringWithFormat("TAK module config received: %@".localized, String(nodeNum))
 		Logger.data.info("🎯 \(logString, privacy: .public)")
 
-		let fetchNodeInfoRequest = NodeInfoEntity.fetchRequest()
-		fetchNodeInfoRequest.predicate = NSPredicate(format: "num == %lld", Int64(nodeNum))
+		let fetchNum = Int64(nodeNum)
+			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+			fetchNodeInfoRequest.fetchLimit = 1
 		do {
-			let fetchedNode = try context.fetch(fetchNodeInfoRequest)
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
 			if !fetchedNode.isEmpty {
 				if fetchedNode[0].takConfig == nil {
-					let newTAKConfig = TAKConfigEntity(context: context)
+					let newTAKConfig = TAKConfigEntity()
+					modelContext.insert(newTAKConfig)
 					newTAKConfig.team = Int32(config.team.rawValue)
 					newTAKConfig.role = Int32(config.role.rawValue)
 					fetchedNode[0].takConfig = newTAKConfig
@@ -1902,10 +1657,9 @@ extension MeshPackets {
 					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
 				}
 				do {
-					try context.save()
+					try modelContext.save()
 					Logger.data.info("💾 [TAKConfigEntity] Updated TAK Module Config for node: \(nodeNum.toHex(), privacy: .public)")
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [TAKConfigEntity] Error Updating Core Data: \(nsError, privacy: .public)")
 				}

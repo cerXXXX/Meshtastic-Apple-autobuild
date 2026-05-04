@@ -1,17 +1,15 @@
 <!--
 Sync Impact Report
-  Version change: N/A → 1.0.0
-  Modified principles: N/A (initial creation)
+  Version change: 1.2.0 → 1.3.0
+  Modified principles: none
+  Updated sections: none
   Added sections:
-    - Core Principles (7 principles)
-    - Technology Stack & Constraints
-    - Development Workflow
-    - Governance
+    - Principle VIII (Meshtastic Design Standards Compliance)
   Removed sections: N/A
   Templates requiring updates:
-    - .specify/templates/plan-template.md ✅ no changes needed (uses dynamic constitution check)
-    - .specify/templates/spec-template.md ✅ no changes needed (project-agnostic)
-    - .specify/templates/tasks-template.md ✅ no changes needed (project-agnostic)
+    - .specify/templates/plan-template.md ✅ no changes needed
+    - .specify/templates/spec-template.md ✅ no changes needed
+    - .specify/templates/tasks-template.md ✅ no changes needed
   Follow-up TODOs: None
 -->
 
@@ -33,20 +31,26 @@ deep-link routing.
 complexity and keeps the codebase approachable for contributors
 familiar with modern Apple development.
 
-### II. Core Data Persistence
+### II. SwiftData Persistence
 
-All persistent application data MUST be stored in Core Data using the
-existing `PersistenceController.shared` singleton. Schema changes MUST
-be added as a new numbered model version (currently V57) with
-appropriate migration support. Entity query functions MUST reside in
-`Meshtastic/Persistence/QueryCoreData.swift`. Entity update operations
-MUST be performed through the `MeshPackets` actor on a background
-context to ensure thread safety. Entity extensions providing computed
-properties MUST be placed in `Meshtastic/Extensions/CoreData/`.
+All persistent application data MUST be stored using SwiftData. The
+`PersistenceController.shared` singleton owns the `ModelContainer`
+and exposes a `ModelContext` via its `context` property. Model types
+are defined with the `@Model` macro in `Meshtastic/Model/`. Views
+MUST use `@Query` for reads and `@Environment(\.modelContext)` or
+`@Bindable` for writes. Background processing MUST use the
+`MeshPackets` `@ModelActor` which provides its own `ModelContext`.
+Entity query helpers reside in
+`Meshtastic/Persistence/QueryCoreData.swift`. Entity extensions
+providing computed properties MUST be placed in
+`Meshtastic/Extensions/CoreData/`. Schema evolution is managed via
+`VersionedSchema` and `SchemaMigrationPlan` in
+`Meshtastic/Model/MeshtasticSchema.swift`.
 
-**Rationale**: Core Data is the established persistence layer with 57
-migration versions. Consistency in where queries and updates live
-prevents data-access fragmentation.
+**Rationale**: SwiftData replaces Core Data with a modern,
+Swift-native persistence API that integrates directly with SwiftUI
+via `@Query` and `@Bindable`, eliminating boilerplate and improving
+type safety.
 
 ### III. Protocol-Oriented Transport
 
@@ -118,14 +122,27 @@ cross-platform rendering consistency.
 compilation keeps a single codebase while respecting platform
 capabilities.
 
+### VIII. Meshtastic Design Standards Compliance
+
+All UI work MUST comply with the
+[Meshtastic Client Design Standards](https://raw.githubusercontent.com/meshtastic/design/refs/heads/master/standards/meshtastic_design_standards_latest.md).
+This is the canonical, authoritative source for all visual and
+interaction design requirements. Agents and contributors MUST fetch
+and review this document before making UI changes. Do not rely on
+summaries — always consult the latest version at the URL above.
+
+**Rationale**: A single canonical design standards document prevents
+drift between inline summaries and the authoritative source, ensuring
+cross-platform consistency as standards evolve.
+
 ## Technology Stack & Constraints
 
 - **Language**: Swift (latest stable), using Swift Concurrency
   (`actor`, `@MainActor`, `async`/`await`)
 - **UI**: SwiftUI with `ObservableObject` / `@Published` state
   management
-- **Persistence**: Core Data (`NSPersistentContainer`) with
-  progressive migration
+- **Persistence**: SwiftData (`ModelContainer` / `ModelContext`)
+  with `VersionedSchema` migration
 - **Networking**: CoreBluetooth (BLE), Network.framework (TCP),
   IOKit (Serial/macCatalyst), CocoaMQTT (MQTT proxy)
 - **Protobufs**: apple/swift-protobuf (>= 1.33.3) via local SPM
@@ -133,11 +150,17 @@ capabilities.
 - **Observability**: Datadog SDK (RUM, Crash Reporting, Logs,
   Tracing, Session Replay on TestFlight)
 - **Testing**: Swift Testing framework (`@Suite`, `@Test`,
-  `#expect`, `#require`)
+  `#expect`, `#require`); custom SwiftUI snapshot renderer in
+  `SwiftUIViewSnapshotTests.swift`
+- **Snapshot Testing**: Custom `renderImage` helper using
+  `UIHostingController` + `drawHierarchy(in:afterScreenUpdates:)`
+  with safe-area negation. Reference PNGs stored in
+  `MeshtasticTests/__Snapshots__/`.
 - **Linting**: SwiftLint with pre-commit hook auto-fix
 - **CI/CD**: Xcode Cloud with pre-build secrets injection
 - **IDE**: Latest release version of Xcode
 - **License**: GPL v3
+- **Design Standards**: [Meshtastic Client Design Standards](https://raw.githubusercontent.com/meshtastic/design/refs/heads/master/standards/meshtastic_design_standards_latest.md)
 - **Deep Links**: `meshtastic:///` URL scheme for navigation,
   shortcuts, and widget integration
 
@@ -155,7 +178,20 @@ capabilities.
   merge.
 - **Testing**: All existing tests MUST pass before PR submission.
   New features and bug fixes SHOULD include tests using the Swift
-  Testing framework in `MeshtasticTests/`.
+  Testing framework in `MeshtasticTests/`. Do NOT use XCTest for
+  new tests — use `import Testing`, `@Suite`, `@Test`, `#expect`,
+  and `#require` exclusively. The one remaining XCTest file
+  (`ChannelEntityTests.swift`) is legacy and SHOULD be migrated.
+- **Snapshot Testing**: SwiftUI helper views SHOULD have snapshot
+  tests in `MeshtasticTests/SwiftUIViewSnapshotTests.swift`. The
+  custom `renderImage` function renders views via
+  `UIHostingController` + `drawHierarchy` with safe-area inset
+  negation. Reference PNGs are stored in
+  `MeshtasticTests/__Snapshots__/SwiftUIViewSnapshotTests/` and
+  MUST NOT be committed during initial recording — delete and
+  re-record on a clean run. Tests that use `ScrollView` or
+  expand beyond intrinsic size MUST pass an explicit `height:`
+  parameter to `renderImage`.
 - **Git Hooks**: Contributors MUST run `scripts/setup-hooks.sh` to
   install the pre-commit lint hook.
 - **Protobuf Updates**: Run `scripts/gen_protos.sh`, build, test,
@@ -183,4 +219,4 @@ with these principles.
   MUST be justified in the PR description and approved by a
   maintainer.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-15 | **Last Amended**: 2026-04-15
+**Version**: 1.3.0 | **Ratified**: 2026-04-15 | **Last Amended**: 2026-05-03

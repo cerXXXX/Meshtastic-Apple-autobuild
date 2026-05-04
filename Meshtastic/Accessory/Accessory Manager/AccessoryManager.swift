@@ -123,7 +123,7 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 	// Chicken/Egg problem.  Set in the App object immediately after
 	// AppState and AccessoryManager are created
 	var appState: AppState!
-	let context = PersistenceController.shared.container.viewContext
+	lazy var context = PersistenceController.shared.context
 	let mqttManager = MqttClientProxyManager.shared
 
 	// Published Stuff
@@ -140,6 +140,12 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 	@Published var firmwareEdition: FirmwareEditions = .vanilla
 
 	var activeConnection: (device: Device, connection: any Connection)?
+
+	/// Reference to the active discovery scan engine, if any
+	var discoveryScanEngine: DiscoveryScanEngine?
+
+	/// Shared discovery scan engine that persists across navigation
+	let discoveryEngine = DiscoveryScanEngine()
 
 	let transports: [any Transport]
 
@@ -179,17 +185,12 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 		self.state = .uninitialized
 		self.mqttManager.delegate = self
 
-		// Listen for system memory warnings to proactively release Core Data object data
-		NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { [weak self] _ in
-			guard let self else { return }
-			self.context.refreshAllObjects()
-			Logger.data.warning("⚠️ [AccessoryManager] Memory warning — refreshed viewContext (\(self.context.registeredObjects.count) registered objects)")
-			Task {
-				let bgContext = await MeshPackets.shared.backgroundContext
-				await bgContext.perform {
-					bgContext.refreshAllObjects()
-					Logger.data.warning("⚠️ [MeshPackets] Memory warning — refreshed backgroundContext (\(bgContext.registeredObjects.count) registered objects)")
-				}
+		// Listen for system memory warnings to proactively save pending changes
+		if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+			NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { [weak self] _ in
+				guard let self else { return }
+				try? self.context.save()
+				Logger.data.warning("⚠️ [AccessoryManager] Memory warning — saved context")
 			}
 		}
 	}
@@ -304,11 +305,9 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 		await wantDatabaseGate.cancelAll()
 		await wantDatabaseGate.reset()
 
-		// Re-fault all registered objects on the viewContext to release their in-memory data.
-		// Objects stay registered but their property storage is freed, which prevents unbounded
-		// memory growth across disconnect/reconnect cycles on long-running sessions.
-		context.refreshAllObjects()
-		Logger.data.info("💾 [AccessoryManager] Refreshed viewContext on disconnect (\(self.context.registeredObjects.count) registered objects)")
+		// Save any pending changes and let SwiftData manage object lifecycle on disconnect.
+		try? context.save()
+		Logger.data.info("💾 [AccessoryManager] Saved context on disconnect")
 		
 		// Turn off the disconnect buttons
 		allowDisconnect = false
@@ -525,6 +524,7 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 	}
 
 	private func processFromRadio(_ decodedInfo: FromRadio) async {
+		Logger.transport.info("📻 [processFromRadio] Processing: \(String(describing: decodedInfo.payloadVariant), privacy: .public)")
 		switch decodedInfo.payloadVariant {
 		case .mqttClientProxyMessage(let mqttClientProxyMessage):
 			handleMqttClientProxyMessage(mqttClientProxyMessage)
@@ -545,6 +545,11 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 
 			// Dispatch based on packet contents.
 			if case let .decoded(data) = packet.payloadVariant {
+				// Forward packets to discovery scan engine if active
+				if let engine = discoveryScanEngine, engine.isScanning {
+					engine.handleMeshPacket(packet, portNum: data.portnum)
+				}
+
 				switch data.portnum {
 				case .textMessageApp, .detectionSensorApp, .alertApp:
 					await handleTextMessageAppPacket(packet)
@@ -669,7 +674,11 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 					handleTraceRouteApp(packet)
 				case .neighborinfoApp:
 					if let neighborInfo = try? NeighborInfo(serializedBytes: decodedInfo.packet.decoded.payload) {
-						Logger.mesh.info("🕸️ MESH PACKET received for Neighbor Info App UNHANDLED \((try? neighborInfo.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+						if let engine = discoveryScanEngine, engine.isScanning {
+							engine.handleNeighborInfo(neighborInfo, packet: decodedInfo.packet)
+						} else {
+							Logger.mesh.info("🕸️ MESH PACKET received for Neighbor Info App UNHANDLED \((try? neighborInfo.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
+						}
 					}
 				case .paxcounterApp:
 					await MeshPackets.shared.paxCounterPacket(packet: decodedInfo.packet)
@@ -771,7 +780,6 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 					// Push updated node data to the companion Watch app
 					WatchSessionManager.shared.sendNodesToWatch()
 				} catch {
-					context.rollback()
 					let nsError = error as NSError
 					Logger.data.error("💥 [Database] Error saving batch node info: \(nsError, privacy: .public)")
 				}

@@ -14,11 +14,10 @@ class MeshtasticAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 
 	var router: Router?
 
-	private var isRunningTests: Bool {
-		ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-	}
-
 	func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+		guard NSClassFromString("XCTestCase") == nil && ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else {
+			return true
+		}
 		Logger.services.info("🚀 [App] Meshtstic Apple App launched!")
 		// Default User Default Values
 		UserDefaults.standard.register(defaults: ["meshMapRecentering": true])
@@ -36,12 +35,9 @@ class MeshtasticAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 			TAKServerManager.shared.initializeOnStartup()
 		}
 		// Request Siri authorization so intent donations work and CarPlay messaging is available.
-		// Skip on first launch — the onboarding Siri screen handles the prompt.
 		#if !targetEnvironment(macCatalyst)
-		if !isRunningTests && !UserDefaults.firstLaunch {
-			INPreferences.requestSiriAuthorization { status in
-				Logger.services.info("Siri authorization status: \(String(describing: status))")
-			}
+		INPreferences.requestSiriAuthorization { status in
+			Logger.services.info("Siri authorization status: \(String(describing: status))")
 		}
 		#endif
 		return true

@@ -6,8 +6,6 @@
 //
 
 import Foundation
-import CoreLocation
-import UserNotifications
 import Testing
 @testable import Meshtastic
 
@@ -66,23 +64,6 @@ struct OnboardingStringFormatterTests {
 		return string[range].link
 	}
 
-	@Test func backgroundActivityStringContainsText() {
-		let string = view.createBackgroundActivityString()
-		#expect(string.description.contains("background"))
-		#expect(string.description.contains("settings"))
-	}
-
-	@Test func backgroundActivityStringHasSettingsLink() {
-		let string = view.createBackgroundActivityString()
-		#expect(hasSettingsLink(string))
-	}
-
-	@Test func backgroundActivitySettingsLinkIsAppSettings() {
-		let string = view.createBackgroundActivityString()
-		let url = settingsLinkURL(string)
-		#expect(url?.scheme == "app-settings" || url?.absoluteString.contains("settings") == true)
-	}
-
 	@Test func locationStringContainsText() {
 		let string = view.createLocationString()
 		#expect(string.description.contains("location"))
@@ -133,7 +114,6 @@ struct OnboardingStringFormatterTests {
 
 	@Test func allStringsHaveSettingsLinks() {
 		let strings = [
-			view.createBackgroundActivityString(),
 			view.createLocationString(),
 			view.createLocalNetworkString(),
 			view.createBluetoothString(),
@@ -150,88 +130,8 @@ struct OnboardingStringFormatterTests {
 @Suite("DeviceOnboarding navigation")
 struct OnboardingNavigationTests {
 
-	private func nextStep(
-		after step: DeviceOnboarding.SetupGuide?,
-		notificationStatus: UNAuthorizationStatus,
-		criticalAlertSetting: UNNotificationSetting,
-		locationStatus: CLAuthorizationStatus
-	) -> DeviceOnboarding.SetupGuide? {
+	@Test func navigationPathStartsEmpty() {
 		let view = DeviceOnboarding()
-		return view.nextStep(
-			after: step,
-			notificationStatus: notificationStatus,
-			criticalAlertSetting: criticalAlertSetting,
-			locationStatus: locationStatus
-		)
-	}
-
-	@Test func startRoutesToNotificationsWhenNotificationsUnknown() {
-		let step = nextStep(
-			after: nil,
-			notificationStatus: .notDetermined,
-			criticalAlertSetting: .notSupported,
-			locationStatus: .authorizedAlways
-		)
-		#expect(step == .notifications)
-	}
-
-	@Test func startRoutesToLocationWhenNotificationsKnownAndLocationDenied() {
-		let step = nextStep(
-			after: nil,
-			notificationStatus: .authorized,
-			criticalAlertSetting: .enabled,
-			locationStatus: .denied
-		)
-		#expect(step == .location)
-	}
-
-	@Test func startRoutesToBluetoothWhenLocationAuthorized() {
-		let step = nextStep(
-			after: nil,
-			notificationStatus: .authorized,
-			criticalAlertSetting: .enabled,
-			locationStatus: .authorizedWhenInUse
-		)
-		#expect(step == .bluetooth)
-	}
-
-	@Test func notificationsRoutesToLocationOrBluetooth() {
-		let denied = nextStep(
-			after: .notifications,
-			notificationStatus: .authorized,
-			criticalAlertSetting: .enabled,
-			locationStatus: .denied
-		)
-		let authorized = nextStep(
-			after: .notifications,
-			notificationStatus: .authorized,
-			criticalAlertSetting: .enabled,
-			locationStatus: .authorizedAlways
-		)
-		#expect(denied == .location)
-		#expect(authorized == .bluetooth)
-	}
-
-	@Test func locationRoutesToBluetooth() {
-		let authorized = nextStep(
-			after: .location,
-			notificationStatus: .authorized,
-			criticalAlertSetting: .enabled,
-			locationStatus: .authorizedAlways
-		)
-		let denied = nextStep(
-			after: .location,
-			notificationStatus: .authorized,
-			criticalAlertSetting: .enabled,
-			locationStatus: .denied
-		)
-		#expect(authorized == .bluetooth)
-		#expect(denied == .bluetooth)
-	}
-
-	@Test func deterministicTailFlowMapping() {
-		#expect(nextStep(after: .bluetooth, notificationStatus: .authorized, criticalAlertSetting: .enabled, locationStatus: .authorizedAlways) == .localNetwork)
-		#expect(nextStep(after: .localNetwork, notificationStatus: .authorized, criticalAlertSetting: .enabled, locationStatus: .authorizedAlways) == .siri)
-		#expect(nextStep(after: .siri, notificationStatus: .authorized, criticalAlertSetting: .enabled, locationStatus: .authorizedAlways) == nil)
+		#expect(view.navigationPath.isEmpty)
 	}
 }
