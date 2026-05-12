@@ -1,7 +1,6 @@
 import MeshtasticProtobufs
 import OSLog
 import SwiftUI
-import DatadogSessionReplay
 #if !targetEnvironment(macCatalyst)
 import Translation
 #endif
@@ -21,31 +20,29 @@ struct MessageText: View {
 	@State private var isShowingTranslationPresentation = false
 	
 	var body: some View {
-		SessionReplayPrivacyView(textAndInputPrivacy: .maskAll) {
-			messageContent
-				.environment(\.openURL, OpenURLAction { url in
-					handleURL(url)
-				})
-				.sheet(item: $saveChannelLink) { link in
-					SaveChannelQRCode(
-						channelSetLink: link.data,
-						addChannels: link.add,
-						accessoryManager: accessoryManager
-					)
-					.presentationDetents([.large])
-					.presentationDragIndicator(.visible)
+		messageContent
+			.environment(\.openURL, OpenURLAction { url in
+				handleURL(url)
+			})
+			.sheet(item: $saveChannelLink) { link in
+				SaveChannelQRCode(
+					channelSetLink: link.data,
+					addChannels: link.add,
+					accessoryManager: accessoryManager
+				)
+				.presentationDetents([.large])
+				.presentationDragIndicator(.visible)
+			}
+			.confirmationDialog(
+				"Are you sure you want to delete this message?",
+				isPresented: $isShowingDeleteConfirmation,
+				titleVisibility: .visible
+			) {
+				Button("Delete Message", role: .destructive) {
+					deleteMessage()
 				}
-				.confirmationDialog(
-					"Are you sure you want to delete this message?",
-					isPresented: $isShowingDeleteConfirmation,
-					titleVisibility: .visible
-				) {
-					Button("Delete Message", role: .destructive) {
-						deleteMessage()
-					}
-					Button("Cancel", role: .cancel) {}
-				}
-		}
+				Button("Cancel", role: .cancel) {}
+			}
 	}
 	
 	private var sourceMessageText: String {
@@ -91,12 +88,26 @@ struct MessageText: View {
 		return AnyView(baseMessageContent)
 	}
 
-	private var baseMessageContent: some View {
-		let markdownText = LocalizedStringKey(message.displayedMarkdownPayload)
-		return Group {
-			Text(markdownText)
+	private func underlineLinks(in source: AttributedString) -> AttributedString {
+		var result = source
+		let linkColor = Color("Colors/MeshtasticLink")
+		for run in result.runs where run.link != nil {
+			result[run.range].underlineStyle = .single
+			result[run.range].foregroundColor = linkColor
 		}
-			.tint(isCurrentUser ? .white : Color("Colors/MeshtasticLink"))
+		return result
+	}
+
+	private var baseMessageContent: some View {
+		let payload = message.displayedMarkdownPayload
+		return Group {
+			if let attributed = try? AttributedString(markdown: payload, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+				Text(underlineLinks(in: attributed))
+			} else {
+				Text(LocalizedStringKey(payload))
+			}
+		}
+			.tint(Color("Colors/MeshtasticLink"))
 			.padding(.vertical, 10)
 			.padding(.horizontal, 8)
 			.foregroundColor(isCurrentUser ? .white : Color("Colors/MeshtasticBubbleText"))
