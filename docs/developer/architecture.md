@@ -60,6 +60,21 @@ SwiftData is the sole persistence layer. `PersistenceController.shared` owns the
 
 Model types are defined with `@Model` in `Meshtastic/Model/`. Schema evolution uses `VersionedSchema` and `SchemaMigrationPlan` in `MeshtasticSchema.swift`.
 
+## Services
+
+Application services that are not tied to radio connectivity live in `Meshtastic/Services/`.
+
+| File | Responsibility |
+|------|---------------|
+| `DocTranslationService.swift` | On-device documentation translation using the Apple Translation framework (primary) with FoundationModels fallback. Detects device language, translates bundled English docs pages, and manages background prefetch. iOS 26+. |
+| `TranslationCache.swift` | File-based cache for translated `.md` content stored in Application Support. Tracks content hashes for staleness detection and enforces a 50 MB per-language LRU eviction policy. |
+
 ## Protobufs
 
 The `MeshtasticProtobufs` Swift Package (`MeshtasticProtobufs/Package.swift`) wraps protobuf-generated Swift sources. Regenerate with `./scripts/gen_protos.sh` after updating the `protobufs/` submodule.
+
+## External Swift Packages
+
+| Package | Purpose |
+|---------|---------|
+| [TAKPacket-SDK](https://github.com/meshtastic/TAKPacket-SDK) | TAK V2 wire format on `ATAK_PLUGIN_V2 = port 78`. Exposes `CotXmlParser`, `CotXmlBuilder`, and `TakCompressor` (zstd dictionary compression). Pinned in `Meshtastic.xcworkspace/.../Package.resolved`. See [TAK Protocol](tak-protocol.html). |
