@@ -45,7 +45,7 @@ struct Settings: View {
 			.serialConfig,
 			.storeforwardConfig,
 			.telemetryConfig
-		]) || isTAKModuleSupported()
+		]) || isTAKModuleSupported() || isTrafficManagementModuleSupported()
 	}
 
 	private func isModuleSupported(_ module: ExcludedModules) -> Bool {
@@ -68,6 +68,15 @@ struct Settings: View {
 		}
 
 		return deviceRole == .tak || deviceRole == .takTracker
+	}
+
+	private func isTrafficManagementModuleSupported() -> Bool {
+		guard moduleConfigurationNode != nil else { return false }
+		return accessoryManager.checkIsVersionSupported(forVersion: "2.8.0")
+	}
+
+	private var showsDevelopersSection: Bool {
+		Bundle.main.isDebug || Bundle.main.isTestFlight
 	}
 
 	// MARK: Views
@@ -339,6 +348,16 @@ struct Settings: View {
 				}
 			}
 
+			if isTrafficManagementModuleSupported() {
+				NavigationLink(value: SettingsNavigationState.trafficManagement) {
+					Label {
+						Text("Traffic Management")
+					} icon: {
+						Image(systemName: "arrow.triangle.branch")
+					}
+				}
+			}
+
 			if !showsAnyModuleConfiguration {
 				Text("This node does not support any configurable modules.")
 					.foregroundColor(.secondary)
@@ -376,6 +395,13 @@ struct Settings: View {
 					} icon: {
 						Image(systemName: "hammer")
 					}
+				}
+			}
+			NavigationLink(value: SettingsNavigationState.backupManagement) {
+				Label {
+					Text("Backup Management")
+				} icon: {
+					Image(systemName: "externaldrive")
 				}
 			}
 			NavigationLink(value: SettingsNavigationState.coreDataBrowser) {
@@ -549,9 +575,9 @@ struct Settings: View {
 					deviceConfigurationSection
 					moduleConfigurationSection
 					loggingSection
-#if DEBUG
+					if showsDevelopersSection {
 					developersSection
-#endif
+					}
 				}
 			}
 			.navigationDestination(for: SettingsNavigationState.self) { destination in
@@ -618,6 +644,8 @@ struct Settings: View {
 					StoreForwardConfig(node: configNode)
 				case .telemetry:
 					TelemetryConfig(node: configNode)
+				case .trafficManagement:
+					TrafficManagementConfig(node: configNode)
 				case .debugLogs:
 					AppLog()
 				case .appFiles:
@@ -638,6 +666,8 @@ struct Settings: View {
 					DiscoveryScanView()
 				case .helpDocs:
 					DocBrowserView()
+				case .backupManagement:
+					BackupManagement()
 				}
 			}
 			.onChange(of: UserDefaults.preferredPeripheralNum ) { _, newConnectedNode in

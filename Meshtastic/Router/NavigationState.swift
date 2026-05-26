@@ -51,6 +51,7 @@ enum SettingsNavigationState: String {
 	case security
 	case storeAndForward
 	case telemetry
+	case trafficManagement
 	case debugLogs
 	case appFiles
 	case firmwareUpdates
@@ -60,6 +61,7 @@ enum SettingsNavigationState: String {
 	case coreDataBrowser
 	case localMeshDiscovery
 	case helpDocs
+	case backupManagement
 }
 
 struct NavigationState: Hashable {
