@@ -117,7 +117,7 @@ extension AccessoryManager {
 
 		try await send(toRadio)
 		if let adminDescription {
-			Logger.mesh.debug("\(adminDescription, privacy: .public)")
+			Logger.admin.debug("\(adminDescription, privacy: .public)")
 		}
 	}
 
@@ -168,7 +168,7 @@ extension AccessoryManager {
 					// Update local database with the new node info
 					// Do not auto-favorite when using CLIENT_BASE role to avoid creating routing issues
 					let shouldFavorite = connectedDeviceRole != .clientBase
-					await MeshPackets.shared.upsertNodeInfoPacket(packet: nodeMeshPacket, favorite: shouldFavorite)
+					await MeshPackets.shared.upsertNodeInfoPacket(packet: nodeMeshPacket, favorite: shouldFavorite, overTheMesh: false)
 				}
 			} catch {
 				Logger.data.error("Failed to decode contact data: \(error.localizedDescription, privacy: .public)")
@@ -373,6 +373,7 @@ extension AccessoryManager {
 					Task {
 						let logString = String.localizedStringWithFormat("Sent message %@ from %@ to %@".localized, String(newMessage.messageId), fromUserNum.toHex(), toUserNum.toHex())
 						try await send(toRadio, debugDescription: logString)
+						Logger.mesh.info("💬 \(logString, privacy: .public)")
 					}
 					do {
 						try context.save()
@@ -489,6 +490,14 @@ extension AccessoryManager {
 				chan.role = (i == 0) ? .primary : .secondary
 				chan.settings = cs
 				chan.index = i
+				// Ensure moduleSettings is always explicitly set so the device
+				// stores a defined position_precision value. QR codes typically
+				// omit moduleSettings which causes the firmware to default to 32
+				// (full precision), leaking exact GPS coordinates.
+				if !cs.hasModuleSettings {
+					chan.settings.moduleSettings.positionPrecision = 0
+					chan.settings.moduleSettings.isMuted = false
+				}
 				i += 1
 
 				var adminPacket = AdminMessage()
@@ -2400,5 +2409,41 @@ extension AccessoryManager {
 		try await send(toRadio, debugDescription: logString)
 
 		return Int64(meshPacket.id)
+	}
+
+	func sendLocalStatsRequest(destNum: Int64, wantResponse: Bool) async throws {
+		guard let fromNodeNum = self.activeConnection?.device.num else {
+			Logger.services.error("Error while sending local stats request.  No active device.")
+			throw AccessoryError.ioFailed("No active device")
+		}
+
+		var telemetryPacket = Telemetry()
+		telemetryPacket.localStats = LocalStats()
+
+		var meshPacket = MeshPacket()
+		meshPacket.id = UInt32.random(in: UInt32(UInt8.max)..<UInt32.max)
+		meshPacket.to = UInt32(destNum)
+		meshPacket.from = UInt32(fromNodeNum)
+		meshPacket.wantAck = true
+		meshPacket.decoded.wantResponse = wantResponse
+
+		var dataMessage = DataMessage()
+		if let serializedData: Data = try? telemetryPacket.serializedData() {
+			dataMessage.payload = serializedData
+			dataMessage.portnum = PortNum.telemetryApp
+			dataMessage.wantResponse = wantResponse
+			meshPacket.decoded = dataMessage
+		} else {
+			throw AccessoryError.ioFailed("sendLocalStatsRequest: Unable to serialize telemetry packet")
+		}
+
+		var toRadio: ToRadio!
+		toRadio = ToRadio()
+		toRadio.packet = meshPacket
+
+		let logString = String.localizedStringWithFormat("📊 Sent Local Stats Request from: %@ to: %@".localized, String(fromNodeNum), String(destNum))
+		try await send(toRadio, debugDescription: logString)
+
+		Logger.mesh.info("📊 \(logString, privacy: .public)")
 	}
 }

@@ -279,11 +279,17 @@ extension MeshPackets {
 		}
 	}
 	
-	func upsertNodeInfoPacket (packet: MeshPacket, favorite: Bool = false) {
-		
-		let logString = String.localizedStringWithFormat("[NodeInfo] received for: %@".localized, packet.from.toHex())
-		Logger.mesh.info("📟 \(logString, privacy: .public)")
-		
+	/// - Parameter overTheMesh: true when this NodeInfo arrived as an over-the-air packet from a
+	///   remote node — logged on .mesh so it appears in the Packet Stream. false for local updates
+	///   (e.g. the favorite action), which did not cross the mesh and log on .data.
+	func upsertNodeInfoPacket (packet: MeshPacket, favorite: Bool = false, overTheMesh: Bool = true) {
+
+		if overTheMesh {
+			Logger.mesh.info("[NodeInfo] packet received from \(packet.from.toHex(), privacy: .public)")
+		} else {
+			Logger.data.info("[NodeInfo] packet received from \(packet.from.toHex(), privacy: .public)")
+		}
+
 		guard packet.from > 0 else { return }
 		
 		let fetchNum = Int64(packet.from)
@@ -525,8 +531,7 @@ extension MeshPackets {
 	
 	func upsertPositionPacket (packet: MeshPacket) {
 		
-		let logString = String.localizedStringWithFormat("[Position] received from node: %@".localized, String(packet.from))
-		Logger.mesh.info("📍 \(logString, privacy: .public)")
+		Logger.mesh.info("[Position] packet received from \(packet.from.toHex(), privacy: .public)")
 		
 		let fetchNum = Int64(packet.from)
 			var fetchNodePositionRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
@@ -610,21 +615,24 @@ extension MeshPackets {
 						// Assign position to node via relationship
 						position.nodePosition = fetchedNode[0]
 
-						// Prune: keep at most 5000 positions per node
-						let countDescriptor = FetchDescriptor<PositionEntity>(
-							predicate: #Predicate<PositionEntity> { $0.nodePosition?.num == posNum }
-						)
-						let totalCount = try modelContext.fetchCount(countDescriptor)
-						if totalCount > 5000 {
-							let excess = totalCount - 5000
-							var pruneDescriptor = FetchDescriptor<PositionEntity>(
-								predicate: #Predicate<PositionEntity> { $0.nodePosition?.num == posNum && $0.latest == false },
-								sortBy: [SortDescriptor(\PositionEntity.time, order: .forward)]
+						// Keep the history cap as a soft cap during packet bursts; the
+						// count/sort/delete prune pass is expensive with large node stores.
+						if shouldPrunePositionHistory(for: posNum) {
+							let countDescriptor = FetchDescriptor<PositionEntity>(
+								predicate: #Predicate<PositionEntity> { $0.nodePosition?.num == posNum }
 							)
-							pruneDescriptor.fetchLimit = excess
-							let toDelete = try modelContext.fetch(pruneDescriptor)
-							for old in toDelete {
-								modelContext.delete(old)
+							let totalCount = try modelContext.fetchCount(countDescriptor)
+							if totalCount > MeshPackets.maxPositionHistoryPerNode {
+								let excess = totalCount - MeshPackets.maxPositionHistoryPerNode
+								var pruneDescriptor = FetchDescriptor<PositionEntity>(
+									predicate: #Predicate<PositionEntity> { $0.nodePosition?.num == posNum && $0.latest == false },
+									sortBy: [SortDescriptor(\PositionEntity.time, order: .forward)]
+								)
+								pruneDescriptor.fetchLimit = excess
+								let toDelete = try modelContext.fetch(pruneDescriptor)
+								for old in toDelete {
+									modelContext.delete(old)
+								}
 							}
 						}
 
@@ -645,7 +653,7 @@ extension MeshPackets {
 	func upsertBluetoothConfigPacket(config: Config.BluetoothConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Bluetooth config received: %@".localized, String(nodeNum))
-		Logger.mesh.info("📶 \(logString, privacy: .public)")
+		Logger.admin.info("📶 \(logString, privacy: .public)")
 		
 		let fetchNum = Int64(nodeNum)
 			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
@@ -684,7 +692,7 @@ extension MeshPackets {
 	func upsertDeviceConfigPacket(config: Config.DeviceConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
 		
 		let logString = String.localizedStringWithFormat("Device config received: %@".localized, String(nodeNum))
-		Logger.mesh.info("📟 \(logString, privacy: .public)")
+		Logger.admin.info("📟 \(logString, privacy: .public)")
 		let fetchNum = Int64(nodeNum)
 			var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
 			fetchNodeInfoRequest.fetchLimit = 1
