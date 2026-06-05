@@ -255,10 +255,10 @@ extension MeshPackets {
 				if !isImplicitAck {
 					if packet.rxTime > 0 {
 						node.lastHeard = Date(timeIntervalSince1970: TimeInterval(Int64(packet.rxTime)))
-						Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) lastHeard from rxTime=\(packet.rxTime)")
+						Logger.data.debug("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) lastHeard from rxTime=\(packet.rxTime)")
 					} else {
 						node.lastHeard = Date()
-						Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) lastHeard to now (rxTime==0)")
+						Logger.data.debug("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) lastHeard to now (rxTime==0)")
 					}
 				}
 				
@@ -268,11 +268,11 @@ extension MeshPackets {
 				
 				if packet.hopStart != 0 && packet.hopLimit <= packet.hopStart {
 					node.hopsAway = Int32(packet.hopStart - packet.hopLimit)
-					Logger.data.info("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) hopsAway=\(node.hopsAway)")
+					Logger.data.debug("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) hopsAway=\(node.hopsAway)")
 				}
 				
 				// Changes are saved by the subsequent packet handler's save call
-				Logger.data.info("💾 [updateAnyPacketFrom] Updated node \(node.num.toHex(), privacy: .public) snr=\(node.snr), rssi=\(node.rssi) from packet \(packet.id.toHex(), privacy: .public)")
+				Logger.data.debug("💾 [updateAnyPacketFrom] Updated node \(node.num.toHex(), privacy: .public) snr=\(node.snr), rssi=\(node.rssi) from packet \(packet.id.toHex(), privacy: .public)")
 			}
 		} catch {
 			Logger.data.error("💥 [updateAnyPacketFrom] fetch data error")
@@ -425,7 +425,7 @@ extension MeshPackets {
 				}
 				
 				savePendingChanges()
-				Logger.data.info("💾 [NodeInfo] Saved a NodeInfo for node number: \(packet.from.toHex(), privacy: .public)")
+				Logger.data.debug("💾 [NodeInfo] Saved a NodeInfo for node number: \(packet.from.toHex(), privacy: .public)")
 				
 			} else {
 				// Update an existing node
@@ -522,7 +522,7 @@ extension MeshPackets {
 					}
 				}
 				savePendingChanges()
-				Logger.data.info("💾 [NodeInfoEntity] Updated from Node Info App Packet For: \(fetchedNode[0].num.toHex(), privacy: .public)")
+				Logger.data.debug("💾 [NodeInfoEntity] Updated from Node Info App Packet For: \(fetchedNode[0].num.toHex(), privacy: .public)")
 			}
 		} catch {
 			Logger.data.error("💥 [NodeInfoEntity] fetch data error for NODEINFO_APP")
@@ -548,19 +548,15 @@ extension MeshPackets {
 						let newNode = createNodeInfo(num: Int64(packet.from), context: modelContext)
 						newNode.lastHeard = Date()
 						fetchedNode = [newNode]
-						Logger.data.info("📍 [Position] created stub node for: \(packet.from.toHex(), privacy: .public)")
+						Logger.data.debug("📍 [Position] created stub node for: \(packet.from.toHex(), privacy: .public)")
 					}
 					if fetchedNode.count == 1 {
 						
-						// Unset the current latest position for this node
 						let posNum = Int64(packet.from)
-						let fetchCurrentLatestPositionsRequest = FetchDescriptor<PositionEntity>(predicate: #Predicate<PositionEntity> { $0.nodePosition?.num == posNum && $0.latest == true })
-						let fetchedPositions = try modelContext.fetch(fetchCurrentLatestPositionsRequest)
-						if fetchedPositions.count > 0 {
-							for position in fetchedPositions {
-								position.latest = false
-							}
-						}
+						// Previous latest is tracked directly on the node — no PositionEntity table scan.
+						let previousLatest = fetchedNode[0].latestPosition
+						previousLatest?.latest = false
+
 						let position = PositionEntity()
 						modelContext.insert(position)
 						position.latest = true
@@ -584,36 +580,25 @@ extension MeshPackets {
 							position.time = Date(timeIntervalSince1970: TimeInterval(Int64(positionMessage.time)))
 						}
 
-						// Deduplication: fetch only the most recent position for this node
-						// instead of loading the entire positions array (which could be thousands)
-						var mostRecentDescriptor = FetchDescriptor<PositionEntity>(
-							predicate: #Predicate<PositionEntity> { $0.nodePosition?.num == posNum },
-							sortBy: [SortDescriptor(\PositionEntity.time, order: .reverse)]
-						)
-						mostRecentDescriptor.fetchLimit = 1
-						let mostRecentPositions = try modelContext.fetch(mostRecentDescriptor)
+						// Assign to the node and record as the new latest — O(1), no table scan.
+						position.nodePosition = fetchedNode[0]
+						fetchedNode[0].latestPositionCache = position
 
 						if position.precisionBits == 32 || position.precisionBits == 0 {
-							// Don't save nearly the same position. If within 9m of most recent, replace it.
-							if let mostRecent = mostRecentPositions.first,
-							   let mostRecentCoord = mostRecent.nodeCoordinate,
-							   let positionCoord = position.nodeCoordinate,
-							   mostRecentCoord.distance(from: positionCoord) < 9.0 {
-								modelContext.delete(mostRecent)
+							// Full precision: drop a near-duplicate of the previous latest (within 9m).
+							if let previousLatest,
+								let prevCoord = previousLatest.nodeCoordinate,
+								let positionCoord = position.nodeCoordinate,
+								prevCoord.distance(from: positionCoord) < 9.0 {
+								modelContext.delete(previousLatest)
 							}
 						} else {
-							// Don't store any history for reduced accuracy positions — delete all non-latest
-							let deleteDescriptor = FetchDescriptor<PositionEntity>(
-								predicate: #Predicate<PositionEntity> { $0.nodePosition?.num == posNum && $0.latest == false }
-							)
-							let oldPositions = try modelContext.fetch(deleteDescriptor)
-							for old in oldPositions {
+							// Reduced accuracy: keep no history. Delete this node's older positions via its own
+							// relationship (small for reduced-accuracy nodes) instead of a global table scan.
+							for old in fetchedNode[0].positions where !old.latest {
 								modelContext.delete(old)
 							}
 						}
-
-						// Assign position to node via relationship
-						position.nodePosition = fetchedNode[0]
 
 						// Keep the history cap as a soft cap during packet bursts; the
 						// count/sort/delete prune pass is expensive with large node stores.
@@ -639,7 +624,7 @@ extension MeshPackets {
 						fetchedNode[0].channel = Int32(packet.channel)
 						
 						scheduleDebouncedSave()
-						Logger.data.info("📍 [Position] buffered for Node: \(fetchedNode[0].num.toHex(), privacy: .public)")
+						Logger.data.debug("📍 [Position] buffered for Node: \(fetchedNode[0].num.toHex(), privacy: .public)")
 					}
 				} else {
 					Logger.data.error("💥 Empty POSITION_APP Packet: \((try? packet.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
