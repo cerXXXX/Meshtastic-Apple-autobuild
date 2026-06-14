@@ -343,6 +343,11 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 		await wantDatabaseGate.cancelAll()
 		await wantDatabaseGate.reset()
 
+		// Stop the MQTT proxy so it doesn't forward broker packets over BLE during reconnect,
+		// which would starve the wantConfig handshake. initializeMqtt() restarts it in Step 8.
+		// Disconnect unconditionally — mqttProxyConnected can be stale during a teardown race.
+		mqttManager.mqttClientProxy?.disconnect()
+
 		// Save any pending changes and let SwiftData manage object lifecycle on disconnect.
 		try? context.save()
 		Logger.data.info("💾 [AccessoryManager] Saved context on disconnect")
@@ -714,7 +719,7 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 				case .audioApp:
 					Logger.mesh.info("[Audio] packet received from \(packet.from.toHex(), privacy: .public)")
 				case .nodeStatusApp:
-					Logger.mesh.info("[Node Status] packet received from \(packet.from.toHex(), privacy: .public)")
+					await MeshPackets.shared.upsertNodeStatusPacket(packet: packet)
 				case .tracerouteApp:
 					handleTraceRouteApp(packet)
 				case .neighborinfoApp:
@@ -907,6 +912,11 @@ extension AccessoryManager {
 	/// handshook) since v2 is now the predominant firmware in the field.
 	var supportsTAKv2: Bool {
 		checkIsVersionSupported(forVersion: "2.8.0")
+	}
+
+	/// StatusMessage module was introduced in firmware 2.6.0.
+	var supportsStatusMessage: Bool {
+		checkIsVersionSupported(forVersion: "2.6.0")
 	}
 }
 
