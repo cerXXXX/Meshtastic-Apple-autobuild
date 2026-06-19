@@ -147,9 +147,19 @@ extension MeshPackets {
 	}
 	
 	public func clearDatabase(includeRoutes: Bool, preserveFavorites: Bool = false) {
-		// Delete entities that are on the inverse side of many-to-many
-		// relationships first to avoid constraint trigger violations.
+		// Delete entities that are on the inverse side of many-to-many relationships first to avoid
+		// constraint trigger violations. A batch `delete(model:)` alone trips the mandatory MTM
+		// nullify inverse between DeviceHardwareEntity.tags and DeviceHardwareTagEntity.devices, so
+		// first sever the relationship from the owning side and save before deleting the tag/image
+		// entities. Mirrors PersistenceController.clearDatabase.
 		do {
+			let hardwareDevices = try modelContext.fetch(FetchDescriptor<DeviceHardwareEntity>())
+			for device in hardwareDevices {
+				device.tags.removeAll()
+			}
+			if modelContext.hasChanges {
+				try modelContext.save()
+			}
 			try modelContext.delete(model: DeviceHardwareTagEntity.self)
 			try modelContext.delete(model: DeviceHardwareImageEntity.self)
 		} catch {
@@ -583,7 +593,7 @@ extension MeshPackets {
 					var fetchedNode = try modelContext.fetch(fetchNodePositionRequest)
 					// Create a stub node if one doesn't exist yet — it will be updated when the NodeInfo packet arrives
 					if fetchedNode.isEmpty {
-						let newNode = createNodeInfo(num: Int64(packet.from), context: modelContext)
+						let newNode = findOrCreateNode(num: Int64(packet.from), context: modelContext)
 						newNode.lastHeard = Date()
 						fetchedNode = [newNode]
 						Logger.data.debug("📍 [Position] created stub node for: \(packet.from.toHex(), privacy: .public)")

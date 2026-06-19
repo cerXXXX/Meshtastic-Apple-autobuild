@@ -58,6 +58,9 @@ final class DiscoveryScanEngine {
 	// MARK: Internal State
 
 	private var homePreset: ModemPresets?
+	/// Full snapshot of the LoRa config as it was before the scan started, so every field
+	/// (frequency slot, overrides, MQTT flags, …) can be restored exactly afterward (#1952).
+	private var homeLoRaConfig: Config.LoRaConfig?
 	private var presetQueue: [ModemPresets] = []
 	private var currentPresetResult: DiscoveryPresetResultEntity?
 	private var dwellTask: Task<Void, Never>?
@@ -126,8 +129,13 @@ final class DiscoveryScanEngine {
 		// Record home preset from current LoRa config
 		let connectedNodeNum = Int64(UserDefaults.preferredPeripheralNum)
 		let connectedNode = getNodeInfo(id: connectedNodeNum, context: context)
-		if let loraConfig = connectedNode?.loRaConfig {
+		if let loraConfig = connectedNode?.loRaConfig, !loraConfig.isDeleted {
 			homePreset = ModemPresets(rawValue: Int(loraConfig.modemPreset))
+			// Snapshot the complete config so restore puts back the frequency slot and all
+			// other LoRa settings exactly — not just the modem preset (#1952). Each scan preset
+			// is sent on the default frequency slot (see sendPresetChange); this snapshot is what
+			// returns the user to their real slot when the scan finishes.
+			homeLoRaConfig = loRaConfigProto(from: loraConfig, presetOverride: nil)
 		}
 
 		// Create session
@@ -206,6 +214,41 @@ final class DiscoveryScanEngine {
 		await sendPresetChange(nextPreset)
 	}
 
+	// MARK: - LoRa Config Helper
+
+	/// Builds a complete `Config.LoRaConfig` proto from the stored entity, preserving every
+	/// field. `saveLoRaConfig` replaces the device's entire LoRa config, so any field left at
+	/// its proto default is written as 0/false on the radio — e.g. `channelNum` (frequency
+	/// slot) → 0, which silently moves the radio off the user's frequency and wipes their
+	/// settings. The discovery scan only needs to change the modem preset, so everything else
+	/// must be carried through (#1952).
+	/// - Parameter presetOverride: when set, replaces the modem preset (used while shifting
+	///   presets); when `nil`, the entity's own preset is used (used to snapshot/restore home).
+	///
+	/// Internal (not private) so the field-preservation guarantee can be unit-tested.
+	func loRaConfigProto(from entity: LoRaConfigEntity, presetOverride: ModemPresets?) -> Config.LoRaConfig {
+		var config = Config.LoRaConfig()
+		if let resolvedPreset = presetOverride ?? ModemPresets(rawValue: Int(entity.modemPreset)) {
+			config.modemPreset = resolvedPreset.protoEnumValue()
+		}
+		config.region = Config.LoRaConfig.RegionCode(rawValue: Int(entity.regionCode)) ?? .unset
+		config.usePreset = entity.usePreset
+		config.hopLimit = UInt32(entity.hopLimit)
+		config.txEnabled = entity.txEnabled
+		config.txPower = entity.txPower
+		config.channelNum = UInt32(entity.channelNum)
+		config.bandwidth = UInt32(entity.bandwidth)
+		config.codingRate = UInt32(entity.codingRate)
+		config.spreadFactor = UInt32(entity.spreadFactor)
+		config.frequencyOffset = entity.frequencyOffset
+		config.overrideFrequency = entity.overrideFrequency
+		config.overrideDutyCycle = entity.overrideDutyCycle
+		config.sx126XRxBoostedGain = entity.sx126xRxBoostedGain
+		config.ignoreMqtt = entity.ignoreMqtt
+		config.configOkToMqtt = entity.okToMqtt
+		return config
+	}
+
 	// MARK: - Send Preset Change
 
 	private func sendPresetChange(_ preset: ModemPresets) async {
@@ -219,16 +262,26 @@ final class DiscoveryScanEngine {
 			return
 		}
 
-		var loraConfig = Config.LoRaConfig()
-		loraConfig.modemPreset = preset.protoEnumValue()
-
-		// Copy existing config values if available
+		// Carry through EVERY existing LoRa field, changing only the modem preset. The device
+		// applies the whole config, so building a partial one zeroes the omitted fields —
+		// notably bandwidth/codingRate/spreadFactor and the MQTT/override flags — which would
+		// silently wipe the user's settings (#1952).
+		//
+		// The one field we deliberately DON'T carry through is the frequency slot: the scan must
+		// run on the default slot (0) so the firmware auto-derives each preset's frequency from
+		// the primary channel. A user's custom frequency slot can't be translated across presets,
+		// so scanning on it would listen on the wrong frequency and find nothing. The user's real
+		// slot is snapshotted in `homeLoRaConfig` and restored verbatim when the scan finishes.
+		let loraConfig: Config.LoRaConfig
 		if let existingConfig = connectedNode.loRaConfig, !existingConfig.isDeleted {
-			loraConfig.region = Config.LoRaConfig.RegionCode(rawValue: Int(existingConfig.regionCode)) ?? .unset
-			loraConfig.hopLimit = UInt32(existingConfig.hopLimit)
-			loraConfig.txEnabled = existingConfig.txEnabled
-			loraConfig.txPower = existingConfig.txPower
-			loraConfig.usePreset = existingConfig.usePreset
+			var scanConfig = loRaConfigProto(from: existingConfig, presetOverride: preset)
+			scanConfig.channelNum = 0
+			loraConfig = scanConfig
+		} else {
+			var minimal = Config.LoRaConfig()
+			minimal.modemPreset = preset.protoEnumValue()
+			loraConfig = minimal
+			Logger.discovery.warning("📡 [Discovery] No existing LoRa config to copy — sending preset-only config")
 		}
 
 		do {
@@ -307,17 +360,61 @@ final class DiscoveryScanEngine {
 		}
 	}
 
+	/// Seconds to wait for the device to reboot before we stop requiring an observed BLE
+	/// disconnect (see `awaitingDisconnect`). A reboot+reconnect normally completes within this.
+	private static let reconnectGraceSeconds = 30
+	/// Hard cap on the whole reconnect wait before giving up.
+	private static let reconnectTimeoutSeconds = 120
+
+	/// Once the post-preset-change reconnect window elapses, decide where a still-`.reconnecting`
+	/// scan should go: connected & subscribed → resume dwelling (covers a missed disconnect edge
+	/// or a recovered link); otherwise the link is genuinely down → pause. Pure for testability.
+	nonisolated static func reconnectTimeoutResolution(isConnected: Bool, isSubscribed: Bool) -> DiscoveryScanState {
+		(isConnected && isSubscribed) ? .dwell : .paused
+	}
+
 	private func startReconnectTimeout() {
 		reconnectTimeoutTask?.cancel()
 		reconnectTimeoutTask = Task { [weak self] in
-			do {
-				try await Task.sleep(for: .seconds(120))
-				guard let self, self.currentState == .reconnecting else { return }
-				Logger.discovery.warning("📡 [Discovery] Reconnect timeout (120s) → Paused")
-				self.transitionTo(.paused)
-			} catch {
-				// Cancelled — expected when reconnection succeeds
+			// Grace period: give the device time to reboot and BLE to cycle. If we never observe
+			// the disconnect edge (missed event, or a reconnect faster than the observer can see
+			// it), stop requiring it — otherwise the scan hangs on this preset forever and never
+			// rotates (#1952 item 3).
+			do { try await Task.sleep(for: .seconds(Self.reconnectGraceSeconds)) } catch { return }
+			guard let self, self.currentState == .reconnecting else { return }
+
+			// After the grace period we no longer require an observed disconnect edge.
+			if self.awaitingDisconnect {
+				self.awaitingDisconnect = false
+				Logger.discovery.warning("📡 [Discovery] No disconnect observed \(Self.reconnectGraceSeconds)s after preset change — no longer requiring one")
 			}
+			// If the device is back — whether or not we ever saw the disconnect, and whether or
+			// not the observer's subscribe edge fired — proceed to dwell now rather than waiting
+			// out the full timeout. (Checked regardless of awaitingDisconnect: the observer
+			// clears it on the disconnect edge, so gating this on it would skip the fast path in
+			// exactly the missed-subscribe-edge case it exists to handle.)
+			let connected = self.accessoryManager?.isConnected ?? false
+			let subscribed = self.accessoryManager.map { $0.state == .subscribed } ?? false
+			if connected && subscribed {
+				Logger.discovery.info("📡 [Discovery] Connected & subscribed after grace → Dwell")
+				self.transitionTo(.dwell)
+				self.startDwellTimer()
+				return
+			}
+
+			// Still not back: wait out the remaining window. With `awaitingDisconnect` now clear,
+			// the connection observer will advance us to dwell the instant we reconnect. If the
+			// window fully elapses, recover if we're somehow connected, else pause.
+			let remaining = Self.reconnectTimeoutSeconds - Self.reconnectGraceSeconds
+			do { try await Task.sleep(for: .seconds(remaining)) } catch { return }
+			guard self.currentState == .reconnecting else { return }
+			let resolution = Self.reconnectTimeoutResolution(
+				isConnected: self.accessoryManager?.isConnected ?? false,
+				isSubscribed: self.accessoryManager.map { $0.state == .subscribed } ?? false
+			)
+			Logger.discovery.warning("📡 [Discovery] Reconnect window elapsed (\(Self.reconnectTimeoutSeconds)s) → \(resolution)")
+			self.transitionTo(resolution)
+			if resolution == .dwell { self.startDwellTimer() }
 		}
 	}
 
@@ -575,8 +672,11 @@ extension DiscoveryScanEngine {
 	// MARK: - Restore Home Preset
 
 	func restoreHomePreset() async {
-		guard let homePreset, let accessoryManager, let context = modelContext else {
-			Logger.discovery.info("📡 [Discovery] No home preset to restore → Idle")
+		// Restore the full config snapshot captured at scan start — preset, frequency slot,
+		// overrides and all — rather than rebuilding a partial config that would drop the
+		// user's frequency slot and other settings (#1952).
+		guard let homeLoRaConfig, let accessoryManager, let context = modelContext else {
+			Logger.discovery.info("📡 [Discovery] No home config to restore → Idle")
 			cleanupAndIdle()
 			return
 		}
@@ -585,27 +685,16 @@ extension DiscoveryScanEngine {
 		guard let connectedNode = getNodeInfo(id: connectedNodeNum, context: context),
 			  let fromUser = connectedNode.user,
 			  let toUser = connectedNode.user else {
-			Logger.discovery.error("📡 [Discovery] Cannot restore home preset — no connected node")
+			Logger.discovery.error("📡 [Discovery] Cannot restore home config — no connected node")
 			cleanupAndIdle()
 			return
 		}
 
-		var loraConfig = Config.LoRaConfig()
-		loraConfig.modemPreset = homePreset.protoEnumValue()
-
-		if let existingConfig = connectedNode.loRaConfig, !existingConfig.isDeleted {
-			loraConfig.region = Config.LoRaConfig.RegionCode(rawValue: Int(existingConfig.regionCode)) ?? .unset
-			loraConfig.hopLimit = UInt32(existingConfig.hopLimit)
-			loraConfig.txEnabled = existingConfig.txEnabled
-			loraConfig.txPower = existingConfig.txPower
-			loraConfig.usePreset = existingConfig.usePreset
-		}
-
 		do {
-			_ = try await accessoryManager.saveLoRaConfig(config: loraConfig, fromUser: fromUser, toUser: toUser)
-			Logger.discovery.info("📡 [Discovery] Restored home preset: \(homePreset.name)")
+			_ = try await accessoryManager.saveLoRaConfig(config: homeLoRaConfig, fromUser: fromUser, toUser: toUser)
+			Logger.discovery.info("📡 [Discovery] Restored home LoRa config — preset: \(self.homePreset?.name ?? "unknown"), frequency slot: \(homeLoRaConfig.channelNum)")
 		} catch {
-			Logger.discovery.error("📡 [Discovery] Failed to restore home preset: \(error.localizedDescription)")
+			Logger.discovery.error("📡 [Discovery] Failed to restore home config: \(error.localizedDescription)")
 		}
 
 		cleanupAndIdle()
@@ -712,6 +801,10 @@ extension DiscoveryScanEngine {
 		deviceMetricsHistory = [:]
 		awaitingDisconnect = false
 		interruptedDwellRemaining = nil
+		// Clear both home snapshots together so a later scan that starts without a readable
+		// LoRa config doesn't inherit a stale preset/config from a previous scan (#1952).
+		homePreset = nil
+		homeLoRaConfig = nil
 		transitionTo(.idle)
 	}
 
