@@ -57,6 +57,51 @@ struct ClusterMapOverlayStyle {
 	var lineDash: [NSNumber]?
 	var lineCap: CGLineCap = .round
 	var level: MKOverlayLevel = .aboveLabels
+	/// Draw chevrons along the line pointing in the direction of travel (uses the stroke color).
+	var directional: Bool = false
+}
+
+/// An `MKPolylineRenderer` that also draws small chevrons along the line pointing in the direction of
+/// travel, at a roughly constant on-screen size + spacing. Drawn in the renderer's (north-up) map
+/// space so the arrows rotate and scale with the map. Used for trace route direction indicators.
+final class DirectionalPolylineRenderer: MKPolylineRenderer {
+	override func draw(_ mapRect: MKMapRect, zoomScale: MKZoomScale, in context: CGContext) {
+		super.draw(mapRect, zoomScale: zoomScale, in: context)
+		guard let line = overlay as? MKPolyline, line.pointCount >= 2 else { return }
+		let points = line.points()
+
+		// Sizes are in screen points, converted to the renderer's space by dividing by the zoom scale.
+		let size = 10 / zoomScale
+		let spacing = 156 / zoomScale
+		guard spacing > 0 else { return }
+
+		context.setStrokeColor((strokeColor ?? .white).cgColor)
+		context.setLineWidth(max(lineWidth, 3) / zoomScale)
+		context.setLineCap(.round)
+		context.setLineJoin(.round)
+
+		var carry = spacing * 0.5
+		for i in 1..<line.pointCount {
+			let a = point(for: points[i - 1])
+			let b = point(for: points[i])
+			let dx = b.x - a.x, dy = b.y - a.y
+			let segLength = (dx * dx + dy * dy).squareRoot()
+			guard segLength > 0 else { continue }
+			let ux = dx / segLength, uy = dy / segLength   // unit direction of travel
+			let px = -uy, py = ux                          // perpendicular
+			var d = carry
+			while d < segLength {
+				let tipX = a.x + ux * d, tipY = a.y + uy * d
+				let backX = tipX - ux * size, backY = tipY - uy * size
+				context.move(to: CGPoint(x: backX + px * size * 0.7, y: backY + py * size * 0.7))
+				context.addLine(to: CGPoint(x: tipX, y: tipY))
+				context.addLine(to: CGPoint(x: backX - px * size * 0.7, y: backY - py * size * 0.7))
+				d += spacing
+			}
+			context.strokePath()
+			carry = d - segLength
+		}
+	}
 }
 
 /// A caller overlay (route polyline, accuracy circle, convex hull, GeoJSON shape) + its style.
@@ -79,6 +124,23 @@ struct ClusterMapDecoration: Identifiable {
 	var onTap: (() -> Void)?
 }
 
+// MARK: - One-shot camera command
+
+/// A one-shot programmatic camera move. The wrapper applies each distinct command EXACTLY ONCE
+/// (tracked by `id` in the coordinator), so re-renders never re-apply it and streaming data can't
+/// yank the camera out from under the user. Use this — not the continuous `region` binding — to
+/// drive the camera (e.g. the initial framing). After the command fires, the user owns the camera
+/// and we never push the region back in.
+struct ClusterMapCameraCommand: Equatable {
+	let id: UUID
+	let region: MKCoordinateRegion
+	var animated: Bool = false
+
+	static func == (lhs: ClusterMapCameraCommand, rhs: ClusterMapCameraCommand) -> Bool {
+		lhs.id == rhs.id
+	}
+}
+
 // MARK: - Public declarative API
 
 /// A data-driven map. Pass your `items` and a `@ViewBuilder` that turns one item into its annotation
@@ -99,9 +161,13 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 	let items: [Item]
 	/// Per-item coordinate. A closure (not a key-path constraint) so items model location freely.
 	let coordinate: (Item) -> CLLocationCoordinate2D
-	/// Two-way camera binding. A `nil` wrapped value means "don't drive the camera"; supply a real
-	/// binding to read the user's pans/zooms back out AND to push programmatic region changes in.
+	/// Camera WRITE-BACK binding (map → SwiftUI). Supply a real binding to read the user's pans/zooms
+	/// back out (e.g. to filter visible content). We never push this value back INTO the map — that's
+	/// what `cameraCommand` is for — so high-frequency data updates can't fight the user's gestures.
 	let region: Binding<MKCoordinateRegion?>?
+	/// One-shot programmatic camera move (e.g. the initial frame), applied exactly once per distinct
+	/// id. The ONLY thing that moves the camera programmatically; after it fires the user is in control.
+	let cameraCommand: ClusterMapCameraCommand?
 	/// When true, annotations share a `clusteringIdentifier` so MapKit collapses nearby pins.
 	let clustering: Bool
 	/// Builds the SwiftUI view for one item's pin.
@@ -121,6 +187,13 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 	/// Tap / long-press on EMPTY map (not on a pin/marker) -> caller coordinate (create waypoint).
 	let onMapTap: ((CLLocationCoordinate2D) -> Void)?
 	let onMapLongPress: ((CLLocationCoordinate2D) -> Void)?
+	/// Handed the underlying `MKMapView` once it's created, so a caller can drive the camera directly
+	/// (e.g. a guided 3D flyover). Called once from `makeUIView`.
+	let onMapCreated: ((MKMapView) -> Void)?
+	/// When true, region changes are NOT written back into `region` and don't drive SwiftUI updates.
+	/// Set while the caller is animating the camera itself (e.g. a flyover) so the per-frame region
+	/// changes don't re-render `body` (which can spiral on Mac Catalyst with many annotations).
+	let suppressRegionUpdates: Bool
 
 	@Environment(\.colorScheme) private var colorScheme
 
@@ -130,6 +203,7 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		items: [Item],
 		coordinate: @escaping (Item) -> CLLocationCoordinate2D,
 		region: Binding<MKCoordinateRegion?>? = nil,
+		cameraCommand: ClusterMapCameraCommand? = nil,
 		clustering: Bool = true,
 		onSelect: ((Item) -> Void)? = nil,
 		configuration: ClusterMapConfiguration = .init(),
@@ -138,12 +212,15 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		decorations: [ClusterMapDecoration] = [],
 		onMapTap: ((CLLocationCoordinate2D) -> Void)? = nil,
 		onMapLongPress: ((CLLocationCoordinate2D) -> Void)? = nil,
+		onMapCreated: ((MKMapView) -> Void)? = nil,
+		suppressRegionUpdates: Bool = false,
 		@ViewBuilder content pinContent: @escaping (Item) -> Pin,
 		@ViewBuilder clusterContent: @escaping (Int) -> Cluster
 	) {
 		self.items = items
 		self.coordinate = coordinate
 		self.region = region
+		self.cameraCommand = cameraCommand
 		self.clustering = clustering
 		self.onSelect = onSelect
 		self.configuration = configuration
@@ -152,6 +229,8 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		self.decorations = decorations
 		self.onMapTap = onMapTap
 		self.onMapLongPress = onMapLongPress
+		self.onMapCreated = onMapCreated
+		self.suppressRegionUpdates = suppressRegionUpdates
 		self.pinContent = pinContent
 		self.clusterContent = clusterContent
 	}
@@ -196,16 +275,21 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		context.coordinator.syncCoverage(areas: coverageAreas, dark: colorScheme == .dark, on: mapView)
 		context.coordinator.syncDecorations(decorations, on: mapView)
 
-		// Initial camera, if the caller drives one. Guarded so we don't echo it back out.
-		if let region = region?.wrappedValue {
+		// Initial camera, if a one-shot command is already pending at creation. Guarded so we don't
+		// echo it back out. (The continuous `region` binding is never pushed INTO the map.)
+		if let command = cameraCommand {
+			context.coordinator.appliedCameraCommandID = command.id
 			context.coordinator.isApplyingExternalRegion = true
-			mapView.setRegion(region, animated: false)
+			mapView.setRegion(command.region, animated: false)
 			context.coordinator.isApplyingExternalRegion = false
 		}
 
 		// Seed the annotations through the same diffing path used by updates.
 		context.coordinator.sync(items: items, coordinate: coordinate,
 								 clustering: clustering, on: mapView)
+
+		// Hand the map to the caller (e.g. for a guided camera flyover).
+		onMapCreated?(mapView)
 		return mapView
 	}
 
@@ -214,30 +298,51 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		// current on reuse (the representable is recreated each render; the coordinator persists).
 		refreshClosures(on: context.coordinator)
 
+		let coordinator = context.coordinator
+		// RE-ENTRANCY GUARD. Hosting a SwiftUI pin (`UIHostingConfiguration` forces a synchronous
+		// layout) and writing the region binding back are side effects that can synchronously
+		// re-invalidate this representable and call updateUIView AGAIN while we're mid-mutation of
+		// MapKit's annotation/overlay tables. Mutating one of those (an `NSHashTable`) during
+		// MapKit's own enumeration throws NSGenericException ("Collection … was mutated while being
+		// enumerated"). A nested call is always triggered by our own side effects — it carries the
+		// SAME data (real data changes arrive on a later runloop tick, never re-entrantly) — so
+		// skipping it drops nothing. (Repro: clear database → connect → the node flood churns
+		// annotations fast enough to re-enter.)
+		guard !coordinator.isApplyingUpdate else { return }
+		coordinator.isApplyingUpdate = true
+		defer { coordinator.isApplyingUpdate = false }
+
 		// 0) Apple basemap type + controls (diffed; only re-applied when it actually changed).
-		context.coordinator.applyConfiguration(configuration, to: mapView)
-		context.coordinator.installControls(on: mapView, bottomInset: configuration.controlsBottomInset)
+		coordinator.applyConfiguration(configuration, to: mapView)
+		coordinator.installControls(on: mapView, bottomInset: configuration.controlsBottomInset)
 
-		// 1) Offline basemap: rebuild only if the URL or the dark/light flag actually changed.
-
-		// 1b) Vector overlays — diffed by id (object-identity change → remove + re-add).
-		context.coordinator.syncOverlays(overlays, on: mapView)
-		context.coordinator.syncCoverage(areas: coverageAreas, dark: colorScheme == .dark, on: mapView)
-		context.coordinator.syncDecorations(decorations, on: mapView)
+		// 1) Vector overlays — diffed by id (object-identity change → remove + re-add).
+		coordinator.syncOverlays(overlays, on: mapView)
+		coordinator.syncCoverage(areas: coverageAreas, dark: colorScheme == .dark, on: mapView)
+		coordinator.syncDecorations(decorations, on: mapView)
 
 		// 2) Diff annotations by Identifiable id — add/remove/move ONLY what changed (no flicker).
-		context.coordinator.sync(items: items, coordinate: coordinate,
-								 clustering: clustering, on: mapView)
+		coordinator.sync(items: items, coordinate: coordinate, clustering: clustering, on: mapView)
 
-		// 3) Push an external region change in — but never while the user is driving the map, and
-		//    skip no-op writes. That's the feedback-loop guard (see Coordinator).
-		if let region = region?.wrappedValue,
-		   !context.coordinator.isUpdatingRegionFromMap,
-		   !context.coordinator.regionsApproximatelyEqual(mapView.region, region) {
-			context.coordinator.isApplyingExternalRegion = true
-			mapView.setRegion(region, animated: true)
-			// Cleared in regionDidChangeAnimated; also clear async in case no event fires.
-			DispatchQueue.main.async { context.coordinator.isApplyingExternalRegion = false }
+		// 3) Apply a one-shot camera command (e.g. the initial frame) EXACTLY ONCE. We deliberately
+		//    do NOT push the `region` binding back into the map: under heavy traffic the data churns
+		//    every frame, and a reactive setRegion would fight the user's pan/zoom and "re-frame" the
+		//    map constantly. After the initial command fires, the user owns the camera.
+		if let command = cameraCommand,
+		   coordinator.appliedCameraCommandID != command.id {
+			coordinator.appliedCameraCommandID = command.id
+			let currentRegion = mapView.region
+			coordinator.isApplyingExternalRegion = true
+			mapView.setRegion(command.region, animated: command.animated)
+			// `regionDidChangeAnimated` clears the guard when the move completes — for an *animated*
+			// move that's only after the animation finishes, so we must NOT clear it early. Only fall
+			// back to an async clear when the target equals the current region: MapKit fires no
+			// callback then, so without this the guard would stick and suppress the next user pan.
+			// (An unconditional async clear would race ahead of an animated move's later callback and
+			// let the programmatic change leak into `regionBinding`.)
+			if coordinator.regionsApproximatelyEqual(currentRegion, command.region) {
+				DispatchQueue.main.async { coordinator.isApplyingExternalRegion = false }
+			}
 		}
 	}
 
@@ -249,6 +354,7 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		coordinator.onSelect = onSelect
 		coordinator.onMapTap = onMapTap
 		coordinator.onMapLongPress = onMapLongPress
+		coordinator.suppressRegionUpdates = suppressRegionUpdates
 	}
 
 	// MARK: - Coordinator (MKMapViewDelegate + diffing + camera sync + offline overlay)
@@ -266,6 +372,8 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		/// Empty-map tap / long-press handlers (create waypoint), set each render.
 		var onMapTap: ((CLLocationCoordinate2D) -> Void)?
 		var onMapLongPress: ((CLLocationCoordinate2D) -> Void)?
+		/// While true, region-change callbacks don't write the binding (caller is driving the camera).
+		var suppressRegionUpdates = false
 
 		/// id → the backing annotation currently on the map. The single source of truth for diffing.
 		private var annotationsByID: [Item.ID: ItemAnnotation<Item>] = [:]
@@ -298,6 +406,13 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		/// Per-MKOverlay style, keyed by object identity, for O(1) lookup in `rendererFor`.
 		private var styleByOverlay: [ObjectIdentifier: ClusterMapOverlayStyle] = [:]
 
+		/// True while `updateUIView` is mutating the map. Mutating annotations/overlays hosts SwiftUI
+		/// pins and writes the region binding back, either of which can synchronously re-invalidate
+		/// the representable and re-enter `updateUIView` mid-mutation — mutating MapKit's annotation
+		/// `NSHashTable` while it is being enumerated, which throws NSGenericException. This flag makes
+		/// the re-entrant call a no-op (it carries the same data, so nothing is lost).
+		var isApplyingUpdate = false
+
 		// Camera feedback-loop guards.
 		/// True while WE push an external region in (so the resulting `regionDidChange` callback
 		/// doesn't write back out and ping-pong).
@@ -305,6 +420,9 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		/// True for the duration of a user-driven region write-back (so an interleaved update won't
 		/// fight the gesture by re-applying the binding mid-pan).
 		var isUpdatingRegionFromMap = false
+		/// id of the last `ClusterMapCameraCommand` we applied, so each command moves the camera once
+		/// and re-renders never re-apply it (the guard that keeps streaming data off the camera).
+		var appliedCameraCommandID: UUID?
 
 		/// Shared clustering identifier — all clustered item annotations use the same one so MapKit
 		/// groups them. (Computed, not stored: the Coordinator is nested in the generic
@@ -328,17 +446,17 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 				case .standard, .offline:
 					// Offline tiles are now an independent overlay (drawn on top of whatever base is
 					// selected), so a stray `.offline` base value just maps to the clean Standard base.
-					let standard = MKStandardMapConfiguration(elevationStyle: .realistic)
+					let standard = MKStandardMapConfiguration(elevationStyle: .flat)
 					standard.pointOfInterestFilter = poi
 					standard.showsTraffic = config.showsTraffic
 					mapView.preferredConfiguration = standard
 				case .hybrid:
-					let hybrid = MKHybridMapConfiguration(elevationStyle: .realistic)
+					let hybrid = MKHybridMapConfiguration(elevationStyle: .flat)
 					hybrid.pointOfInterestFilter = poi
 					hybrid.showsTraffic = config.showsTraffic
 					mapView.preferredConfiguration = hybrid
 				case .satellite:
-					mapView.preferredConfiguration = MKImageryMapConfiguration(elevationStyle: .realistic)
+					mapView.preferredConfiguration = MKImageryMapConfiguration(elevationStyle: .flat)
 				}
 			}
 
@@ -691,7 +809,8 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 			switch overlay {
 			case let circle as MKCircle: renderer = MKCircleRenderer(circle: circle)
 			case let polygon as MKPolygon: renderer = MKPolygonRenderer(polygon: polygon)
-			case let polyline as MKPolyline: renderer = MKPolylineRenderer(polyline: polyline)
+			case let polyline as MKPolyline:
+				renderer = style.directional ? DirectionalPolylineRenderer(polyline: polyline) : MKPolylineRenderer(polyline: polyline)
 			case let multi as MKMultiPolyline: renderer = MKMultiPolylineRenderer(multiPolyline: multi)
 			case let multi as MKMultiPolygon: renderer = MKMultiPolygonRenderer(multiPolygon: multi)
 			default: return MKOverlayRenderer(overlay: overlay)
@@ -712,6 +831,8 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 				isApplyingExternalRegion = false
 				return
 			}
+			// Caller is driving the camera (e.g. a flyover) — don't write the binding / re-render.
+			guard !suppressRegionUpdates else { return }
 			guard let regionBinding else { return }
 			let newRegion = mapView.region
 			// Skip no-op writes so we don't thrash SwiftUI state (guard #2).
@@ -750,6 +871,7 @@ extension ClusterMapView where Cluster == ClusterBadge {
 		items: [Item],
 		coordinate: @escaping (Item) -> CLLocationCoordinate2D,
 		region: Binding<MKCoordinateRegion?>? = nil,
+		cameraCommand: ClusterMapCameraCommand? = nil,
 		clustering: Bool = true,
 		onSelect: ((Item) -> Void)? = nil,
 		configuration: ClusterMapConfiguration = .init(),
@@ -758,11 +880,14 @@ extension ClusterMapView where Cluster == ClusterBadge {
 		decorations: [ClusterMapDecoration] = [],
 		onMapTap: ((CLLocationCoordinate2D) -> Void)? = nil,
 		onMapLongPress: ((CLLocationCoordinate2D) -> Void)? = nil,
+		onMapCreated: ((MKMapView) -> Void)? = nil,
+		suppressRegionUpdates: Bool = false,
 		@ViewBuilder content pinContent: @escaping (Item) -> Pin
 	) {
 		self.init(items: items,
 				  coordinate: coordinate,
 				  region: region,
+				  cameraCommand: cameraCommand,
 				  clustering: clustering,
 				  onSelect: onSelect,
 				  configuration: configuration,
@@ -771,6 +896,8 @@ extension ClusterMapView where Cluster == ClusterBadge {
 				decorations: decorations,
 				onMapTap: onMapTap,
 				onMapLongPress: onMapLongPress,
+				onMapCreated: onMapCreated,
+				suppressRegionUpdates: suppressRegionUpdates,
 				  content: pinContent,
 				  clusterContent: { ClusterBadge(count: $0) })
 	}
