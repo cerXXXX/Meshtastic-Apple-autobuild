@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0516B3FE2F68892000D0FC40 /* NodeFilterParametersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DCA1AE2F646B3B00D0724C /* NodeFilterParametersTests.swift */; };
+		DD0000A10EDD5A00000000B1 /* XEdDSASigningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000A20EDD5A00000000B2 /* XEdDSASigningTests.swift */; };
 		05A1B2C32F70000100D0FC40 /* SettingsNodeSortTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C42F70000100D0FC40 /* SettingsNodeSortTests.swift */; };
 		0B9642EC0DB1B971CB26E8AE /* RadarSweepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E06A9BCC789BD452DFA9CFB /* RadarSweepView.swift */; };
 		102B5EAB2E172F41003D191E /* DatadogCore in Frameworks */ = {isa = PBXBuildFile; productRef = 102B5EAA2E172F41003D191E /* DatadogCore */; };
@@ -33,6 +34,8 @@
 		2315D1A82EEF2ED400E0FAE7 /* SwiftDraw in Frameworks */ = {isa = PBXBuildFile; productRef = 2315D1A72EEF2ED400E0FAE7 /* SwiftDraw */; };
 		23196A6E2EF1BA9100B1504B /* ESP32WifiOTAViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23196A6D2EF1BA9100B1504B /* ESP32WifiOTAViewModel.swift */; };
 		23196C702EF42D3D00B1504B /* CircularProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23196C6F2EF42D3D00B1504B /* CircularProgressView.swift */; };
+		5C970D55476A78FC5258D0DE /* NodeDisplayNameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B83C70A9A33A56C3AFA6AF7 /* NodeDisplayNameStore.swift */; };
+		2D8C25541553DE3B517A4347 /* EditNodeDisplayNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA9CF85E46C8337BB40D6145 /* EditNodeDisplayNameView.swift */; };
 		231A53782E69ADB900216B99 /* NodeFilterParameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231A53772E69ADB900216B99 /* NodeFilterParameters.swift */; };
 		231B3F212D087A4C0069A07D /* MetricTableColumn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231B3F202D087A4C0069A07D /* MetricTableColumn.swift */; };
 		231B3F222D087A4C0069A07D /* MetricsColumnList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 231B3F1F2D087A4C0069A07D /* MetricsColumnList.swift */; };
@@ -179,6 +182,7 @@
 		AA003DOC0000002000000006 /* DocTranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000006 /* DocTranslationService.swift */; };
 		AA003DOC0000002000000007 /* TranslationCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000007 /* TranslationCache.swift */; };
 		AA003DOC0000002000000008 /* DocTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000008 /* DocTranslationTests.swift */; };
+		DD000031STATMSGDISP00001 /* StatusMessageDisplayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000031STATMSGDISP00000 /* StatusMessageDisplayTests.swift */; };
 		AA003DOC0000004000000001 /* docs in Resources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000005000000001 /* docs */; };
 		AA003FM00000002000000001 /* FoundationModelAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003FM00000001000000001 /* FoundationModelAvailability.swift */; };
 		AA004FMT0000002000000001 /* MarkdownFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA004FMT0000001000000001 /* MarkdownFormatting.swift */; };
@@ -304,6 +308,7 @@
 		DD000029APSTFWTST0000001 /* AppSettingsAndFirmwareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000029APSTFWTST0000000 /* AppSettingsAndFirmwareTests.swift */; };
 		DD00002AINTREMTST00000001 /* IntentAndRemainingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002AINTREMTST00000000 /* IntentAndRemainingTests.swift */; };
 		DD00002BMSHPKTELTST000001 /* MeshPacketsAndTelemetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002BMSHPKTELTST000000 /* MeshPacketsAndTelemetryTests.swift */; };
+		DD00002BACKSTATUSRT000001 /* MessageAckStatusRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002BACKSTATUSRT000000 /* MessageAckStatusRefreshTests.swift */; };
 		DD00002DSNPVWTST000000001 /* SwiftUIViewSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002DSNPVWTST000000000 /* SwiftUIViewSnapshotTests.swift */; };
 		DD00002ESDMIGTST000000001 /* SwiftDataMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002ESDMIGTST000000000 /* SwiftDataMigrationTests.swift */; };
 		DD00002FSHRDTSTCNT000001 /* SharedTestContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002FSHRDTSTCNT000000 /* SharedTestContainer.swift */; };
@@ -511,6 +516,13 @@
 		FCEFC176A62447319948ACEF /* DeviceLinkDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24506086F81240A9BFE18FA6 /* DeviceLinkDirectory.swift */; };
 		FDAF8808342245C4817C93EC /* NetworkConfigIPConversionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18295AFE686247778632C6DE /* NetworkConfigIPConversionTests.swift */; };
 		FE508F9AF5AD5DA20AA64DBF /* AccessoryManager+TAK.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82232A3CF2DD284ED5B9B8ED /* AccessoryManager+TAK.swift */; };
+		DD7E5750000000000000007A /* AccessoryManager+Lockdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007A /* AccessoryManager+Lockdown.swift */; };
+		DD7E5750000000000000007B /* LockdownSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007B /* LockdownSheet.swift */; };
+		DD7E5750000000000000007C /* LockdownCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007C /* LockdownCoordinator.swift */; };
+		DD7E5750000000000000007D /* LockdownPassphraseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007D /* LockdownPassphraseStore.swift */; };
+		DD7E5750000000000000007E /* LockdownState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007E /* LockdownState.swift */; };
+		DD7E5750000000000000008A /* LockdownCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */; };
+		DD7E5750000000000000008B /* LockdownPassphraseStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */; };
 		FE57A71500000000000000A2 /* StatusMessageConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE57A71500000000000000A1 /* StatusMessageConfig.swift */; };
 /* End PBXBuildFile section */
 
@@ -574,6 +586,7 @@
 
 /* Begin PBXFileReference section */
 		01028778B8BFD81F7A039593 /* TAKConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TAKConnection.swift; sourceTree = "<group>"; };
+		DD0000A20EDD5A00000000B2 /* XEdDSASigningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XEdDSASigningTests.swift; sourceTree = "<group>"; };
 		05A1B2C42F70000100D0FC40 /* SettingsNodeSortTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsNodeSortTests.swift; sourceTree = "<group>"; };
 		05DCA1AE2F646B3B00D0724C /* NodeFilterParametersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeFilterParametersTests.swift; sourceTree = "<group>"; };
 		05E0BD1A81CF4F6A90D56CE3 /* MeshtasticSchemaV1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshtasticSchemaV1.swift; sourceTree = "<group>"; };
@@ -597,6 +610,7 @@
 		23196A6D2EF1BA9100B1504B /* ESP32WifiOTAViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESP32WifiOTAViewModel.swift; sourceTree = "<group>"; };
 		23196C6F2EF42D3D00B1504B /* CircularProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularProgressView.swift; sourceTree = "<group>"; };
 		231A53772E69ADB900216B99 /* NodeFilterParameters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeFilterParameters.swift; sourceTree = "<group>"; };
+		AA9CF85E46C8337BB40D6145 /* EditNodeDisplayNameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditNodeDisplayNameView.swift; sourceTree = "<group>"; };
 		231B3F1F2D087A4C0069A07D /* MetricsColumnList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsColumnList.swift; sourceTree = "<group>"; };
 		231B3F202D087A4C0069A07D /* MetricTableColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricTableColumn.swift; sourceTree = "<group>"; };
 		231B3F242D087C3C0069A07D /* EnvironmentDefaultColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentDefaultColumns.swift; sourceTree = "<group>"; };
@@ -702,6 +716,13 @@
 		748E4806582595DE80D455CD /* CoTXMLParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoTXMLParser.swift; sourceTree = "<group>"; };
 		7F1B62B5CB54395476C3A924 /* GenericCoTHandler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GenericCoTHandler.swift; sourceTree = "<group>"; };
 		82232A3CF2DD284ED5B9B8ED /* AccessoryManager+TAK.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "AccessoryManager+TAK.swift"; sourceTree = "<group>"; };
+		DD7E5740000000000000007A /* AccessoryManager+Lockdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccessoryManager+Lockdown.swift"; sourceTree = "<group>"; };
+		DD7E5740000000000000007B /* LockdownSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownSheet.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000007C /* LockdownCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownCoordinator.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000007D /* LockdownPassphraseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownPassphraseStore.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000007E /* LockdownState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownState.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownCoordinatorTests.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownPassphraseStoreTests.swift; sourceTree = "<group>"; };
 		84CCF00CDD3D48C9B9DCA554 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
 		87D006C85B250291D5925F30 /* TAKMeshtasticBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TAKMeshtasticBridge.swift; sourceTree = "<group>"; };
 		8A96594950B87789C0BB96DB /* NodeListHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeListHelp.swift; sourceTree = "<group>"; };
@@ -760,6 +781,7 @@
 		AA003DOC0000001000000006 /* DocTranslationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocTranslationService.swift; sourceTree = "<group>"; };
 		AA003DOC0000001000000007 /* TranslationCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TranslationCache.swift; path = Meshtastic/Services/TranslationCache.swift; sourceTree = "<group>"; };
 		AA003DOC0000001000000008 /* DocTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocTranslationTests.swift; sourceTree = "<group>"; };
+		DD000031STATMSGDISP00000 /* StatusMessageDisplayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMessageDisplayTests.swift; sourceTree = "<group>"; };
 		AA003DOC0000005000000001 /* docs */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = docs; sourceTree = "<group>"; };
 		AA003FM00000001000000001 /* FoundationModelAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FoundationModelAvailability.swift; path = Meshtastic/Services/FoundationModelAvailability.swift; sourceTree = "<group>"; };
 		AA004FMT0000001000000001 /* MarkdownFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownFormatting.swift; sourceTree = "<group>"; };
@@ -878,6 +900,7 @@
 		DD000029APSTFWTST0000000 /* AppSettingsAndFirmwareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsAndFirmwareTests.swift; sourceTree = "<group>"; };
 		DD00002AINTREMTST00000000 /* IntentAndRemainingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentAndRemainingTests.swift; sourceTree = "<group>"; };
 		DD00002BMSHPKTELTST000000 /* MeshPacketsAndTelemetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshPacketsAndTelemetryTests.swift; sourceTree = "<group>"; };
+		DD00002BACKSTATUSRT000000 /* MessageAckStatusRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageAckStatusRefreshTests.swift; sourceTree = "<group>"; };
 		DD00002DSNPVWTST000000000 /* SwiftUIViewSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIViewSnapshotTests.swift; sourceTree = "<group>"; };
 		DD00002ESDMIGTST000000000 /* SwiftDataMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataMigrationTests.swift; sourceTree = "<group>"; };
 		DD00002FSHRDTSTCNT000000 /* SharedTestContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTestContainer.swift; sourceTree = "<group>"; };
@@ -934,6 +957,7 @@
 		DD354FD82BD96A0B0061A25F /* IAQScale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IAQScale.swift; sourceTree = "<group>"; };
 		DD3619132B1EE20700C41C8C /* MeshtasticDataModelV21.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = MeshtasticDataModelV21.xcdatamodel; sourceTree = "<group>"; };
 		DD3619142B1EF9F900C41C8C /* LocationsHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationsHandler.swift; sourceTree = "<group>"; };
+		6B83C70A9A33A56C3AFA6AF7 /* NodeDisplayNameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeDisplayNameStore.swift; sourceTree = "<group>"; };
 		DD398EBD2B93F640002B4C51 /* MeshtasticDataModelV 29.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "MeshtasticDataModelV 29.xcdatamodel"; sourceTree = "<group>"; };
 		DD3CC24B2C498D6C001BD3A2 /* BatteryCompact.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryCompact.swift; sourceTree = "<group>"; };
 		DD3CC6B428E33FD100FA9159 /* ShareChannels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareChannels.swift; sourceTree = "<group>"; };
@@ -1463,6 +1487,7 @@
 				23AD546A2E2AA5A80046E9AB /* AccessoryManager+ToRadio.swift */,
 				23AD546C2E2AE9630046E9AB /* AccessoryManager+MQTT.swift */,
 				82232A3CF2DD284ED5B9B8ED /* AccessoryManager+TAK.swift */,
+				DD7E5740000000000000007A /* AccessoryManager+Lockdown.swift */,
 			);
 			path = "Accessory Manager";
 			sourceTree = "<group>";
@@ -1558,6 +1583,7 @@
 				DD9C70112E9F2A0000029299 /* DeviceOnboardingTests.swift */,
 				25F5D5D02C4375DF008036E3 /* RouterTests.swift */,
 				05DCA1AE2F646B3B00D0724C /* NodeFilterParametersTests.swift */,
+				DD0000A20EDD5A00000000B2 /* XEdDSASigningTests.swift */,
 				05A1B2C42F70000100D0FC40 /* SettingsNodeSortTests.swift */,
 				AA0120250000000000000C02 /* PacketStreamModelTests.swift */,
 				AA000301CPTST000000000001 /* CarPlayTests.swift */,
@@ -1606,6 +1632,7 @@
 				DD000029APSTFWTST0000000 /* AppSettingsAndFirmwareTests.swift */,
 				DD00002AINTREMTST00000000 /* IntentAndRemainingTests.swift */,
 				DD00002BMSHPKTELTST000000 /* MeshPacketsAndTelemetryTests.swift */,
+				DD00002BACKSTATUSRT000000 /* MessageAckStatusRefreshTests.swift */,
 				DD00002DSNPVWTST000000000 /* SwiftUIViewSnapshotTests.swift */,
 				AA004FMT0000001000000004 /* MarkdownFormattingTests.swift */,
 				DD00002ESDMIGTST000000000 /* SwiftDataMigrationTests.swift */,
@@ -1613,7 +1640,10 @@
 				DD000030EVTFWNTST0000000 /* EventFirmwareNotificationTests.swift */,
 				AA009MCT0000001000000001 /* MarkdownConverterTests.swift */,
 				AA003DOC0000001000000008 /* DocTranslationTests.swift */,
+				DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */,
+				DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */,
 				DD0000DEVLNKTST000000000 /* DeviceLinkTests.swift */,
+				DD000031STATMSGDISP00000 /* StatusMessageDisplayTests.swift */,
 			);
 			path = MeshtasticTests;
 			sourceTree = "<group>";
@@ -2134,6 +2164,7 @@
 				DD47E3D726F2F21A00029299 /* Connect */,
 				DDC2E18D26CE25CB0042C5E4 /* Helpers */,
 				DD6D5A312CA1176A00ED3032 /* Layouts */,
+				DD7E5760000000000000007F /* Lockdown */,
 				DDC2E18B26CE25A70042C5E4 /* Messages */,
 				DD47E3CA26F0E50300029299 /* Nodes */,
 				DD74ED0B2DC6A0900059AC10 /* Onboarding */,
@@ -2141,6 +2172,14 @@
 				DDC2E18E26CE25FE0042C5E4 /* ContentView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		DD7E5760000000000000007F /* Lockdown */ = {
+			isa = PBXGroup;
+			children = (
+				DD7E5740000000000000007B /* LockdownSheet.swift */,
+			);
+			path = Lockdown;
 			sourceTree = "<group>";
 		};
 		DDC2E18826CE24EE0042C5E4 /* Model */ = {
@@ -2171,6 +2210,7 @@
 				231B3F1E2D0879BC0069A07D /* Metrics Visualization */,
 				D952A49BD44F4EB19722C716 /* Schema */,
 				DD23A50E26FD1B4400D9B90C /* PeripheralModel.swift */,
+				DD7E5740000000000000007E /* LockdownState.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -2251,10 +2291,13 @@
 				BCD7448C2E0F2FA300F265A2 /* ContactURLHandler.swift */,
 				DDD43FE12A78C86B0083A3E9 /* Mqtt */,
 				DD1BEF492E0292220090CE24 /* KeychainHelper.swift */,
+				DD7E5740000000000000007C /* LockdownCoordinator.swift */,
+				DD7E5740000000000000007D /* LockdownPassphraseStore.swift */,
 				DD913638270DFF4C00D7ACF3 /* LocalNotificationManager.swift */,
 				DDA6B2E828419CF2003E8C16 /* MeshPackets.swift */,
 				84CCF00CDD3D48C9B9DCA554 /* WatchSessionManager.swift */,
 				DD3619142B1EF9F900C41C8C /* LocationsHandler.swift */,
+				6B83C70A9A33A56C3AFA6AF7 /* NodeDisplayNameStore.swift */,
 				6D825E612C34786C008DBEE4 /* CommonRegex.swift */,
 				3D3417B32E2730EC006A988B /* GeoJSONOverlayManager.swift */,
 				AA004FMT0000001000000001 /* MarkdownFormatting.swift */,
@@ -2319,6 +2362,7 @@
 				AB61EBF02E3326DC00B35962 /* NodeListItemCompact.swift */,
 				DDDCD56F2BB26F5C00BE6B60 /* NodeListFilter.swift */,
 				231A53772E69ADB900216B99 /* NodeFilterParameters.swift */,
+				AA9CF85E46C8337BB40D6145 /* EditNodeDisplayNameView.swift */,
 				251926882C3BAF2E00249DF5 /* Actions */,
 				BCDDFA992DBB180D0065189C /* ScrollToBottomButton.swift */,
 			);
@@ -2660,12 +2704,16 @@
 				1396606FC903D7DA662B6326 /* DiscoveryModelTests.swift in Sources */,
 				AA003DOC0000002000000005 /* DocBundleTests.swift in Sources */,
 				AA003DOC0000002000000008 /* DocTranslationTests.swift in Sources */,
+				DD7E5750000000000000008A /* LockdownCoordinatorTests.swift in Sources */,
+				DD7E5750000000000000008B /* LockdownPassphraseStoreTests.swift in Sources */,
 				DD0000DEVLNKTST000000001 /* DeviceLinkTests.swift in Sources */,
+				DD000031STATMSGDISP00001 /* StatusMessageDisplayTests.swift in Sources */,
 				AA009MCT0000002000000001 /* MarkdownConverterTests.swift in Sources */,
 				AA0001012E2730EC00600001 /* ConnectViewTests.swift in Sources */,
 				DD9C70102E9F2A0000029299 /* DeviceOnboardingTests.swift in Sources */,
 				25F5D5D12C4375DF008036E3 /* RouterTests.swift in Sources */,
 				0516B3FE2F68892000D0FC40 /* NodeFilterParametersTests.swift in Sources */,
+				DD0000A10EDD5A00000000B1 /* XEdDSASigningTests.swift in Sources */,
 				05A1B2C32F70000100D0FC40 /* SettingsNodeSortTests.swift in Sources */,
 				AA0120250000000000000C01 /* PacketStreamModelTests.swift in Sources */,
 				AA000301CPTST000000000002 /* CarPlayTests.swift in Sources */,
@@ -2711,6 +2759,7 @@
 				DD000029APSTFWTST0000001 /* AppSettingsAndFirmwareTests.swift in Sources */,
 				DD00002AINTREMTST00000001 /* IntentAndRemainingTests.swift in Sources */,
 				DD00002BMSHPKTELTST000001 /* MeshPacketsAndTelemetryTests.swift in Sources */,
+				DD00002BACKSTATUSRT000001 /* MessageAckStatusRefreshTests.swift in Sources */,
 				DD00002DSNPVWTST000000001 /* SwiftUIViewSnapshotTests.swift in Sources */,
 				AA004FMT0000002000000004 /* MarkdownFormattingTests.swift in Sources */,
 				DD00002ESDMIGTST000000001 /* SwiftDataMigrationTests.swift in Sources */,
@@ -2936,6 +2985,7 @@
 				DD6193772862F90F00E59241 /* CannedMessagesConfig.swift in Sources */,
 				BD7B1A838F8245A0B6BE56C5 /* WatchSessionManager.swift in Sources */,
 				DD3619152B1EF9F900C41C8C /* LocationsHandler.swift in Sources */,
+				5C970D55476A78FC5258D0DE /* NodeDisplayNameStore.swift in Sources */,
 				DD6F65792C6EADE60053C113 /* DirectMessagesHelp.swift in Sources */,
 				23148E302EE1CCE500F0DB2C /* MeshtasticAPI.swift in Sources */,
 				23C2BD292EE87D0300F6A997 /* CoreDataBrowser.swift in Sources */,
@@ -2956,6 +3006,7 @@
 				DDE0F7C5295F77B700B8AAB3 /* AppSettingsEnums.swift in Sources */,
 				DDB6ABE628B1406100384BA1 /* LoraConfigEnums.swift in Sources */,
 				231A53782E69ADB900216B99 /* NodeFilterParameters.swift in Sources */,
+				2D8C25541553DE3B517A4347 /* EditNodeDisplayNameView.swift in Sources */,
 				232ED4C52E2C5EDD009DA392 /* TCPConnection.swift in Sources */,
 				23825FF92EF6D9AA00C25543 /* ESP32WifiOTASheet.swift in Sources */,
 				DDB8F4142A9EE5F000230ECE /* ChannelList.swift in Sources */,
@@ -3122,6 +3173,11 @@
 				10794B252F8C2C90000CA23F /* RouteDataPackageGenerator.swift in Sources */,
 				E3ED80145D0E873011982556 /* TAKServerManager.swift in Sources */,
 				FE508F9AF5AD5DA20AA64DBF /* AccessoryManager+TAK.swift in Sources */,
+				DD7E5750000000000000007A /* AccessoryManager+Lockdown.swift in Sources */,
+				DD7E5750000000000000007B /* LockdownSheet.swift in Sources */,
+				DD7E5750000000000000007C /* LockdownCoordinator.swift in Sources */,
+				DD7E5750000000000000007D /* LockdownPassphraseStore.swift in Sources */,
+				DD7E5750000000000000007E /* LockdownState.swift in Sources */,
 				A5339E2F74E83F8FC41EEE33 /* TAKServerConfig.swift in Sources */,
 				AA0001032F07A4B000600001 /* TAKModuleConfig.swift in Sources */,
 				DCC919C6B47C15BB0795456C /* Tools.swift in Sources */,
