@@ -278,13 +278,13 @@
         "section": "user",
         "navOrder": 3,
         "keywords": [
-            "message",
             "channel",
+            "message",
+            "channels",
             "messages",
             "key",
             "text",
             "formatting",
-            "channels",
             "markdown",
             "delimiters",
             "not",
@@ -292,12 +292,12 @@
             "direct",
             "bold",
             "tap",
+            "from",
             "button",
             "public",
             "preview",
             "press",
             "node",
-            "from",
             "encryption",
             "destination",
             "broadcast",
@@ -309,7 +309,7 @@
             "shield",
             "select"
         ],
-        "charCount": 8428
+        "charCount": 8968
     },
     {
         "id": "mqtt",
