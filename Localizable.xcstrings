@@ -1,6 +1,259 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "lockdown.backoff.body %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Try again in %lld s"
+          }
+        }
+      }
+    },
+    "lockdown.backoff.explanation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Wait for the timer to elapse before trying again."
+          }
+        }
+      }
+    },
+    "lockdown.backoff.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Too many attempts"
+          }
+        }
+      }
+    },
+    "lockdown.connecting" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Connecting to device…"
+          }
+        }
+      }
+    },
+    "lockdown.locked.auto_replay_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Stored passphrase no longer works. Enter the current one."
+          }
+        }
+      }
+    },
+    "lockdown.locked.needs_auth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This device is locked. Enter the passphrase to continue."
+          }
+        }
+      }
+    },
+    "lockdown.locked.token_expired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your session has expired. Re-enter the passphrase."
+          }
+        }
+      }
+    },
+    "lockdown.locked.token_rtc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Device clock unavailable; passphrase required."
+          }
+        }
+      }
+    },
+    "lockdown.locked.token_tamper" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Stored credentials invalid; re-enter the passphrase."
+          }
+        }
+      }
+    },
+    "lockdown.passphrase.field" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Passphrase"
+          }
+        }
+      }
+    },
+    "lockdown.passphrase.wrong" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Wrong passphrase. Try again."
+          }
+        }
+      }
+    },
+    "lockdown.session.boots_caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave empty for firmware default."
+          }
+        }
+      }
+    },
+    "lockdown.session.boots_remaining" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Boots remaining (optional)"
+          }
+        }
+      }
+    },
+    "lockdown.session.cap_caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Per-boot uptime cap. Leave empty for no cap. Device reboots when the cap elapses; next boot auto-unlocks via the boot-count TTL."
+          }
+        }
+      }
+    },
+    "lockdown.session.cap_minutes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Session cap (minutes)"
+          }
+        }
+      }
+    },
+    "lockdown.session.hours_caption" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave empty for no time limit."
+          }
+        }
+      }
+    },
+    "lockdown.session.hours_valid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Hours valid (optional)"
+          }
+        }
+      }
+    },
+    "lockdown.session.section" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Session"
+          }
+        }
+      }
+    },
+    "lockdown.set_passphrase.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "First-time setup. Pick a passphrase you can re-enter."
+          }
+        }
+      }
+    },
+    "lockdown.set_passphrase.submit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Set Passphrase"
+          }
+        }
+      }
+    },
+    "lockdown.set_passphrase.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Set device passphrase"
+          }
+        }
+      }
+    },
+    "lockdown.unlock.submit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Unlock"
+          }
+        }
+      }
+    },
+    "lockdown.unlock.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Unlock device"
+          }
+        }
+      }
+    },
     "Signed · verified" : {
       "localizations" : {
         "en" : {

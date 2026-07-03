@@ -516,6 +516,13 @@
 		FCEFC176A62447319948ACEF /* DeviceLinkDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24506086F81240A9BFE18FA6 /* DeviceLinkDirectory.swift */; };
 		FDAF8808342245C4817C93EC /* NetworkConfigIPConversionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18295AFE686247778632C6DE /* NetworkConfigIPConversionTests.swift */; };
 		FE508F9AF5AD5DA20AA64DBF /* AccessoryManager+TAK.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82232A3CF2DD284ED5B9B8ED /* AccessoryManager+TAK.swift */; };
+		DD7E5750000000000000007A /* AccessoryManager+Lockdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007A /* AccessoryManager+Lockdown.swift */; };
+		DD7E5750000000000000007B /* LockdownSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007B /* LockdownSheet.swift */; };
+		DD7E5750000000000000007C /* LockdownCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007C /* LockdownCoordinator.swift */; };
+		DD7E5750000000000000007D /* LockdownPassphraseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007D /* LockdownPassphraseStore.swift */; };
+		DD7E5750000000000000007E /* LockdownState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007E /* LockdownState.swift */; };
+		DD7E5750000000000000008A /* LockdownCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */; };
+		DD7E5750000000000000008B /* LockdownPassphraseStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */; };
 		FE57A71500000000000000A2 /* StatusMessageConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE57A71500000000000000A1 /* StatusMessageConfig.swift */; };
 /* End PBXBuildFile section */
 
@@ -709,6 +716,13 @@
 		748E4806582595DE80D455CD /* CoTXMLParser.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoTXMLParser.swift; sourceTree = "<group>"; };
 		7F1B62B5CB54395476C3A924 /* GenericCoTHandler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GenericCoTHandler.swift; sourceTree = "<group>"; };
 		82232A3CF2DD284ED5B9B8ED /* AccessoryManager+TAK.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "AccessoryManager+TAK.swift"; sourceTree = "<group>"; };
+		DD7E5740000000000000007A /* AccessoryManager+Lockdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AccessoryManager+Lockdown.swift"; sourceTree = "<group>"; };
+		DD7E5740000000000000007B /* LockdownSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownSheet.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000007C /* LockdownCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownCoordinator.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000007D /* LockdownPassphraseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownPassphraseStore.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000007E /* LockdownState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownState.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownCoordinatorTests.swift; sourceTree = "<group>"; };
+		DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownPassphraseStoreTests.swift; sourceTree = "<group>"; };
 		84CCF00CDD3D48C9B9DCA554 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
 		87D006C85B250291D5925F30 /* TAKMeshtasticBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TAKMeshtasticBridge.swift; sourceTree = "<group>"; };
 		8A96594950B87789C0BB96DB /* NodeListHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeListHelp.swift; sourceTree = "<group>"; };
@@ -1473,6 +1487,7 @@
 				23AD546A2E2AA5A80046E9AB /* AccessoryManager+ToRadio.swift */,
 				23AD546C2E2AE9630046E9AB /* AccessoryManager+MQTT.swift */,
 				82232A3CF2DD284ED5B9B8ED /* AccessoryManager+TAK.swift */,
+				DD7E5740000000000000007A /* AccessoryManager+Lockdown.swift */,
 			);
 			path = "Accessory Manager";
 			sourceTree = "<group>";
@@ -1625,6 +1640,8 @@
 				DD000030EVTFWNTST0000000 /* EventFirmwareNotificationTests.swift */,
 				AA009MCT0000001000000001 /* MarkdownConverterTests.swift */,
 				AA003DOC0000001000000008 /* DocTranslationTests.swift */,
+				DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */,
+				DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */,
 				DD0000DEVLNKTST000000000 /* DeviceLinkTests.swift */,
 				DD000031STATMSGDISP00000 /* StatusMessageDisplayTests.swift */,
 			);
@@ -2147,6 +2164,7 @@
 				DD47E3D726F2F21A00029299 /* Connect */,
 				DDC2E18D26CE25CB0042C5E4 /* Helpers */,
 				DD6D5A312CA1176A00ED3032 /* Layouts */,
+				DD7E5760000000000000007F /* Lockdown */,
 				DDC2E18B26CE25A70042C5E4 /* Messages */,
 				DD47E3CA26F0E50300029299 /* Nodes */,
 				DD74ED0B2DC6A0900059AC10 /* Onboarding */,
@@ -2154,6 +2172,14 @@
 				DDC2E18E26CE25FE0042C5E4 /* ContentView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		DD7E5760000000000000007F /* Lockdown */ = {
+			isa = PBXGroup;
+			children = (
+				DD7E5740000000000000007B /* LockdownSheet.swift */,
+			);
+			path = Lockdown;
 			sourceTree = "<group>";
 		};
 		DDC2E18826CE24EE0042C5E4 /* Model */ = {
@@ -2184,6 +2210,7 @@
 				231B3F1E2D0879BC0069A07D /* Metrics Visualization */,
 				D952A49BD44F4EB19722C716 /* Schema */,
 				DD23A50E26FD1B4400D9B90C /* PeripheralModel.swift */,
+				DD7E5740000000000000007E /* LockdownState.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -2264,6 +2291,8 @@
 				BCD7448C2E0F2FA300F265A2 /* ContactURLHandler.swift */,
 				DDD43FE12A78C86B0083A3E9 /* Mqtt */,
 				DD1BEF492E0292220090CE24 /* KeychainHelper.swift */,
+				DD7E5740000000000000007C /* LockdownCoordinator.swift */,
+				DD7E5740000000000000007D /* LockdownPassphraseStore.swift */,
 				DD913638270DFF4C00D7ACF3 /* LocalNotificationManager.swift */,
 				DDA6B2E828419CF2003E8C16 /* MeshPackets.swift */,
 				84CCF00CDD3D48C9B9DCA554 /* WatchSessionManager.swift */,
@@ -2675,6 +2704,8 @@
 				1396606FC903D7DA662B6326 /* DiscoveryModelTests.swift in Sources */,
 				AA003DOC0000002000000005 /* DocBundleTests.swift in Sources */,
 				AA003DOC0000002000000008 /* DocTranslationTests.swift in Sources */,
+				DD7E5750000000000000008A /* LockdownCoordinatorTests.swift in Sources */,
+				DD7E5750000000000000008B /* LockdownPassphraseStoreTests.swift in Sources */,
 				DD0000DEVLNKTST000000001 /* DeviceLinkTests.swift in Sources */,
 				DD000031STATMSGDISP00001 /* StatusMessageDisplayTests.swift in Sources */,
 				AA009MCT0000002000000001 /* MarkdownConverterTests.swift in Sources */,
@@ -3142,6 +3173,11 @@
 				10794B252F8C2C90000CA23F /* RouteDataPackageGenerator.swift in Sources */,
 				E3ED80145D0E873011982556 /* TAKServerManager.swift in Sources */,
 				FE508F9AF5AD5DA20AA64DBF /* AccessoryManager+TAK.swift in Sources */,
+				DD7E5750000000000000007A /* AccessoryManager+Lockdown.swift in Sources */,
+				DD7E5750000000000000007B /* LockdownSheet.swift in Sources */,
+				DD7E5750000000000000007C /* LockdownCoordinator.swift in Sources */,
+				DD7E5750000000000000007D /* LockdownPassphraseStore.swift in Sources */,
+				DD7E5750000000000000007E /* LockdownState.swift in Sources */,
 				A5339E2F74E83F8FC41EEE33 /* TAKServerConfig.swift in Sources */,
 				AA0001032F07A4B000600001 /* TAKModuleConfig.swift in Sources */,
 				DCC919C6B47C15BB0795456C /* Tools.swift in Sources */,
