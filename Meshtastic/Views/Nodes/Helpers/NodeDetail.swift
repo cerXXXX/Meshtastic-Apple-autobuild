@@ -61,7 +61,12 @@ struct NodeDetail: View {
 		return (fromUser, toUser)
 	}
 	@State var showingCompassSheet = false
-	
+	@State private var nodeForDisplayNameEdit: NodeInfoEntity?
+	/// Bumped whenever a local display name is set/cleared to force this view to re-render —
+	/// NodeDisplayNameStore is plain UserDefaults, not a SwiftData/@Bindable property, so nothing
+	/// else here would pick up the change.
+	@State private var displayNameRefresh = 0
+
 	var body: some View {
 		if node.modelContext != nil {
 			ScrollViewReader { scrollView in
@@ -70,8 +75,17 @@ struct NodeDetail: View {
 					.id("topOfList")
 					nodeDetailList
 					.sheet(isPresented: $showingCompassSheet) {
-						CompassView(waypointLocation: latestPosition?.nodeCoordinate ?? nil, waypointLongName: node.user?.longName ?? nil, waypointShortName: node.user?.shortName ?? nil, color: Color(UIColor(hex: UInt32(node.num))))
+						CompassView(waypointLocation: latestPosition?.nodeCoordinate ?? nil, waypointLongName: node.user?.displayLongName, waypointShortName: node.user?.shortName, color: Color(UIColor(hex: UInt32(node.num))))
 							}
+					.displayNameAlert(node: $nodeForDisplayNameEdit)
+					.onReceive(NotificationCenter.default.publisher(for: NodeDisplayNameStore.didChangeNotification)) { notification in
+						// Scoped to this node: the notification's object is unconditionally `nil`
+						// otherwise, and `displayNameRefresh` drives `.id()` below (which recreates
+						// the list and re-triggers its scroll-to-top onAppear) -- renaming an
+						// unrelated node elsewhere must not yank this detail view back to the top.
+						guard notification.object as? Int64 == node.num else { return }
+						displayNameRefresh += 1
+					}
 					.onAppear {
 						refreshNodeSummary()
 						scrollView.scrollTo("topOfList", anchor: .top)
@@ -84,8 +98,9 @@ struct NodeDetail: View {
 							refreshNodeSummary()
 						}
 						.contentMargins(.top, 0, for: .scrollContent)
-					.navigationTitle(String(node.user?.longName?.addingVariationSelectors ?? "Unknown".localized))
+					.navigationTitle(String((node.user?.displayLongName ?? "Unknown".localized).addingVariationSelectors))
 					.navigationBarTitleDisplayMode(.inline)
+					.id(displayNameRefresh)
 			}
 		} else {
 			// Node was deleted or detached (e.g. after a database reset / node switch).
@@ -163,6 +178,25 @@ struct NodeDetail: View {
 					}
 				}
 			}
+			// Local-only display name shown instead of the device long name. Never leaves this
+			// device (not sent over the mesh, not exported/shared) — see NodeDisplayNameStore.
+			Button {
+				nodeForDisplayNameEdit = node
+			} label: {
+				HStack {
+					Label {
+						Text("Name")
+					} icon: {
+						Image(systemName: "person.crop.circle")
+							.symbolRenderingMode(.hierarchical)
+					}
+					Spacer()
+					Text(node.user?.displayLongName ?? "—")
+						.foregroundStyle(.secondary)
+						.lineLimit(1)
+				}
+			}
+			.accessibilityElement(children: .combine)
 			HStack {
 				Label {
 					Text("Node Number")

@@ -60,10 +60,12 @@ struct NodeListItem: View {
 
 	private func accessibilityDescription(batteryLevel: Int32?, cachedLocationData: (nodeLocation: CLLocation, myLocation: CLLocation)?, status: String?) -> String {
 		var desc = ""
-		if let shortName = node.user?.shortName {
+		// The device shortName is never overridden by a local display name, so it's safe to branch
+		// on it directly here; only the longName fallback needs the display-name-aware variant.
+		if let shortName = node.user?.shortName, !shortName.isEmpty {
 			desc = shortName.formatNodeNameForVoiceOver()
-		} else if let longName = node.user?.longName {
-			desc = longName
+		} else if let user = node.user, let longName = user.longName, !longName.isEmpty {
+			desc = user.displayLongName
 		} else {
 			desc = "Unknown".localized + " " + "Node".localized
 		}
@@ -220,7 +222,7 @@ struct NodeListItem: View {
 						let (image, color) = userKeyStatus
 						IconAndText(systemName: image,
 									imageColor: color,
-									text: node.user?.longName?.addingVariationSelectors ?? "Unknown".localized,
+									text: node.user?.displayLongName.addingVariationSelectors ?? "Unknown".localized,
 									textColor: .primary)
 						if node.favorite {
 							Spacer()
