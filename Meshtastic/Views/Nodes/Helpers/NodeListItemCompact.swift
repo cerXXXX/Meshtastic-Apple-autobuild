@@ -111,6 +111,11 @@ struct NodeListItemCompact: View {
 			}
 			desc += ", " + signalString
 		}
+		// Mirror the visual "Signed node" shield (rendered below) so VoiceOver announces it in the
+		// compact list too — affirmative only, never for unsigned nodes.
+		if node.hasXeddsaSigned {
+			desc += ", " + "Signed node".localized
+		}
 		return desc
 	}
 
@@ -158,6 +163,13 @@ struct NodeListItemCompact: View {
 		}
 		
 		if shouldShowLastHeard {
+			lines += 1
+		}
+
+		// The signed-node ("Signed node") row renders on its own line whenever the node is signed,
+		// so reserve space for it too — otherwise the avatar circle is sized too short for signed
+		// nodes, most visibly when last-heard / telemetry rows are disabled.
+		if node.hasXeddsaSigned {
 			lines += 1
 		}
 
@@ -220,6 +232,13 @@ struct NodeListItemCompact: View {
 							Image(systemName: "star.fill")
 								.symbolRenderingMode(.multicolor)
 						}
+					}
+					// Signed node = XEdDSA-signed NodeInfo broadcast → identity verified by the radio.
+					// Affirmative only; never shown for unsigned nodes. Mirrors the Node Detail row.
+					if node.hasXeddsaSigned {
+						IconAndText(systemName: "checkmark.shield.fill",
+									imageColor: .green,
+									text: "Signed node".localized)
 					}
 					// User-authored status broadcast by the node, directly beneath the name.
 					// Single-line clamp keeps the compact row dense; omitted when empty.
