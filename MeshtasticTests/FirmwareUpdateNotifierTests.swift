@@ -43,8 +43,8 @@ struct FirmwareUpdateNotifierTests {
 		#expect(notification?.id == "firmware-update-notified:4660:rak11310:2.8.0")
 		#expect(notification?.content.contains("Meshtastic Flasher") == true)
 		#expect(notification?.content.contains("Firmware Updates") == false)
-		#expect(notification?.target == "firmwareUpdates")
-		#expect(notification?.path == "meshtastic:///settings/firmwareUpdates")
+		#expect(notification?.target == "flasher")
+		#expect(notification?.path == "https://flasher.meshtastic.org")
 	}
 
 	@Test func notificationReturnsNilWhenMetadataIsMissing() {
@@ -146,5 +146,9 @@ struct FirmwareUpdateNotifierTests {
 
 		#expect(appOTANotice?.connectMessage.contains("Open Firmware Updates") == true)
 		#expect(flasherNotice?.connectMessage.contains("Meshtastic Flasher") == true)
+		#expect(appOTANotice?.actionPath == "meshtastic:///settings/firmwareUpdates")
+		#expect(flasherNotice?.actionPath == "https://flasher.meshtastic.org")
+		#expect(appOTANotice?.accessibilityHint == "Opens Firmware Updates")
+		#expect(flasherNotice?.accessibilityHint == "Opens Meshtastic Flasher")
 	}
 }

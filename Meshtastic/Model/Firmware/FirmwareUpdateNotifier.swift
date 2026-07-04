@@ -47,11 +47,44 @@ struct FirmwareUpdateNotice: Equatable {
 			return "\(currentVersion) is behind stable \(latestStableVersion). Use Meshtastic Flasher for this hardware."
 		}
 	}
+
+	var actionTarget: String {
+		switch installMethod {
+		case .appOTA:
+			return FirmwareUpdateNotifier.target
+		case .flasher:
+			return FirmwareUpdateNotifier.flasherTarget
+		}
+	}
+
+	var actionPath: String {
+		switch installMethod {
+		case .appOTA:
+			return FirmwareUpdateNotifier.path
+		case .flasher:
+			return FirmwareUpdateNotifier.flasherPath
+		}
+	}
+
+	var actionURL: URL? {
+		URL(string: actionPath)
+	}
+
+	var accessibilityHint: String {
+		switch installMethod {
+		case .appOTA:
+			return "Opens Firmware Updates"
+		case .flasher:
+			return "Opens Meshtastic Flasher"
+		}
+	}
 }
 
 enum FirmwareUpdateNotifier {
 	static let target = "firmwareUpdates"
 	static let path = "meshtastic:///settings/firmwareUpdates"
+	static let flasherTarget = "flasher"
+	static let flasherPath = "https://flasher.meshtastic.org"
 	private static let staleFirmwareAPIInterval: TimeInterval = 24 * 60 * 60
 	private static let refreshTimeoutSeconds: TimeInterval = 15
 
@@ -111,8 +144,8 @@ enum FirmwareUpdateNotifier {
 			title: "Firmware update available",
 			subtitle: notice.deviceName,
 			content: notice.notificationContent,
-			target: target,
-			path: path
+			target: notice.actionTarget,
+			path: notice.actionPath
 		)
 	}
 

@@ -22,6 +22,7 @@ struct Connect: View {
 	@EnvironmentObject var accessoryManager: AccessoryManager
 	@EnvironmentObject var lockdown: LockdownCoordinator
 	@Environment(\.colorScheme) private var colorScheme
+	@Environment(\.openURL) private var openURL
 	@State var router: Router
 	@State var node: NodeInfoEntity?
 	/// Cached battery level for the connected node. Refreshed on an interval (see `.task`)
@@ -338,7 +339,7 @@ struct Connect: View {
 					if let firmwareUpdateNotice, accessoryManager.isConnected {
 						Section {
 							FirmwareUpdateConnectNotice(notice: firmwareUpdateNotice) {
-								openFirmwareUpdates()
+								openFirmwareUpdateDestination(firmwareUpdateNotice)
 							}
 						}
 						.textCase(nil)
@@ -601,9 +602,13 @@ struct Connect: View {
 	}
 
 	@MainActor
-	private func openFirmwareUpdates() {
-		guard let url = URL(string: FirmwareUpdateNotifier.path) else { return }
-		router.route(url: url)
+	private func openFirmwareUpdateDestination(_ notice: FirmwareUpdateNotice) {
+		guard let url = notice.actionURL else { return }
+		if url.scheme == "meshtastic" {
+			router.route(url: url)
+		} else {
+			openURL(url)
+		}
 	}
 #if !targetEnvironment(macCatalyst)
 #if canImport(ActivityKit)
@@ -719,7 +724,7 @@ private struct FirmwareUpdateConnectNotice: View {
 		}
 		.buttonStyle(.plain)
 		.accessibilityElement(children: .combine)
-		.accessibilityHint("Opens Firmware Updates")
+		.accessibilityHint(notice.accessibilityHint)
 	}
 }
 
