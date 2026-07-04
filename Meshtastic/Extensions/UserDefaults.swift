@@ -87,6 +87,7 @@ extension UserDefaults {
 		case testIntEnum
 		case lastDeviceAPIUpdate
 		case lastFirmwareAPIUpdate
+		case firmwareUpdateNotificationKeys
 	}
 
 	func reset() {
@@ -194,6 +195,19 @@ extension UserDefaults {
 
 	@UserDefault(.testIntEnum, defaultValue: .one)
 	static var testIntEnum: TestIntEnum
+
+	@UserDefault(.firmwareUpdateNotificationKeys, defaultValue: [])
+	static var firmwareUpdateNotificationKeys: [String]
+
+	static var firmwareUpdateNotificationKeySet: Set<String> {
+		Set(firmwareUpdateNotificationKeys)
+	}
+
+	static func recordFirmwareUpdateNotificationKey(_ key: String) {
+		var keys = firmwareUpdateNotificationKeySet
+		keys.insert(key)
+		firmwareUpdateNotificationKeys = keys.sorted()
+	}
 	
 	static var manualConnections: [Device] {
 		get {
