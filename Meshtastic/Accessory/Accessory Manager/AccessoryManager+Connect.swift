@@ -227,7 +227,8 @@ extension AccessoryManager {
 					ManualConnectionList.shared.insert(device: activeDevice)
 				}
 
-				try await FirmwareUpdateNotifier.notifyIfNeeded(accessoryManager: self)
+				// Best-effort: the notifier bounds stale API refresh and cannot roll back a completed connect.
+				await FirmwareUpdateNotifier.notifyIfNeeded(accessoryManager: self)
 			}
 			
 			// Step 8: Update UI and status to connected

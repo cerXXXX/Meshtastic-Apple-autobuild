@@ -53,6 +53,7 @@ enum FirmwareUpdateNotifier {
 	static let target = "firmwareUpdates"
 	static let path = "meshtastic:///settings/firmwareUpdates"
 	private static let staleFirmwareAPIInterval: TimeInterval = 24 * 60 * 60
+	private static let refreshTimeoutSeconds: TimeInterval = 15
 
 	static func candidate(from source: FirmwareUpdateNotificationSource) -> FirmwareUpdateNotificationCandidate {
 		FirmwareUpdateNotificationCandidate(
@@ -116,18 +117,18 @@ enum FirmwareUpdateNotifier {
 	}
 
 	@MainActor
-	static func notifyIfNeeded(accessoryManager: AccessoryManager) async throws {
+	static func notifyIfNeeded(accessoryManager: AccessoryManager) async {
 		await refreshFirmwareDataIfStale()
-		try Task.checkCancellation()
+		guard !Task.isCancelled else { return }
 
 		guard let candidate = candidate(accessoryManager: accessoryManager),
 		      let notification = notification(
 			      for: candidate,
 			      alreadyNotified: UserDefaults.firmwareUpdateNotificationKeySet
-		      ) else {
+		) else {
 			return
 		}
-		try Task.checkCancellation()
+		guard !Task.isCancelled else { return }
 
 		let localNotificationManager = LocalNotificationManager()
 		localNotificationManager.notifications = [notification]
@@ -148,8 +149,22 @@ enum FirmwareUpdateNotifier {
 			return
 		}
 
+		let timeoutSeconds = Self.refreshTimeoutSeconds
 		do {
-			try await MeshtasticAPI.shared.refreshFirmwareAPIData()
+			try await withThrowingTaskGroup(of: Void.self) { group in
+				group.addTask {
+					try await MeshtasticAPI.shared.refreshFirmwareAPIData()
+				}
+				group.addTask {
+					try await Task.sleep(for: .seconds(timeoutSeconds))
+					throw MeshtasticAPI.MeshtasticAPIError.timedOut(timeoutSeconds)
+				}
+
+				defer { group.cancelAll() }
+				try await group.next()
+			}
+		} catch is CancellationError {
+			Logger.services.debug("Cancelled firmware data refresh before update notification check")
 		} catch {
 			Logger.services.warning("Failed to refresh firmware data before update notification check: \(error.localizedDescription, privacy: .public)")
 		}

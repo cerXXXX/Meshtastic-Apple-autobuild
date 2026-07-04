@@ -597,10 +597,6 @@ struct Connect: View {
 
 	@MainActor
 	private func refreshFirmwareUpdateNotice() {
-		guard accessoryManager.state == .subscribed else {
-			firmwareUpdateNotice = nil
-			return
-		}
 		firmwareUpdateNotice = FirmwareUpdateNotifier.notice(accessoryManager: accessoryManager)
 	}
 
@@ -701,6 +697,7 @@ private struct FirmwareUpdateConnectNotice: View {
 					.font(.title3)
 					.foregroundColor(.orange)
 					.padding(.top, 2)
+					.accessibilityHidden(true)
 				VStack(alignment: .leading, spacing: 2) {
 					Text("Firmware update available")
 						.font(.callout)
@@ -716,6 +713,7 @@ private struct FirmwareUpdateConnectNotice: View {
 					.font(.footnote)
 					.foregroundColor(.secondary)
 					.padding(.top, 4)
+					.accessibilityHidden(true)
 			}
 			.padding(.vertical, 6)
 		}
