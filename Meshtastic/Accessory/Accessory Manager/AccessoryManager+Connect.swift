@@ -227,9 +227,7 @@ extension AccessoryManager {
 					ManualConnectionList.shared.insert(device: activeDevice)
 				}
 
-				Task { @MainActor in
-					await FirmwareUpdateNotifier.notifyIfNeeded(accessoryManager: self)
-				}
+				try await FirmwareUpdateNotifier.notifyIfNeeded(accessoryManager: self)
 			}
 			
 			// Step 8: Update UI and status to connected

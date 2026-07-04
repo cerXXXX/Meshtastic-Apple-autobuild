@@ -14,7 +14,7 @@ The app can check for and install Meshtastic firmware updates directly on your c
 2. Go to **Settings → Firmware Updates**.
 3. The app shows the firmware version currently running on your radio and the latest stable release available from GitHub.
 
-When you connect to a node running firmware older than the latest stable release, the app can send a firmware update notification. Tapping the notification opens **Firmware Updates** so you can review and start the update for hardware that supports app-based OTA.
+When you connect to a node running firmware older than the latest stable release, the app can send a firmware update notification. For hardware the app can update directly, tapping the notification opens **Firmware Updates** so you can review and start the OTA update. For hardware that needs an external updater, the notification tells you to use **Meshtastic Flasher** instead.
 
 The app remembers each node, hardware target, and stable version it has already notified you about, so it will not keep sending the same reminder.
 

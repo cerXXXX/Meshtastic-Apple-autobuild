@@ -6,13 +6,13 @@ import Testing
 @Suite("Firmware update notification policy")
 struct FirmwareUpdateNotificationPolicyTests {
 
-	@Test func supportsAppOTAOnlyForArchitecturesHandledByTheApp() {
-		#expect(FirmwareUpdateNotificationPolicy.supportsAppOTA(architecture: "esp32"))
-		#expect(FirmwareUpdateNotificationPolicy.supportsAppOTA(architecture: "esp32-s3"))
-		#expect(FirmwareUpdateNotificationPolicy.supportsAppOTA(architecture: "nrf52840"))
-		#expect(FirmwareUpdateNotificationPolicy.supportsAppOTA(architecture: "rp2040") == false)
-		#expect(FirmwareUpdateNotificationPolicy.supportsAppOTA(architecture: nil) == false)
-		#expect(FirmwareUpdateNotificationPolicy.supportsAppOTA(architecture: "unknown") == false)
+	@Test func installMethodUsesAppOTAOnlyForArchitecturesHandledByTheApp() {
+		#expect(FirmwareUpdateNotificationPolicy.installMethod(architecture: "esp32") == .appOTA)
+		#expect(FirmwareUpdateNotificationPolicy.installMethod(architecture: "esp32-s3") == .appOTA)
+		#expect(FirmwareUpdateNotificationPolicy.installMethod(architecture: "nrf52840") == .appOTA)
+		#expect(FirmwareUpdateNotificationPolicy.installMethod(architecture: "rp2040") == .flasher)
+		#expect(FirmwareUpdateNotificationPolicy.installMethod(architecture: nil) == .flasher)
+		#expect(FirmwareUpdateNotificationPolicy.installMethod(architecture: "unknown") == .flasher)
 	}
 
 	@Test func normalizedVersionDropsLeadingVAndBuildHash() {

@@ -2,17 +2,22 @@
 
 import Foundation
 
+enum FirmwareUpdateInstallMethod: Equatable {
+	case appOTA
+	case flasher
+}
+
 enum FirmwareUpdateNotificationPolicy {
-	static func supportsAppOTA(architecture: String?) -> Bool {
+	static func installMethod(architecture: String?) -> FirmwareUpdateInstallMethod {
 		guard let architecture = architecture.flatMap({ Architecture(rawValue: $0) }) else {
-			return false
+			return .flasher
 		}
 
 		switch architecture {
 		case .esp32, .esp32C3, .esp32S3, .esp32C6, .nrf52840:
-			return true
+			return .appOTA
 		case .rp2040:
-			return false
+			return .flasher
 		}
 	}
 

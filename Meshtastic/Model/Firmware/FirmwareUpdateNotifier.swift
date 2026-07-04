@@ -8,7 +8,7 @@ struct FirmwareUpdateNotificationCandidate {
 	let nodeNum: Int64
 	let deviceName: String?
 	let platformioTarget: String?
-	let supportsAppOTA: Bool
+	let installMethod: FirmwareUpdateInstallMethod
 	let currentVersion: String?
 	let latestStableVersion: String?
 }
@@ -23,6 +23,32 @@ struct FirmwareUpdateNotificationSource {
 	let latestStableVersion: String?
 }
 
+struct FirmwareUpdateNotice: Equatable {
+	let notificationKey: String
+	let deviceName: String
+	let currentVersion: String
+	let latestStableVersion: String
+	let installMethod: FirmwareUpdateInstallMethod
+
+	var notificationContent: String {
+		switch installMethod {
+		case .appOTA:
+			return "\(deviceName) is running \(currentVersion). Stable \(latestStableVersion) is available in Firmware Updates."
+		case .flasher:
+			return "\(deviceName) is running \(currentVersion). Stable \(latestStableVersion) is available. Use Meshtastic Flasher to update this hardware."
+		}
+	}
+
+	var connectMessage: String {
+		switch installMethod {
+		case .appOTA:
+			return "\(currentVersion) is behind stable \(latestStableVersion). Open Firmware Updates when you're ready."
+		case .flasher:
+			return "\(currentVersion) is behind stable \(latestStableVersion). Use Meshtastic Flasher for this hardware."
+		}
+	}
+}
+
 enum FirmwareUpdateNotifier {
 	static let target = "firmwareUpdates"
 	static let path = "meshtastic:///settings/firmwareUpdates"
@@ -33,27 +59,17 @@ enum FirmwareUpdateNotifier {
 			nodeNum: source.nodeNum,
 			deviceName: source.deviceName,
 			platformioTarget: source.platformioTarget,
-			supportsAppOTA: FirmwareUpdateNotificationPolicy.supportsAppOTA(architecture: source.architecture),
+			installMethod: FirmwareUpdateNotificationPolicy.installMethod(architecture: source.architecture),
 			currentVersion: source.metadataVersion?.isEmpty == false ? source.metadataVersion : source.connectedVersion,
 			latestStableVersion: source.latestStableVersion
 		)
 	}
 
-	static func notification(
-		for candidate: FirmwareUpdateNotificationCandidate,
-		alreadyNotified: Set<String>
-	) -> Notification? {
+	static func notice(for candidate: FirmwareUpdateNotificationCandidate) -> FirmwareUpdateNotice? {
 		guard let platformioTarget = candidate.platformioTarget,
-		      candidate.supportsAppOTA,
 		      let currentVersion = candidate.currentVersion,
 		      let latestStableVersion = candidate.latestStableVersion,
-		      FirmwareUpdateNotificationPolicy.shouldNotify(
-			      nodeNum: candidate.nodeNum,
-			      platformioTarget: platformioTarget,
-			      currentVersion: currentVersion,
-			      latestStableVersion: latestStableVersion,
-			      alreadyNotified: alreadyNotified
-		      ) else {
+		      FirmwareUpdateNotificationPolicy.isUpdateAvailable(current: currentVersion, latestStable: latestStableVersion) else {
 			return nil
 		}
 
@@ -71,48 +87,58 @@ enum FirmwareUpdateNotifier {
 		let current = FirmwareUpdateNotificationPolicy.normalizedVersion(currentVersion)
 		let latest = FirmwareUpdateNotificationPolicy.normalizedVersion(latestStableVersion)
 
+		return FirmwareUpdateNotice(
+			notificationKey: key,
+			deviceName: displayName,
+			currentVersion: current,
+			latestStableVersion: latest,
+			installMethod: candidate.installMethod
+		)
+	}
+
+	static func notification(
+		for candidate: FirmwareUpdateNotificationCandidate,
+		alreadyNotified: Set<String>
+	) -> Notification? {
+		guard let notice = notice(for: candidate),
+		      !alreadyNotified.contains(notice.notificationKey) else {
+			return nil
+		}
+
 		return Notification(
-			id: key,
+			id: notice.notificationKey,
 			title: "Firmware update available",
-			subtitle: displayName,
-			content: "\(displayName) is running \(current). Stable \(latest) is available.",
+			subtitle: notice.deviceName,
+			content: notice.notificationContent,
 			target: target,
 			path: path
 		)
 	}
 
 	@MainActor
-	static func notifyIfNeeded(accessoryManager: AccessoryManager) async {
+	static func notifyIfNeeded(accessoryManager: AccessoryManager) async throws {
 		await refreshFirmwareDataIfStale()
+		try Task.checkCancellation()
 
-		guard let nodeNum = accessoryManager.activeDeviceNum,
-		      let node = getNodeInfo(id: nodeNum, context: accessoryManager.context),
-		      let platformioTarget = node.myInfo?.pioEnv,
-		      let hardware = hardwareSupportingAppOTA(platformioTarget: platformioTarget, context: accessoryManager.context) else {
+		guard let candidate = candidate(accessoryManager: accessoryManager),
+		      let notification = notification(
+			      for: candidate,
+			      alreadyNotified: UserDefaults.firmwareUpdateNotificationKeySet
+		      ) else {
 			return
 		}
-
-		let candidate = candidate(from: FirmwareUpdateNotificationSource(
-			nodeNum: node.num,
-			deviceName: node.user?.longName ?? accessoryManager.activeConnection?.device.longName ?? accessoryManager.activeConnection?.device.name,
-			platformioTarget: platformioTarget,
-			architecture: hardware.architecture,
-			metadataVersion: node.metadata?.firmwareVersion,
-			connectedVersion: accessoryManager.connectedVersion,
-			latestStableVersion: latestStableFirmwareVersion(context: accessoryManager.context)
-		))
-
-		guard let notification = notification(
-			for: candidate,
-			alreadyNotified: UserDefaults.firmwareUpdateNotificationKeySet
-		) else {
-			return
-		}
+		try Task.checkCancellation()
 
 		let localNotificationManager = LocalNotificationManager()
 		localNotificationManager.notifications = [notification]
 		localNotificationManager.schedule()
 		UserDefaults.recordFirmwareUpdateNotificationKey(notification.id)
+	}
+
+	@MainActor
+	static func notice(accessoryManager: AccessoryManager) -> FirmwareUpdateNotice? {
+		guard let candidate = candidate(accessoryManager: accessoryManager) else { return nil }
+		return notice(for: candidate)
 	}
 
 	@MainActor
@@ -130,16 +156,37 @@ enum FirmwareUpdateNotifier {
 	}
 
 	@MainActor
-	private static func hardwareSupportingAppOTA(platformioTarget: String, context: ModelContext) -> DeviceHardwareEntity? {
+	private static func candidate(accessoryManager: AccessoryManager) -> FirmwareUpdateNotificationCandidate? {
+		guard let nodeNum = accessoryManager.activeDeviceNum,
+		      let node = getNodeInfo(id: nodeNum, context: accessoryManager.context),
+		      let platformioTarget = node.myInfo?.pioEnv,
+		      let hardware = hardware(platformioTarget: platformioTarget, context: accessoryManager.context) else {
+			return nil
+		}
+
+		return candidate(from: FirmwareUpdateNotificationSource(
+			nodeNum: node.num,
+			deviceName: node.user?.longName ?? accessoryManager.activeConnection?.device.longName ?? accessoryManager.activeConnection?.device.name,
+			platformioTarget: platformioTarget,
+			architecture: hardware.architecture,
+			metadataVersion: node.metadata?.firmwareVersion,
+			connectedVersion: accessoryManager.connectedVersion,
+			latestStableVersion: latestStableFirmwareVersion(context: accessoryManager.context)
+		))
+	}
+
+	@MainActor
+	private static func hardware(platformioTarget: String, context: ModelContext) -> DeviceHardwareEntity? {
 		var descriptor = FetchDescriptor<DeviceHardwareEntity>(
 			predicate: #Predicate { $0.platformioTarget == platformioTarget }
 		)
 		descriptor.fetchLimit = 1
-		guard let hardware = try? context.fetch(descriptor).first,
-		      FirmwareUpdateNotificationPolicy.supportsAppOTA(architecture: hardware.architecture) else {
+		do {
+			return try context.fetch(descriptor).first
+		} catch {
+			Logger.services.warning("Failed to fetch hardware for firmware update notification target \(platformioTarget, privacy: .public): \(error.localizedDescription, privacy: .public)")
 			return nil
 		}
-		return hardware
 	}
 
 	@MainActor
@@ -154,6 +201,11 @@ enum FirmwareUpdateNotifier {
 			]
 		)
 		descriptor.fetchLimit = 1
-		return try? context.fetch(descriptor).first?.versionId
+		do {
+			return try context.fetch(descriptor).first?.versionId
+		} catch {
+			Logger.services.warning("Failed to fetch latest stable firmware release for update notification: \(error.localizedDescription, privacy: .public)")
+			return nil
+		}
 	}
 }

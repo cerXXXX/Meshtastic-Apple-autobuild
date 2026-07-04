@@ -66,14 +66,14 @@
             "text",
             "session",
             "row",
-            "not",
             "live",
             "last",
             "interface",
             "heard",
             "device",
             "contact",
-            "channels"
+            "channels",
+            "automatically"
         ],
         "charCount": 3378
     },
@@ -127,33 +127,33 @@
             "radio",
             "app",
             "updates",
+            "hardware",
             "version",
             "stable",
-            "not",
-            "hardware",
             "ble",
             "settings",
             "progress",
-            "over",
+            "notification",
+            "meshtastic",
             "connected",
             "channel",
-            "usually",
             "troubleshooting",
             "transfer",
             "running",
             "release",
             "ota",
             "older",
-            "notification",
             "node",
-            "meshtastic",
             "list",
             "latest",
             "keep",
+            "flasher",
             "failed",
-            "during"
+            "directly",
+            "description",
+            "connect"
         ],
-        "charCount": 2217
+        "charCount": 2329
     },
     {
         "id": "getting-started",
@@ -267,8 +267,8 @@
             "trace",
             "right",
             "radius",
-            "over",
-            "open"
+            "open",
+            "maps"
         ],
         "charCount": 5717
     },
@@ -285,7 +285,6 @@
             "key",
             "text",
             "formatting",
-            "not",
             "markdown",
             "delimiters",
             "selection",
@@ -307,7 +306,8 @@
             "symbol",
             "style",
             "shield",
-            "select"
+            "select",
+            "radio"
         ],
         "charCount": 9014
     },
@@ -328,9 +328,7 @@
             "tls",
             "node",
             "channel",
-            "use",
             "org",
-            "not",
             "internet",
             "username",
             "uplink",
@@ -346,7 +344,9 @@
             "publishes",
             "password",
             "packet",
-            "over"
+            "optional",
+            "only",
+            "one"
         ],
         "charCount": 2443
     },
@@ -367,7 +367,6 @@
             "messages",
             "key",
             "shows",
-            "not",
             "list",
             "hardware",
             "broadcasts",
@@ -385,7 +384,8 @@
             "hops",
             "heard",
             "filter",
-            "display"
+            "display",
+            "detail"
         ],
         "charCount": 8333
     },
@@ -759,7 +759,6 @@
             "environmentobject",
             "wraps",
             "via",
-            "use",
             "url",
             "translations",
             "translation",
@@ -775,7 +774,8 @@
             "deep",
             "connectivity",
             "ble",
-            "app"
+            "app",
+            "after"
         ],
         "charCount": 4422
     },
@@ -847,13 +847,13 @@
             "var",
             "utility",
             "uses",
-            "use",
             "types",
             "typed",
             "transport",
             "tips",
             "tcp",
-            "swiftdata"
+            "swiftdata",
+            "subsystems"
         ],
         "charCount": 3538
     },
@@ -888,11 +888,11 @@
             "apple",
             "app",
             "xcode",
-            "use",
             "uikit",
             "type",
             "submodule",
-            "subject"
+            "subject",
+            "site"
         ],
         "charCount": 2890
     },
@@ -986,7 +986,6 @@
             "measurement",
             "swift",
             "views",
-            "use",
             "temperature",
             "let",
             "speed",
@@ -1009,7 +1008,8 @@
             "unitspeed",
             "unitlength",
             "text",
-            "string"
+            "string",
+            "nodes"
         ],
         "charCount": 6352
     },
@@ -1044,11 +1044,11 @@
             "per",
             "messages",
             "launch",
-            "use",
             "type",
             "set",
             "schema",
-            "nodeinfoentity"
+            "nodeinfoentity",
+            "environment"
         ],
         "charCount": 9726
     },
@@ -1103,7 +1103,6 @@
             "snapshots",
             "run",
             "let",
-            "use",
             "reference",
             "png",
             "expect",
@@ -1126,7 +1125,8 @@
             "using",
             "try",
             "suite",
-            "screenshots"
+            "screenshots",
+            "scale"
         ],
         "charCount": 3697
     },

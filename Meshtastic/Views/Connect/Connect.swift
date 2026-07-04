@@ -27,6 +27,7 @@ struct Connect: View {
 	/// Cached battery level for the connected node. Refreshed on an interval (see `.task`)
 	/// rather than fetched in `body`, which re-ran a TelemetryEntity query on every render.
 	@State private var connectedBatteryLevel: Int32?
+	@State private var firmwareUpdateNotice: FirmwareUpdateNotice?
 	@State var isUnsetRegion = false
 	@State var invalidFirmwareVersion = false
 	@State var showSecurityVersionNag = false
@@ -333,6 +334,15 @@ struct Connect: View {
 						}
 					}
 					.textCase(nil)
+
+					if let firmwareUpdateNotice, accessoryManager.isConnected {
+						Section {
+							FirmwareUpdateConnectNotice(notice: firmwareUpdateNotice) {
+								openFirmwareUpdates()
+							}
+						}
+						.textCase(nil)
+					}
 					
 					if !(accessoryManager.isConnected || accessoryManager .isConnecting) {
 						Group {
@@ -489,43 +499,21 @@ struct Connect: View {
 				.presentationDragIndicator(.automatic)
 		}
 		.onChange(of: self.accessoryManager.state) { _, state in
-			// Clear stale node data when not subscribed to prevent showing previous connection's info
 			if state != .subscribed {
 				node = nil
+				firmwareUpdateNotice = nil
 			}
-			
-			if let deviceNum = accessoryManager.activeDeviceNum, UserDefaults.preferredPeripheralId.count > 0 && state == .subscribed {
-				
-				var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(
-					predicate: #Predicate<NodeInfoEntity> { $0.num == deviceNum }
-				)
-				fetchNodeInfoRequest.fetchLimit = 1
-				
-				do {
-					node = try context.fetch(fetchNodeInfoRequest).first
-					if let loRaConfig = node?.loRaConfig, loRaConfig.regionCode == RegionCodes.unset.rawValue {
-						isUnsetRegion = true
-					} else {
-						isUnsetRegion = false
-					}
-				} catch {
-					Logger.data.error("💥 Error fetching node info: \(error.localizedDescription, privacy: .public)")
-				}
-			// Check firmware version on connection (only if version is known)
-			if let firmwareVersion = accessoryManager.activeConnection?.device.firmwareVersion, firmwareVersion != "?.?.?" && !firmwareVersion.isEmpty {
-				let meetsMinimumVersion = accessoryManager.checkIsVersionSupported(forVersion: accessoryManager.minimumVersion)
-				let meetsSecurityVersion = accessoryManager.checkIsVersionSupported(forVersion: accessoryManager.securityVersion)
-				invalidFirmwareVersion = !meetsMinimumVersion
-				showSecurityVersionNag = meetsMinimumVersion && !meetsSecurityVersion
-			}
-			}
+			refreshConnectedNodeState()
 		}
 		.sheet(item: $pendingNymeaDevice, onDismiss: {
 			updateNymeaDiscovery()
 		}) { device in
 			WifiProvisioningView(preselectedDevice: device)
 		}
-		.onAppear { updateNymeaDiscovery() }
+		.onAppear {
+			updateNymeaDiscovery()
+			refreshConnectedNodeState()
+		}
 		.onDisappear { nymeaProvisioning.stopDiscovery() }
 		.onChange(of: scenePhase) { _, _ in updateNymeaDiscovery() }
 		.onChange(of: accessoryManager.isConnected) { _, _ in updateNymeaDiscovery() }
@@ -568,6 +556,58 @@ struct Connect: View {
 		} else {
 			nymeaProvisioning.stopDiscovery()
 		}
+	}
+
+	@MainActor
+	private func refreshConnectedNodeState() {
+		guard let deviceNum = accessoryManager.activeDeviceNum,
+		      UserDefaults.preferredPeripheralId.count > 0,
+		      accessoryManager.state == .subscribed else {
+			firmwareUpdateNotice = nil
+			return
+		}
+
+		var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(
+			predicate: #Predicate<NodeInfoEntity> { $0.num == deviceNum }
+		)
+		fetchNodeInfoRequest.fetchLimit = 1
+
+		do {
+			node = try context.fetch(fetchNodeInfoRequest).first
+			if let loRaConfig = node?.loRaConfig, loRaConfig.regionCode == RegionCodes.unset.rawValue {
+				isUnsetRegion = true
+			} else {
+				isUnsetRegion = false
+			}
+		} catch {
+			node = nil
+			firmwareUpdateNotice = nil
+			Logger.data.error("💥 Error fetching node info: \(error.localizedDescription, privacy: .public)")
+			return
+		}
+
+		refreshFirmwareUpdateNotice()
+		if let firmwareVersion = accessoryManager.activeConnection?.device.firmwareVersion, firmwareVersion != "?.?.?" && !firmwareVersion.isEmpty {
+			let meetsMinimumVersion = accessoryManager.checkIsVersionSupported(forVersion: accessoryManager.minimumVersion)
+			let meetsSecurityVersion = accessoryManager.checkIsVersionSupported(forVersion: accessoryManager.securityVersion)
+			invalidFirmwareVersion = !meetsMinimumVersion
+			showSecurityVersionNag = meetsMinimumVersion && !meetsSecurityVersion
+		}
+	}
+
+	@MainActor
+	private func refreshFirmwareUpdateNotice() {
+		guard accessoryManager.state == .subscribed else {
+			firmwareUpdateNotice = nil
+			return
+		}
+		firmwareUpdateNotice = FirmwareUpdateNotifier.notice(accessoryManager: accessoryManager)
+	}
+
+	@MainActor
+	private func openFirmwareUpdates() {
+		guard let url = URL(string: FirmwareUpdateNotifier.path) else { return }
+		router.route(url: url)
 	}
 #if !targetEnvironment(macCatalyst)
 #if canImport(ActivityKit)
@@ -647,6 +687,41 @@ struct TransportIcon: View {
 			Text(transport?.type.rawValue ?? "Unknown".localized)
 				.font(.title3)
 		}
+	}
+}
+
+private struct FirmwareUpdateConnectNotice: View {
+	let notice: FirmwareUpdateNotice
+	let action: () -> Void
+
+	var body: some View {
+		Button(action: action) {
+			HStack(alignment: .top, spacing: 12) {
+				Image(systemName: "exclamationmark.triangle.fill")
+					.font(.title3)
+					.foregroundColor(.orange)
+					.padding(.top, 2)
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Firmware update available")
+						.font(.callout)
+						.fontWeight(.semibold)
+						.foregroundColor(.primary)
+					Text(notice.connectMessage)
+						.font(.footnote)
+						.foregroundColor(.secondary)
+						.fixedSize(horizontal: false, vertical: true)
+				}
+				Spacer(minLength: 8)
+				Image(systemName: "chevron.right")
+					.font(.footnote)
+					.foregroundColor(.secondary)
+					.padding(.top, 4)
+			}
+			.padding(.vertical, 6)
+		}
+		.buttonStyle(.plain)
+		.accessibilityElement(children: .combine)
+		.accessibilityHint("Opens Firmware Updates")
 	}
 }
 
