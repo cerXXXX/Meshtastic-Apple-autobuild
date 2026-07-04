@@ -27,6 +27,12 @@ Channel conversations load the most recent **50 messages** by default. Scroll to
 
 The channel form lets you configure the channel name, encryption key, role, position sharing, and MQTT uplink/downlink settings.
 
+### Channel QR Codes
+
+Use **Share QR Code** from Settings to choose which configured channels to share. The generated Meshtastic channel link includes the selected channel settings and the LoRa config needed for another radio to communicate on the same mesh.
+
+When you open or scan a Meshtastic channel link, review the listed channels and choose whether to **Replace Channels** or **Add Channels**. Replace mode overwrites the current radio channel set, while add mode appends the incoming channels when there are free slots and no duplicate channel names.
+
 ### Channel Security
 
 | Icon | Meaning |
@@ -98,9 +104,9 @@ Long press any message and tap **Tapback** to send an emoji reaction.
 
 ![Message status reference](../assets/screenshots/ackErrors.png)
 
-| Colour | Meaning |
+| Color | Meaning |
 |--------|---------|
-| Grey | Successful delivery. |
+| Gray | Successful delivery. |
 | Orange bubble | **Acknowledged by another node** — message was relayed but not confirmed by the final recipient. |
 
 The following errors may appear on a message bubble (red unless noted):
@@ -119,7 +125,7 @@ The following errors may appear on a message bubble (red unless noted):
 | Bad Request | Malformed packet rejected by the destination. |
 | Not Authorized | The destination node refused the request due to permissions. |
 
-> Grey indicates successful delivery. Orange indicates a retryable error. Red indicates a permanent failure that will not succeed on retry.
+> Gray indicates successful delivery. Orange indicates the message was relayed but not confirmed by the final recipient. Red indicates a permanent failure that will not succeed on retry.
 
 ---
 
