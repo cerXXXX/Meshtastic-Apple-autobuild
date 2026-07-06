@@ -45,6 +45,8 @@ enum MeshtasticSchemaV1: VersionedSchema {
 			DisplayConfigEntity.self,
 			ExternalNotificationConfigEntity.self,
 			LoRaConfigEntity.self,
+			MeshBeaconConfigEntity.self,
+			BroadcastTargetEntity.self,
 			MQTTConfigEntity.self,
 			NeighborInfoConfigEntity.self,
 			NetworkConfigEntity.self,
@@ -63,7 +65,8 @@ enum MeshtasticSchemaV1: VersionedSchema {
 			// Discovery entities
 			DiscoverySessionEntity.self,
 			DiscoveryPresetResultEntity.self,
-			DiscoveredNodeEntity.self
+			DiscoveredNodeEntity.self,
+			DiscoveredBeaconEntity.self
 		]
 	}
 }
