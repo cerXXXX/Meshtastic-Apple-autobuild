@@ -154,6 +154,8 @@ Tap any node to see the full detail view with hardware info, signal metrics, env
 
 ![Node Detail](../assets/screenshots/nodeDetail.png)
 
+For messageable nodes, use **Actions > Share Contact QR** to show a Meshtastic contact link and QR code that another device can scan.
+
 ### Signed Node
 
 If a node signs its broadcast packets, a green shield (🛡️) **Signed node** row appears in the detail view, marked **Verified automatically**. This means the radio has cryptographically verified an XEdDSA signature from this node (firmware 2.8 or later). Because a node's identity broadcast is itself signed, its name and identity are verified by extension.

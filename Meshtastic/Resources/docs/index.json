@@ -378,16 +378,16 @@
             "direct",
             "client",
             "supported",
+            "show",
             "mesh",
             "long",
             "local",
             "links",
             "hops",
             "heard",
-            "filter",
-            "display"
+            "filter"
         ],
-        "charCount": 8333
+        "charCount": 8466
     },
     {
         "id": "settings",
