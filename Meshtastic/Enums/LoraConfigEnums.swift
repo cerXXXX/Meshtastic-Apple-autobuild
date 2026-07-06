@@ -525,12 +525,24 @@ enum ModemPresets: Int, CaseIterable, Identifiable {
 		}
 	}
 
+	/// Presets deprecated upstream that must no longer be offered for new selection,
+	/// mirroring how Android filters them out. They remain as cases so a radio already
+	/// configured on one round-trips through protobuf and renders the correct label.
+	var isDeprecated: Bool {
+		switch self {
+		case .longSlow:
+			return true
+		default:
+			return false
+		}
+	}
+
 	/// Presets selectable for a connected device, given whether its firmware
 	/// implements the 2.8 rework. On older firmware the 2.8-only presets are
 	/// dropped. Callers should additionally constrain this to the selected
 	/// region's legal set via `RegionPresetInfo` when the firmware provides one.
 	static func selectable(supports2_8: Bool) -> [ModemPresets] {
-		allCases.filter { supports2_8 || !$0.requiresFirmware2_8 }
+		allCases.filter { !$0.isDeprecated && (supports2_8 || !$0.requiresFirmware2_8) }
 	}
 
 	/// The conservative (pre-2.8) selectable set. Retained for callers that have
