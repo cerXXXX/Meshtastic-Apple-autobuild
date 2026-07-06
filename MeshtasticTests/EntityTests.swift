@@ -136,6 +136,14 @@ struct ShareContactQRTests {
 		let node = makeNodeInfo(unmessagable: true)
 
 		#expect(ShareContactQR.urlString(for: node, manuallyVerified: false) == nil)
+		#expect(ShareContactQR.urlString(for: node, manuallyVerified: true) == nil)
+	}
+
+	@Test func contactURLUnavailableWhenUserAbsent() {
+		let node = NodeInfo()
+
+		#expect(!ShareContactQR.canShareContact(for: node))
+		#expect(ShareContactQR.urlString(for: node, manuallyVerified: false) == nil)
 	}
 
 	@Test @MainActor func availabilityUsesNodeUserMessagingState() {
@@ -151,6 +159,25 @@ struct ShareContactQRTests {
 
 		node.user = nil
 		#expect(!ShareContactQR.canShareContact(for: node))
+	}
+
+	@Test @MainActor func nodeProtoPreservesUnmessagableStateForQRAvailability() {
+		let node = NodeInfoEntity()
+		let user = UserEntity()
+		user.unmessagable = true
+		node.user = user
+
+		let proto = node.toProto()
+
+		#expect(proto.user.isUnmessagable)
+		#expect(!ShareContactQR.canShareContact(for: proto))
+	}
+
+	@Test @MainActor func userProtoPreservesUnmessagableState() {
+		let user = UserEntity()
+		user.unmessagable = true
+
+		#expect(user.toProto().isUnmessagable)
 	}
 }
 
