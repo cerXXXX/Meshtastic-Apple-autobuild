@@ -355,15 +355,20 @@ struct PowerMetricsLog: View {
 
 	// MARK: - Channel labels
 
-	private var channelLabelsKey: String { "powerChannelLabels.\(node.num)" }
-
+	/// Persisted on `node.powerChannelLabels` (SwiftData) rather than `UserDefaults` so labels are
+	/// deleted along with the node instead of accumulating indefinitely after it's forgotten.
 	private func loadChannelLabels() -> [String] {
-		let stored = UserDefaults.standard.stringArray(forKey: channelLabelsKey) ?? []
+		let stored = node.powerChannelLabels
 		return (0..<3).map { index in index < stored.count ? stored[index] : "" }
 	}
 
 	private func saveChannelLabels() {
-		UserDefaults.standard.set(channelLabels, forKey: channelLabelsKey)
+		node.powerChannelLabels = channelLabels
+		do {
+			try context.save()
+		} catch let error as NSError {
+			Logger.data.error("\(error.localizedDescription, privacy: .public)")
+		}
 	}
 
 	/// The label shown for a power channel: the user's custom label, or the generic "Channel N" fallback.
