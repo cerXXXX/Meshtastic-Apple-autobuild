@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%1$@ reacted %2$@ to \"%3$@\"" : {
+      "comment" : "Tapback/reaction notification body. %1$@ is the sender name, %2$@ is the reaction emoji, %3$@ is the original message text that was reacted to."
+    },
     "%@ entered %@" : {
       "comment" : "Geofence notification body. First %@ is the node name, second %@ is the waypoint name."
     },

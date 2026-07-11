@@ -288,12 +288,13 @@
             "not",
             "markdown",
             "delimiters",
-            "selection",
             "direct",
+            "selection",
             "bold",
             "tap",
             "from",
             "button",
+            "radio",
             "public",
             "preview",
             "press",
@@ -306,10 +307,9 @@
             "tip",
             "symbol",
             "style",
-            "shield",
-            "select"
+            "shield"
         ],
-        "charCount": 9014
+        "charCount": 9418
     },
     {
         "id": "mqtt",
@@ -672,14 +672,15 @@
             "jun",
             "settings",
             "nodes",
-            "node",
             "messages",
+            "node",
             "map",
             "page",
+            "now",
             "mesh",
             "local",
             "channel",
-            "now",
+            "quot",
             "show",
             "region",
             "list",
@@ -688,18 +689,17 @@
             "app",
             "signed",
             "radios",
-            "quot",
             "per",
             "only",
             "message",
+            "jul",
             "docs",
             "amp",
             "waypoints",
             "watch",
-            "verified",
-            "translation"
+            "verified"
         ],
-        "charCount": 6314
+        "charCount": 6609
     },
     {
         "id": "adding-features",
