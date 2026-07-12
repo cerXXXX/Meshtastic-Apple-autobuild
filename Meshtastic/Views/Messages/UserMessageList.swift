@@ -665,8 +665,10 @@ private extension UserMessageList {
 			let needed = try MessageSearch.directNewerCount(in: context, userNum: user.num, than: match) + 1
 			if needed > messageLimit {
 				messageLimit = ((needed / 100) + 1) * 100
-				loadMessages(markReadAfterLoad: false)
 			}
+			// The match isn't in the current window; reload so it's present to scroll to,
+			// whether or not the window needed expanding.
+			loadMessages(markReadAfterLoad: false)
 		} catch {
 			Logger.data.error("Failed to expand direct-message window for search: \(error.localizedDescription, privacy: .public)")
 		}

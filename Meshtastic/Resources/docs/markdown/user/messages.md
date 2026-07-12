@@ -108,7 +108,7 @@ Tap the **magnifying glass** in the top-right of any channel or direct-message c
 - The bar shows your position in the results (e.g. **2/7**); use the **up/down chevrons** to jump to the previous or next match, wrapping around at the ends. The current match is highlighted and scrolled into view, loading older messages automatically if needed.
 - Tap **Done** (or the magnifying glass again) to close the bar and clear the search.
 
-Search covers the text of channel broadcasts and direct messages; emoji tapbacks and system/admin traffic are excluded.
+Search covers the text of channel broadcasts and direct messages, matching exactly the messages each conversation shows. Emoji reactions aren't matched.
 
 ---
 

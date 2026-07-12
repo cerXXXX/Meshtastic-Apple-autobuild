@@ -579,8 +579,10 @@ private extension ChannelMessageList {
 			let needed = try MessageSearch.channelNewerCount(in: context, channelIndex: channel.index, than: match) + 1
 			if needed > messageLimit {
 				messageLimit = ((needed / 100) + 1) * 100
-				loadMessages(markReadAfterLoad: false)
 			}
+			// The match isn't in the current window; reload so it's present to scroll to,
+			// whether or not the window needed expanding.
+			loadMessages(markReadAfterLoad: false)
 		} catch {
 			Logger.data.error("Failed to expand channel window for search: \(error.localizedDescription, privacy: .public)")
 		}
