@@ -372,10 +372,12 @@
             "hardware",
             "broadcasts",
             "row",
+            "radio",
             "public",
             "location",
             "firmware",
             "direct",
+            "detail",
             "client",
             "supported",
             "mesh",
@@ -383,11 +385,9 @@
             "local",
             "links",
             "hops",
-            "heard",
-            "filter",
-            "display"
+            "heard"
         ],
-        "charCount": 8333
+        "charCount": 8630
     },
     {
         "id": "settings",
