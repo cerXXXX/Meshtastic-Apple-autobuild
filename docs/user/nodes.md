@@ -49,7 +49,7 @@ Each node is configured with a role that determines how it behaves on the mesh. 
 
 The full node row shows the circle avatar, battery level, encryption status, last-heard time, device role, signal strength, and log indicators all at once.
 
-The signal meter shown here (and on a node's detail screen) rates link quality from SNR relative to your radio preset — using your radio's reported noise floor when it's available — and the strength bar and the SNR text color always reflect the same rating. See [Signal Meter](signal-meter.md) for how it works.
+The signal meter shown here (and on a node's detail screen) rates link quality from SNR relative to your radio preset — using your radio's recently reported noise floor when available — and the strength bar and the SNR text color always reflect the same rating. See [Signal Meter](signal-meter.md) for how it works.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../assets/screenshots/standard_directConnected_dark.png" />
