@@ -63,9 +63,7 @@ RSSI is still shown next to the meter, but it is no longer used to guess the rat
 Because Meshtastic's meter acts as a **"Clarity Meter"**, it behaves differently than what most people expect:
 
 > **Tip — Don't panic over low RSSI**
->
 > You might see a seemingly terrible RSSI value like `-118 dBm`. On a cell phone, you would have zero bars. But if you have an SNR of `+2 dB`, Meshtastic will still show a strong signal! *The library is quiet, so the whisper is heard perfectly.*
 
 > **Warning — Watch out for local noise**
->
 > If you hook up a massive antenna and see a great RSSI (e.g., `-90 dBm`) but your signal meter is only showing **1 Bar (Bad)**, you have a problem. It means you have local interference—perhaps a cheap power supply, a noisy computer, or a nearby radio tower—creating so much static that it is drowning out your mesh. When your radio knows its own noise floor, the meter accounts for exactly this by measuring your real margin above the noise.
