@@ -100,6 +100,18 @@ Long press any message and tap **Tapback** to send an emoji reaction.
 
 ---
 
+## Find in Conversation
+
+Tap the **magnifying glass** in the top-right of any channel or direct-message conversation to open the find bar, then type to search that conversation's message text.
+
+- Matching is **case- and accent-insensitive**, and searches the **entire conversation history** — not just the messages currently on screen.
+- The bar shows your position in the results (e.g. **2/7**); use the **up/down chevrons** to jump to the previous or next match, wrapping around at the ends. The current match is highlighted and scrolled into view, loading older messages automatically if needed.
+- Tap **Done** (or the magnifying glass again) to close the bar and clear the search.
+
+Search covers the text of channel broadcasts and direct messages; emoji tapbacks and system/admin traffic are excluded.
+
+---
+
 ## Message Status
 
 ![Message status reference](../assets/screenshots/ackErrors.png)

@@ -280,18 +280,18 @@
         "keywords": [
             "channel",
             "message",
-            "channels",
             "messages",
-            "key",
+            "channels",
             "text",
-            "formatting",
+            "key",
             "not",
+            "formatting",
             "markdown",
             "delimiters",
-            "selection",
             "direct",
-            "bold",
             "tap",
+            "selection",
+            "bold",
             "from",
             "button",
             "public",
@@ -309,7 +309,7 @@
             "shield",
             "select"
         ],
-        "charCount": 9014
+        "charCount": 9789
     },
     {
         "id": "mqtt",
