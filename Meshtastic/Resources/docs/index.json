@@ -44,7 +44,6 @@
         "section": "user",
         "navOrder": 14,
         "keywords": [
-            "quot",
             "messages",
             "carplay",
             "siri",
@@ -73,7 +72,8 @@
             "heard",
             "device",
             "contact",
-            "channels"
+            "channels",
+            "automatically"
         ],
         "charCount": 3378
     },
@@ -185,12 +185,12 @@
             "location",
             "ios",
             "first",
-            "amp",
             "within",
             "tip",
             "time",
             "tapping",
-            "started"
+            "started",
+            "setup"
         ],
         "charCount": 2899
     },
@@ -437,7 +437,6 @@
             "snr",
             "signal",
             "noise",
-            "quot",
             "meter",
             "rssi",
             "radio",
@@ -463,9 +462,10 @@
             "two",
             "see",
             "relative",
-            "rating"
+            "rating",
+            "power"
         ],
-        "charCount": 4812
+        "charCount": 4810
     },
     {
         "id": "tak",
@@ -499,10 +499,10 @@
             "zip",
             "tip",
             "read",
-            "quot",
             "primary",
             "position",
-            "pickers"
+            "pickers",
+            "over"
         ],
         "charCount": 6073
     },
@@ -561,7 +561,6 @@
             "localizer",
             "local",
             "translate",
-            "amp",
             "translation",
             "review",
             "open",
@@ -580,7 +579,8 @@
             "english",
             "directly",
             "bin",
-            "automatically"
+            "automatically",
+            "version"
         ],
         "charCount": 4753
     },
@@ -602,7 +602,6 @@
             "distances",
             "distance",
             "date",
-            "amp",
             "telemetry",
             "meshtastic",
             "device",
@@ -619,7 +618,8 @@
             "change",
             "altitude",
             "uses",
-            "time"
+            "time",
+            "settings"
         ],
         "charCount": 4753
     },
@@ -688,16 +688,16 @@
             "app",
             "signed",
             "radios",
-            "quot",
             "per",
             "only",
             "message",
             "docs",
-            "amp",
             "waypoints",
             "watch",
             "verified",
-            "translation"
+            "translation",
+            "translate",
+            "snr"
         ],
         "charCount": 6314
     },
@@ -707,7 +707,6 @@
         "section": "developer",
         "navOrder": 3,
         "keywords": [
-            "quot",
             "settings",
             "view",
             "settingsnavigationstate",
@@ -736,7 +735,8 @@
             "create",
             "adding",
             "url",
-            "tests"
+            "tests",
+            "testing"
         ],
         "charCount": 2664
     },
@@ -830,7 +830,6 @@
             "accessorymanager",
             "logger",
             "root",
-            "quot",
             "packet",
             "extensions",
             "ble",
@@ -853,7 +852,8 @@
             "transport",
             "tips",
             "tcp",
-            "swiftdata"
+            "swiftdata",
+            "subsystems"
         ],
         "charCount": 3538
     },
@@ -915,7 +915,6 @@
             "nodes",
             "nodenum",
             "deep",
-            "amp",
             "tak",
             "lora",
             "links",
@@ -931,7 +930,8 @@
             "swift",
             "serial",
             "security",
-            "routes"
+            "routes",
+            "route"
         ],
         "charCount": 3040
     },
@@ -980,7 +980,6 @@
         "section": "developer",
         "navOrder": 7,
         "keywords": [
-            "quot",
             "locale",
             "unit",
             "measurement",
@@ -1004,12 +1003,13 @@
             "format",
             "device",
             "date",
-            "amp",
             "universal",
             "unitspeed",
             "unitlength",
             "text",
-            "string"
+            "string",
+            "nodes",
+            "measurementformatter"
         ],
         "charCount": 6352
     },
@@ -1065,7 +1065,6 @@
             "swift",
             "xml",
             "route",
-            "quot",
             "atak",
             "wire",
             "try",
@@ -1087,7 +1086,8 @@
             "zstd",
             "via",
             "supportstakv2",
-            "routes"
+            "routes",
+            "protobuf"
         ],
         "charCount": 7653
     },
@@ -1098,7 +1098,6 @@
         "navOrder": 6,
         "keywords": [
             "test",
-            "quot",
             "tests",
             "snapshots",
             "run",
@@ -1126,7 +1125,8 @@
             "using",
             "try",
             "suite",
-            "screenshots"
+            "screenshots",
+            "scale"
         ],
         "charCount": 3697
     },
