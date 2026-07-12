@@ -120,6 +120,7 @@ final class CoverageEstimateRunner: NSObject, ObservableObject {
 
 	/// Cancel any in-flight run and tear down the WebView.
 	func cancel() {
+		didFinish = true
 		timeoutTask?.cancel()
 		timeoutTask = nil
 		teardownWebView()

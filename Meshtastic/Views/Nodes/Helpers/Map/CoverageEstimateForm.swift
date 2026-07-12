@@ -114,8 +114,8 @@ struct CoverageEstimateForm: View {
 
 				locationShortcuts
 
-				labeledNumber("Latitude", value: $params.latitude)
-				labeledNumber("Longitude", value: $params.longitude)
+				DecimalField("Latitude", value: $params.latitude)
+				DecimalField("Longitude", value: $params.longitude)
 				labeledNumber("Transmit power (W)", value: $params.txPowerWatts)
 				labeledNumber("Frequency (MHz)", value: $params.txFrequencyMHz)
 				labeledNumber("Antenna height (m)", value: $params.txHeightMeters)
@@ -129,7 +129,7 @@ struct CoverageEstimateForm: View {
 	private var receiverSection: some View {
 		Section {
 			DisclosureGroup(isExpanded: $receiverExpanded) {
-				labeledNumber("Sensitivity (dBm)", value: $params.rxSensitivityDBm)
+				DecimalField("Sensitivity (dBm)", value: $params.rxSensitivityDBm)
 			} label: {
 				Label("Receiver", systemImage: "dot.radiowaves.left.and.right")
 			}
@@ -226,6 +226,61 @@ struct CoverageEstimateForm: View {
 				.multilineTextAlignment(.trailing)
 				.frame(maxWidth: 140)
 				.accessibilityLabel(Text(title))
+		}
+	}
+
+	/// A text-backed decimal field for values that can be negative (latitude, longitude,
+	/// receiver sensitivity). `TextField(value:format: .number)` resets the bound value to
+	/// `nil` on intermediate input like a lone `-` or a trailing `.`, which makes negative
+	/// values awkward to type. A local string buffer lets the user type freely and only
+	/// pushes a parsed value back to the model, while still reflecting external updates
+	/// (e.g. the location shortcut buttons) when the field isn't being edited.
+	private struct DecimalField: View {
+		let title: LocalizedStringKey
+		@Binding var value: Double
+		@State private var text: String
+		@FocusState private var focused: Bool
+
+		init(_ title: LocalizedStringKey, value: Binding<Double>) {
+			self.title = title
+			_value = value
+			_text = State(initialValue: Self.format(value.wrappedValue))
+		}
+
+		var body: some View {
+			HStack {
+				Text(title)
+				Spacer()
+				TextField("", text: $text)
+					.keyboardType(.numbersAndPunctuation)
+					.multilineTextAlignment(.trailing)
+					.frame(maxWidth: 140)
+					.focused($focused)
+					.accessibilityLabel(Text(title))
+					.onChange(of: text) { _, newValue in
+						if let parsed = Double(newValue.replacingOccurrences(of: ",", with: ".")) {
+							value = parsed
+						}
+					}
+					.onChange(of: value) { _, newValue in
+						// Reflect external updates (shortcut buttons), but don't fight the user mid-edit.
+						if !focused {
+							text = Self.format(newValue)
+						}
+					}
+			}
+		}
+
+		/// Formats with a stable `.` decimal separator (matching `Double` parsing) and no
+		/// grouping, trimming trailing zeros while preserving coordinate precision.
+		private static func format(_ value: Double) -> String {
+			let formatter = NumberFormatter()
+			formatter.numberStyle = .decimal
+			formatter.usesGroupingSeparator = false
+			formatter.minimumFractionDigits = 0
+			formatter.maximumFractionDigits = 8
+			formatter.locale = Locale(identifier: "en_US_POSIX")
+			return formatter.string(from: NSNumber(value: value)) ?? String(value)
 		}
 	}
 
