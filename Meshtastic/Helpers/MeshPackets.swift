@@ -1381,7 +1381,8 @@ actor MeshPackets {
 					// Send notifications if the message saved properly to core data
 					if messageSaved {
 						// Donate to SiriKit so the message appears in CarPlay Messages
-						#if os(iOS)
+						// (CarPlay is iPhone-only, so skip on Mac Catalyst).
+						#if os(iOS) && !targetEnvironment(macCatalyst)
 						CarPlayIntentDonation.donateReceivedMessage(newMessage)
 						#endif
 
