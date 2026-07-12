@@ -39,7 +39,7 @@ struct LoRaSignalStrengthIndicator_Previews: PreviewProvider {
 	}
 }
 
-enum LoRaSignalStrength: Int {
+enum LoRaSignalStrength: Int, Comparable {
 	case none = 0
 	case bad = 1
 	case fair = 2
@@ -56,6 +56,14 @@ enum LoRaSignalStrength: Int {
 			return "Good".localized
 		}
 	}
+	/// The color for this tier. Exposed so the bar indicator and any accompanying
+	/// SNR text can be driven from the *same* rating and never disagree.
+	var color: Color {
+		getColor(signalStrength: self)
+	}
+	static func < (lhs: LoRaSignalStrength, rhs: LoRaSignalStrength) -> Bool {
+		lhs.rawValue < rhs.rawValue
+	}
 }
 
 private func getColor(signalStrength: LoRaSignalStrength) -> Color {
@@ -71,28 +79,43 @@ private func getColor(signalStrength: LoRaSignalStrength) -> Color {
 	}
 }
 
-func getLoRaSignalStrength(snr: Float, rssi: Int32, preset: ModemPresets) -> LoRaSignalStrength {
-	// rssi is 0 when not available
-	if rssi == 0 {
-		if snr > (preset.snrLimit()) {
-			return .good
-		}
-		if snr < (preset.snrLimit() - 7.5) {
-			return .none
-		}
-		if snr <= (preset.snrLimit() - 5.5) {
-			return .bad
-		}
-		return .fair
-	}
-
-	if rssi > -115 && snr > (preset.snrLimit()) {
+/// Single source of truth for the 4-tier signal rating: how far a signal-to-noise
+/// margin sits above (or below) the preset's demodulation floor. `snrMargin` is
+/// `snr - preset.snrLimit()` in dB. Both the bar indicator and the SNR text color
+/// derive from this, so they can never disagree on the same reading.
+func signalQuality(snrMargin: Float) -> LoRaSignalStrength {
+	if snrMargin > 0 {
 		return .good
-	} else if rssi < -126 && snr < (preset.snrLimit() - 7.5) {
-		return .none
-	} else if rssi <= -120 || snr <= (preset.snrLimit() - 5.5) {
+	} else if snrMargin > -5.5 {
+		return .fair
+	} else if snrMargin >= -7.5 {
 		return .bad
-	} else { return .fair }
+	} else {
+		return .none
+	}
+}
+
+/// Rates link quality for a directly-received packet.
+///
+/// Primary signal is the reported packet SNR relative to the preset's demodulation
+/// floor. When the *receiving* node has a recent noise-floor reading (from Local
+/// Stats telemetry, `DeviceMetrics.noise_floor`), we also derive a second SNR
+/// estimate from the real link margin (`rssi - noiseFloor`) and take the more
+/// conservative of the two tiers — this is more accurate than trusting a single
+/// estimate. When no noise floor is available we fall back to SNR-only (matching
+/// Meshtastic-Android's `determineSignalQuality`), rather than the old guessed
+/// fixed RSSI thresholds (-115/-120/-126), which could not know the noise floor.
+func getLoRaSignalStrength(snr: Float, rssi: Int32, preset: ModemPresets, noiseFloor: Int32? = nil) -> LoRaSignalStrength {
+	let limit = preset.snrLimit()
+	let snrTier = signalQuality(snrMargin: snr - limit)
+
+	// Use the actual link margin only when we have both a real RSSI reading and a
+	// real noise floor for the receiving radio; otherwise stay SNR-only.
+	if let noiseFloor, noiseFloor != 0, rssi != 0 {
+		let rssiTier = signalQuality(snrMargin: Float(rssi - noiseFloor) - limit)
+		return min(snrTier, rssiTier)
+	}
+	return snrTier
 }
 
 func getRssiColor(rssi: Int32) -> Color {
@@ -111,14 +134,7 @@ func getRssiColor(rssi: Int32) -> Color {
 }
 
 func getSnrColor(snr: Float, preset: ModemPresets) -> Color {
-	if snr > preset.snrLimit() {
-		/// Good
-		return .green
-	} else if snr < preset.snrLimit() && snr > (preset.snrLimit() - 5.5) {
-		/// Fair
-		return .yellow
-	} else if snr >= (preset.snrLimit() - 7.5) {
-		/// Bad
-		return .orange
-	} else { return .red }
+	// SNR-only rating, shared with the bar indicator via signalQuality() so the
+	// two surfaces can never disagree.
+	signalQuality(snrMargin: snr - preset.snrLimit()).color
 }

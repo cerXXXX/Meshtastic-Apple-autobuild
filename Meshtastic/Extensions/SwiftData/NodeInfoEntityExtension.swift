@@ -203,6 +203,21 @@ extension NodeInfoEntity {
 		return try? ctx.fetch(descriptor).first
 	}
 
+	/// The receiving radio's most recent noise floor (dBm) from Local Stats telemetry
+	/// (`DeviceMetrics.noise_floor`), or nil when it's absent, zero, or older than the
+	/// online threshold (2 h). Used to compute a real link margin (`rssi - noiseFloor`)
+	/// for signal-quality rating instead of guessed fixed RSSI thresholds.
+	var recentNoiseFloor: Int32? {
+		guard let stats = latestLocalStats,
+			  let time = stats.time,
+			  let noiseFloor = stats.noiseFloor,
+			  noiseFloor != 0,
+			  let twoHoursAgo = Calendar.current.date(byAdding: .minute, value: -120, to: Date()),
+			  time.compare(twoHoursAgo) == .orderedDescending
+		else { return nil }
+		return noiseFloor
+	}
+
 	var hasLocalStats: Bool {
 		guard let ctx = modelContext else { return false }
 		let nodeNum = self.num
