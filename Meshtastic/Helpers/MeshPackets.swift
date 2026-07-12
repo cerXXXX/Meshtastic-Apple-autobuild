@@ -1145,12 +1145,18 @@ actor MeshPackets {
 	/// synchronously, so callers can hand the resulting value to a deferred `@MainActor` Task
 	/// without capturing the entity itself. Collapses the DM/channel × regular/reaction variants
 	/// that differ only in `content`, deep-link `path`, and `userNum`.
+	///
+	/// `replyMessageId` is the message that tapback/reply notification actions should target. It
+	/// defaults to `message.messageId`, but for a reaction notification the caller passes the
+	/// original (reacted-to) message id so actions act on that message rather than the reaction
+	/// packet (which `messageId` — used for notification cancellation — must keep referencing).
 	private func makeMessageNotification(
 		message: MessageEntity,
 		content: String,
 		path: String,
 		userNum: Int64?,
-		critical: Bool
+		critical: Bool,
+		replyMessageId: Int64? = nil
 	) -> Notification {
 		var notification = Notification(
 			id: ("notification.id.\(message.messageId)"),
@@ -1160,11 +1166,12 @@ actor MeshPackets {
 			target: "messages",
 			path: path,
 			messageId: message.messageId,
+			replyMessageId: replyMessageId ?? message.messageId,
 			channel: message.channel,
 			userNum: userNum,
 			critical: critical
 		)
-		#if os(iOS)
+		#if os(iOS) && !targetEnvironment(macCatalyst)
 		notification.senderIntent = CarPlayIntentDonation.incomingMessageIntent(from: message)
 		#endif
 		return notification
@@ -1414,7 +1421,8 @@ actor MeshPackets {
 										content: reactionBody,
 										path: "meshtastic:///messages?userNum=\(newMessage.fromUser?.num ?? 0)&messageId=\(newMessage.replyID)",
 										userNum: dmUserNum,
-										critical: critical
+										critical: critical,
+										replyMessageId: newMessage.replyID
 									)
 								}
 								if let notification = dmNotification {
@@ -1441,7 +1449,9 @@ actor MeshPackets {
 									// to ~1/sec — the badge tolerates brief lag and resyncs on app-active and on read.
 									let recountUnread = shouldRecomputeChannelUnread()
 									let connectedNodeNum = connectedNode
-									let channelNotificationsEnabled = UserDefaults.channelMessageNotifications && myInfo.channels.contains(where: { $0.index == newMessage.channel && !$0.mute })
+									let channelNotificationsEnabled = UserDefaults.channelMessageNotifications
+										&& !(newMessage.fromUser?.mute ?? false)
+										&& myInfo.channels.contains(where: { $0.index == newMessage.channel && !$0.mute })
 									let senderName = newMessage.fromUser?.longName ?? "Unknown".localized
 									let channelUserNum = Int64(newMessage.fromUser?.userId ?? "0")
 									var channelNotification: Notification?
@@ -1463,7 +1473,8 @@ actor MeshPackets {
 												content: reactionBody,
 												path: "meshtastic:///messages?channelId=\(newMessage.channel)&messageId=\(newMessage.replyID)",
 												userNum: channelUserNum,
-												critical: critical
+												critical: critical,
+												replyMessageId: newMessage.replyID
 											)
 										}
 									}

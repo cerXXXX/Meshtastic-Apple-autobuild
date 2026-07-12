@@ -62,22 +62,34 @@ struct ReactionNotificationTests {
 
 	// MARK: - Found original -> formatted iMessage-style body
 
+	// The body is formatted through `String.localizedStringWithFormat` with a template from
+	// `Localizable.xcstrings`, so the surrounding "reacted"/"to" words are locale-dependent.
+	// Assert only on the locale-stable interpolated pieces (sender, emoji, quoted original text)
+	// so these don't break when the test host runs under a non-English locale.
+
 	@Test func knownReplyID_formatsBody() {
 		insertOriginal(id: 990_010, payload: "See you soon")
 		let result = body(replyID: 990_010, emoji: "👍", sender: "Alice")
-		#expect(result == "Alice reacted 👍 to \"See you soon\"")
+		#expect(result != nil)
+		#expect(result?.contains("Alice") == true)
+		#expect(result?.contains("👍") == true)
+		#expect(result?.contains("See you soon") == true)
 	}
 
 	@Test func knownReplyID_emptyEmoji_fallsBackToHeart() {
 		insertOriginal(id: 990_020, payload: "Hello there")
 		let result = body(replyID: 990_020, emoji: "")
-		#expect(result == "Bob reacted ❤️ to \"Hello there\"")
+		#expect(result != nil)
+		#expect(result?.contains("❤️") == true)
+		#expect(result?.contains("Hello there") == true)
 	}
 
 	@Test func knownReplyID_nilEmoji_fallsBackToHeart() {
 		insertOriginal(id: 990_030, payload: "Hello there")
 		let result = body(replyID: 990_030, emoji: nil)
-		#expect(result == "Bob reacted ❤️ to \"Hello there\"")
+		#expect(result != nil)
+		#expect(result?.contains("❤️") == true)
+		#expect(result?.contains("Hello there") == true)
 	}
 
 	@Test func knownReplyID_nilOriginalPayload_stillNotifies() {
@@ -85,6 +97,8 @@ struct ReactionNotificationTests {
 		// We still surface a notification; the quoted text is simply empty.
 		insertOriginal(id: 990_040, payload: nil)
 		let result = body(replyID: 990_040, emoji: "🎉", sender: "Carol")
-		#expect(result == "Carol reacted 🎉 to \"\"")
+		#expect(result != nil)
+		#expect(result?.contains("Carol") == true)
+		#expect(result?.contains("🎉") == true)
 	}
 }
