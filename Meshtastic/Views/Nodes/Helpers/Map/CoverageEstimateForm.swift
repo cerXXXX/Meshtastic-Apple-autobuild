@@ -171,25 +171,40 @@ struct CoverageEstimateForm: View {
 	@ViewBuilder private var locationShortcuts: some View {
 		let hasShortcuts = deviceLocation != nil || seed.nodeCoordinate != nil || seed.mapCenter != nil
 		if hasShortcuts {
-			HStack(spacing: 12) {
-				if let device = deviceLocation {
-					shortcutButton("My Location", systemImage: "location.fill") { apply(device) }
+			VStack(alignment: .leading, spacing: 6) {
+				Text("Set coordinates from")
+					.font(.caption)
+					.foregroundStyle(.secondary)
+				HStack(spacing: 8) {
+					if let device = deviceLocation {
+						shortcutButton("My Location", systemImage: "location.fill") { apply(device) }
+					}
+					if let node = seed.nodeCoordinate {
+						shortcutButton("Node", systemImage: "flipphone") { apply(node) }
+					}
+					if let center = seed.mapCenter {
+						shortcutButton("Map Center", systemImage: "scope") { apply(center) }
+					}
 				}
-				if let node = seed.nodeCoordinate {
-					shortcutButton("Node", systemImage: "flipphone") { apply(node) }
-				}
-				if let center = seed.mapCenter {
-					shortcutButton("Map Center", systemImage: "scope") { apply(center) }
-				}
+				.buttonStyle(.bordered)
 			}
-			.buttonStyle(.bordered)
-			.controlSize(.small)
 		}
 	}
 
+	/// A compact equal-width shortcut cell: icon over a single-line label, so long titles
+	/// ("My Location", "Map Center") don't wrap or hyphenate in the three-across row.
 	private func shortcutButton(_ title: LocalizedStringKey, systemImage: String, action: @escaping () -> Void) -> some View {
 		Button(action: action) {
-			Label(title, systemImage: systemImage)
+			VStack(spacing: 4) {
+				Image(systemName: systemImage)
+					.font(.body)
+				Text(title)
+					.font(.caption2)
+					.lineLimit(1)
+					.minimumScaleFactor(0.75)
+			}
+			.frame(maxWidth: .infinity)
+			.padding(.vertical, 4)
 		}
 		.accessibilityLabel(Text(title))
 		.accessibilityHint("Fills the transmitter coordinates.")
