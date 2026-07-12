@@ -142,6 +142,8 @@ Tap a node and scroll to the Logs section for detailed metrics:
 | ![Detection Sensor](../assets/screenshots/logDetectionSensor.png) | Motion or door open/close alerts from the node. |
 | ![Trace Routes](../assets/screenshots/logTraceRoutes.png) | Recorded trace route paths showing the hops a message took through the mesh. |
 
+When a node has a known position, the Logs section also offers **Estimate Coverage** (`cellularbars`). It switches to the Map tab and opens the Site Planner coverage-estimate form prefilled from that node. See [Coverage Estimate (Site Planner)](map.md) on the Map page for the full flow.
+
 ## Local Stats and Noise Floor
 
 Local Stats show radio diagnostics reported by a node, including packets received, packets transmitted, duplicate packets, relayed packets, bad receives, canceled packets, online node count, total node count, and noise floor.

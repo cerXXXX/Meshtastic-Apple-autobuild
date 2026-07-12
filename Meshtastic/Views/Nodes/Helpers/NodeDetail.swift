@@ -36,6 +36,7 @@ struct NodeDetail: View {
 	) ?? ModemPresets.longFast
 	@Environment(\.modelContext) private var context
 	@EnvironmentObject var accessoryManager: AccessoryManager
+	@EnvironmentObject var router: Router
 	@State private var showingShutdownConfirm: Bool = false
 	@State private var showingRebootConfirm: Bool = false
 	@State private var dateFormatRelative: Bool = true
@@ -532,6 +533,18 @@ struct NodeDetail: View {
 						Text("Node Map")
 					} icon: {
 						Image(systemName: "map")
+							.symbolRenderingMode(.multicolor)
+					}
+				}
+				.disabled(!hasPositions)
+				Button {
+					router.selectedTab = .map
+					router.mapState = .coverageEstimate(node.num)
+				} label: {
+					Label {
+						Text("Estimate Coverage")
+					} icon: {
+						Image(systemName: "cellularbars")
 							.symbolRenderingMode(.multicolor)
 					}
 				}
