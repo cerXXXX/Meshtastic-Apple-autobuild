@@ -7,10 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0516B3FE2F68892000D0FC40 /* NodeFilterParametersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05DCA1AE2F646B3B00D0724C /* NodeFilterParametersTests.swift */; };
-		DD0000A10EDD5A00000000B1 /* XEdDSASigningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000A20EDD5A00000000B2 /* XEdDSASigningTests.swift */; };
-		DD0000C10EDD5A00000000C1 /* InvalidUTF8Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000C20EDD5A00000000C2 /* InvalidUTF8Tests.swift */; };
-		05A1B2C32F70000100D0FC40 /* SettingsNodeSortTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1B2C42F70000100D0FC40 /* SettingsNodeSortTests.swift */; };
 		0B9642EC0DB1B971CB26E8AE /* RadarSweepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E06A9BCC789BD452DFA9CFB /* RadarSweepView.swift */; };
 		102B5EAB2E172F41003D191E /* DatadogCore in Frameworks */ = {isa = PBXBuildFile; productRef = 102B5EAA2E172F41003D191E /* DatadogCore */; };
 		102B5EAD2E172F41003D191E /* DatadogCrashReporting in Frameworks */ = {isa = PBXBuildFile; productRef = 102B5EAC2E172F41003D191E /* DatadogCrashReporting */; };
@@ -22,7 +18,6 @@
 		108FFECD2DD4005600BFAA81 /* NodeInfoEntityToNodeInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 108FFECC2DD4005600BFAA81 /* NodeInfoEntityToNodeInfo.swift */; };
 		10D109F42E2047D600536CE6 /* DatadogTrace in Frameworks */ = {isa = PBXBuildFile; productRef = 10D109F32E2047D600536CE6 /* DatadogTrace */; };
 		10D80CF7AD2B4269BE0A4933 /* MeshtasticSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38DF7D72AA0A450399DBC592 /* MeshtasticSchema.swift */; };
-		1396606FC903D7DA662B6326 /* DiscoveryModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C6057F9508D4356DAF411F /* DiscoveryModelTests.swift */; };
 		1A8723A6288B46538396E9F1 /* DeviceLinkEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF32D1D722C64814981AB215 /* DeviceLinkEntity.swift */; };
 		230A98402EF86A44004D87F1 /* AsyncCentral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 230A983F2EF86A44004D87F1 /* AsyncCentral.swift */; };
 		230A98422EF86AA9004D87F1 /* ESP32BLEOTAViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 230A98412EF86AA9004D87F1 /* ESP32BLEOTAViewModel.swift */; };
@@ -118,7 +113,6 @@
 		25F5D5BE2C3F6D87008036E3 /* NavigationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F5D5BD2C3F6D87008036E3 /* NavigationState.swift */; };
 		25F5D5C02C3F6DA6008036E3 /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F5D5BF2C3F6DA6008036E3 /* Router.swift */; };
 		25F5D5C22C3F6E4B008036E3 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F5D5C12C3F6E4B008036E3 /* AppState.swift */; };
-		25F5D5D12C4375DF008036E3 /* RouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25F5D5D02C4375DF008036E3 /* RouterTests.swift */; };
 		2849A5E4CE9FDC1DB33DFA34 /* TAKConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01028778B8BFD81F7A039593 /* TAKConnection.swift */; };
 		300424F80C4A445A0FBAE82D /* TAKMeshtasticBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D006C85B250291D5925F30 /* TAKMeshtasticBridge.swift */; };
 		3D3417B42E2730EC006A988B /* GeoJSONOverlayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D3417B32E2730EC006A988B /* GeoJSONOverlayManager.swift */; };
@@ -149,7 +143,6 @@
 		DDBEAC001000000000000111 /* DiscoveryBeaconsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBEAC001000000000000101 /* DiscoveryBeaconsView.swift */; };
 		DDBEAC001000000000000171 /* MeshBeaconConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBEAC001000000000000161 /* MeshBeaconConfig.swift */; };
 		DDBEAC001000000000000191 /* MeshBeaconConfigHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBEAC001000000000000181 /* MeshBeaconConfigHelper.swift */; };
-		DDBEAC001000000000000211 /* MeshBeaconConfigEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBEAC001000000000000201 /* MeshBeaconConfigEditorTests.swift */; };
 		85D0F28AE7CE44C39B6BEBF8 /* MyInfoEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5970BC1CAF4B66999C7248 /* MyInfoEntity.swift */; };
 		86CCA3EEDD7E1036893B2663 /* DiscoverySessionEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B9C39534FE860C7FCF5B9A2 /* DiscoverySessionEntity.swift */; };
 		898C6C4E60B640B3A285AF25 /* ConfigModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B88B4AE298C43D1B8F4516C /* ConfigModels.swift */; };
@@ -164,11 +157,9 @@
 		9C744FC4C34549008EADCA4E /* NodeInfoEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7101240749F24E96835A040A /* NodeInfoEntity.swift */; };
 		A5339E2F74E83F8FC41EEE33 /* TAKServerConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0618E6D0DF90B74EE32E6C06 /* TAKServerConfig.swift */; };
 		AA000001303050030000B001 /* Color+Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002303050030000B001 /* Color+Brand.swift */; };
-		AA0001012E2730EC00600001 /* ConnectViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00010022E2730EC0060000 /* ConnectViewTests.swift */; };
 		AA0001032F07A4B000600001 /* TAKModuleConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001042F07A4B000600001 /* TAKModuleConfig.swift */; };
 		AA000201CPLAY000000000002 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000201CPLAY000000000001 /* CarPlaySceneDelegate.swift */; };
 		AA000201CPLAY000000000004 /* CarPlayIntentDonation.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000201CPLAY000000000003 /* CarPlayIntentDonation.swift */; };
-		AA000301CPTST000000000002 /* CarPlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000301CPTST000000000001 /* CarPlayTests.swift */; };
 		AA000401SIRI000000000002 /* AppIntentVocabulary.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA000401SIRI000000000001 /* AppIntentVocabulary.plist */; };
 		AA000402IPLS000000000002 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = AA000402IPLS000000000001 /* InfoPlist.strings */; };
 		AA0005WTCH00000000BF0001 /* MeshtasticWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0005WTCH00000000FR0001 /* MeshtasticWatchApp.swift */; };
@@ -186,26 +177,20 @@
 		AA003DOC0000002000000002 /* DocBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000002 /* DocBrowserView.swift */; };
 		AA003DOC0000002000000003 /* DocPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000003 /* DocPageView.swift */; };
 		AA003DOC0000002000000004 /* AIDocAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000004 /* AIDocAssistantView.swift */; };
-		AA003DOC0000002000000005 /* DocBundleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000005 /* DocBundleTests.swift */; };
 		AA003DOC0000002000000006 /* DocTranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000006 /* DocTranslationService.swift */; };
 		AA003DOC0000002000000007 /* TranslationCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000007 /* TranslationCache.swift */; };
-		AA003DOC0000002000000008 /* DocTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000001000000008 /* DocTranslationTests.swift */; };
-		DD000031STATMSGDISP00001 /* StatusMessageDisplayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000031STATMSGDISP00000 /* StatusMessageDisplayTests.swift */; };
 		AA003DOC0000004000000001 /* docs in Resources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000005000000001 /* docs */; };
 		AA003FM00000002000000001 /* FoundationModelAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA003FM00000001000000001 /* FoundationModelAvailability.swift */; };
 		AA004FMT0000002000000001 /* MarkdownFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA004FMT0000001000000001 /* MarkdownFormatting.swift */; };
 		AA004FMT0000002000000002 /* FormattingToolbarButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA004FMT0000001000000002 /* FormattingToolbarButtons.swift */; };
 		AA004FMT0000002000000003 /* MessagePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA004FMT0000001000000003 /* MessagePreview.swift */; };
-		AA004FMT0000002000000004 /* MarkdownFormattingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA004FMT0000001000000004 /* MarkdownFormattingTests.swift */; };
 		AA009CTF0000002000000001 /* CommunityTranslationFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA009CTF0000001000000001 /* CommunityTranslationFetcher.swift */; };
 		AA009DTU0000002000000001 /* DocsTranslationUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA009DTU0000001000000001 /* DocsTranslationUploader.swift */; };
-		AA009MCT0000002000000001 /* MarkdownConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA009MCT0000001000000001 /* MarkdownConverterTests.swift */; };
 		AA009MDC0000002000000001 /* MarkdownConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA009MDC0000001000000001 /* MarkdownConverter.swift */; };
 		AA00SDBF0001 /* DeviceHardwareImageEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00SDRF0001 /* DeviceHardwareImageEntity.swift */; };
 		AA00SDBF0002 /* DeviceHardwareTagEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00SDRF0002 /* DeviceHardwareTagEntity.swift */; };
 		AA00SDBF0003 /* FirmwareReleaseEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00SDRF0003 /* FirmwareReleaseEntity.swift */; };
 		AA0120250000000000000B01 /* PacketStreamModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0120250000000000000B02 /* PacketStreamModel.swift */; };
-		AA0120250000000000000C01 /* PacketStreamModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0120250000000000000C02 /* PacketStreamModelTests.swift */; };
 		AA10D0012D00000000000001 /* DiscoverySummaryPDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10D0002D00000000000001 /* DiscoverySummaryPDF.swift */; };
 		AA11223344556677AABB0001 /* DiscoveryTips.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11223344556677AABB0002 /* DiscoveryTips.swift */; };
 		AB4622DCF4B1D4115ED00312 /* SendMessageIntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FCB3877F157D9011FA5C6CF /* SendMessageIntentHandler.swift */; };
@@ -247,7 +232,6 @@
 		BCCA0BAD2F1C5C60007648E5 /* RequestLocalStatsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCCA0BAC2F1C5C60007648E5 /* RequestLocalStatsButton.swift */; };
 		BCD7448D2E0F2FAA00F265A2 /* ContactURLHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD7448C2E0F2FA300F265A2 /* ContactURLHandler.swift */; };
 		BEEF00102F00000100000002 /* MeshtasticChannelURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEF00102F00000100000001 /* MeshtasticChannelURL.swift */; };
-		BEEF00102F00000100000004 /* MeshtasticChannelURLTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEF00102F00000100000003 /* MeshtasticChannelURLTests.swift */; };
 		BCD93CBA2D9E11A2006C9214 /* DisconnectNodeIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD93CB92D9E11A2006C9214 /* DisconnectNodeIntent.swift */; };
 		BCDDFA9A2DBB180D0065189C /* ScrollToBottomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCDDFA992DBB180D0065189C /* ScrollToBottomButton.swift */; };
 		BCE2D3C32C7ADF42008E6199 /* ShutDownNodeIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCE2D3C22C7ADF42008E6199 /* ShutDownNodeIntent.swift */; };
@@ -257,10 +241,6 @@
 		BD7B1A838F8245A0B6BE56C5 /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84CCF00CDD3D48C9B9DCA554 /* WatchSessionManager.swift */; };
 		BF1A0001CABF0001DEAD0001 /* AllTraceRoutesLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1A0002CABF0002DEAD0002 /* AllTraceRoutesLog.swift */; };
 		C1B995B38DC97D13D90D9C1A /* DiscoverySummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1B6FB13C4D4E03503BB1DF8 /* DiscoverySummaryView.swift */; };
-		C54AC9F4DA920A4F718CE21A /* DiscoveryScanEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD14FA280F0A130730DEB93 /* DiscoveryScanEngineTests.swift */; };
-		DDBEAC0010000000000000D1 /* DiscoveredBeaconEntityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBEAC0010000000000000C1 /* DiscoveredBeaconEntityTests.swift */; };
-		DDBEAC001000000000000131 /* ModemPresetFrequencySlotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBEAC001000000000000121 /* ModemPresetFrequencySlotTests.swift */; };
-		DDBEAC001000000000000151 /* BeaconAddVsSwitchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBEAC001000000000000141 /* BeaconAddVsSwitchTests.swift */; };
 		C79BFC99EDCC89DD45082753 /* DiscoveryScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5CA8BAC814CF82E127EEABF /* DiscoveryScanView.swift */; };
 		D02589957BD040969FCB8663 /* PositionEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A97241903A924144A3EEB679 /* PositionEntity.swift */; };
 		D748D59A3AF3253FFCDEF8BF /* DiscoveryMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D942B763789DEA044C5EBD6 /* DiscoveryMapView.swift */; };
@@ -281,60 +261,9 @@
 		DCC919C6B47C15BB0795456C /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D5AD8037A0D583C614B0597 /* Tools.swift */; };
 		DD000001275499A500A42001 /* PerformanceSeedData.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000000275499A500A42001 /* PerformanceSeedData.swift */; };
 		DD000003275499A500A42001 /* MarketingCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000002275499A500A42001 /* MarketingCapture.swift */; };
-		DD000001NODNAVTST00000001 /* NodeNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000001NODNAVTST00000000 /* NodeNavigationTests.swift */; };
-		DD000002STREXTTST00000001 /* StringExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000002STREXTTST00000000 /* StringExtensionTests.swift */; };
-		DD000003NUMEXTTST00000001 /* NumericExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000003NUMEXTTST00000000 /* NumericExtensionTests.swift */; };
-		DD000004URLTST0000000001 /* URLExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000004URLTST0000000000 /* URLExtensionTests.swift */; };
-		DD000005ENUMTST000000001 /* EnumTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000005ENUMTST000000000 /* EnumTests.swift */; };
-		DD000006GEOTST0000000001 /* GeoExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000006GEOTST0000000000 /* GeoExtensionTests.swift */; };
-		DD000007LORATST000000001 /* LoraDeviceEnumTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000007LORATST000000000 /* LoraDeviceEnumTests.swift */; };
-		DD000008APPSTST000000001 /* AppSettingsEnumTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000008APPSTST000000000 /* AppSettingsEnumTests.swift */; };
-		DD000009INTVTST000000001 /* IntervalEnumTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000009INTVTST000000000 /* IntervalEnumTests.swift */; };
-		DD00000AEXTNTST000000001 /* ExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000AEXTNTST000000000 /* ExtensionTests.swift */; };
-		DD00000BTAKCTST000000001 /* TAKCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000BTAKCTST000000000 /* TAKCodecTests.swift */; };
-		DD00000CCOTTST0000000001 /* CoTMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000CCOTTST0000000000 /* CoTMessageTests.swift */; };
-		DD00000DGEOJSNTST0000001 /* GeoJSONTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000DGEOJSNTST0000000 /* GeoJSONTests.swift */; };
-		DD00000ETAKBRGTST0000001 /* TAKBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000ETAKBRGTST0000000 /* TAKBridgeTests.swift */; };
-		DD00000FCOTXMLTST0000001 /* CoTXMLParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000FCOTXMLTST0000000 /* CoTXMLParserTests.swift */; };
-		DD000010GENCOTTST0000001 /* GenericCoTHandlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000010GENCOTTST0000000 /* GenericCoTHandlerTests.swift */; };
-		DD000011UTILENTST0000001 /* UtilityAndEnumTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000011UTILENTST0000000 /* UtilityAndEnumTests.swift */; };
-		DD000012COTEXTTST0000001 /* CoTExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000012COTEXTTST0000000 /* CoTExtensionTests.swift */; };
-		DD000013FWAPITST00000001 /* FirmwareAndAPITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000013FWAPITST00000000 /* FirmwareAndAPITests.swift */; };
-		DD000014RTRDLTST00000001 /* RouterDeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000014RTRDLTST00000000 /* RouterDeepLinkTests.swift */; };
-		DD000016NAVSTATST00000001 /* NavigationStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000016NAVSTATST00000000 /* NavigationStateTests.swift */; };
-		DD000017MTRVZTST00000001 /* MetricsVisualizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000017MTRVZTST00000000 /* MetricsVisualizationTests.swift */; };
-		DD000018RTMISCTST0000001 /* RoutingAndMiscTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000018RTMISCTST0000000 /* RoutingAndMiscTests.swift */; };
-		DD000019NYMEACTST0000001 /* NymeaConstantsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000019NYMEACTST0000000 /* NymeaConstantsTests.swift */; };
-		DD00001AASYNCCTST0000001 /* AsyncConcurrencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00001AASYNCCTST0000000 /* AsyncConcurrencyTests.swift */; };
-		DD00001BINTCVRTST0000001 /* IntentConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00001BINTCVRTST0000000 /* IntentConverterTests.swift */; };
-		DD00001CMAPDATTST0000001 /* MapDataModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00001CMAPDATTST0000000 /* MapDataModelTests.swift */; };
-		DD00001CMAPDMGRTST000001 /* MapDataManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00001CMAPDMGRTST000000 /* MapDataManagerTests.swift */; };
-		DD00001DCDENTTST00000001 /* EntityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00001DCDENTTST00000000 /* EntityTests.swift */; };
-		DD00001EURLDETTST0000001 /* URLExtensionDetailedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00001EURLDETTST0000000 /* URLExtensionDetailedTests.swift */; };
-		DD00001FFWVMERRTST000001 /* FirmwareViewModelErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00001FFWVMERRTST000000 /* FirmwareViewModelErrorTests.swift */; };
-		DD000020TAKBRDTST0000001 /* TAKBridgeDetailedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000020TAKBRDTST0000000 /* TAKBridgeDetailedTests.swift */; };
-		DD000021ENMCMPTST0000001 /* EnumComprehensiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000021ENMCMPTST0000000 /* EnumComprehensiveTests.swift */; };
-		DD000022GEOJSNCFG0000001 /* GeoJSONOverlayConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000022GEOJSNCFG0000000 /* GeoJSONOverlayConfigTests.swift */; };
-		DD000023EXTDETTST0000001 /* ExtensionDetailedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000023EXTDETTST0000000 /* ExtensionDetailedTests.swift */; };
-		DD000024ENMBATTST0000001 /* EnumBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000024ENMBATTST0000000 /* EnumBatchTests.swift */; };
-		DD000025COTMSGDTL0000001 /* CoTMessageDetailedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000025COTMSGDTL0000000 /* CoTMessageDetailedTests.swift */; };
-		DD000026STREXTDTL0000001 /* StringExtensionDetailedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000026STREXTDTL0000000 /* StringExtensionDetailedTests.swift */; };
-		DD000027REMEUTLTST000001 /* RemainingEnumAndUtilTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000027REMEUTLTST000000 /* RemainingEnumAndUtilTests.swift */; };
-		DD000029APSTFWTST0000001 /* AppSettingsAndFirmwareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000029APSTFWTST0000000 /* AppSettingsAndFirmwareTests.swift */; };
-		DD00002AINTREMTST00000001 /* IntentAndRemainingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002AINTREMTST00000000 /* IntentAndRemainingTests.swift */; };
-		DD00002BMSHPKTELTST000001 /* MeshPacketsAndTelemetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002BMSHPKTELTST000000 /* MeshPacketsAndTelemetryTests.swift */; };
-		DD00002BACKSTATUSRT000001 /* MessageAckStatusRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002BACKSTATUSRT000000 /* MessageAckStatusRefreshTests.swift */; };
-		DD00002DSNPVWTST000000001 /* SwiftUIViewSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002DSNPVWTST000000000 /* SwiftUIViewSnapshotTests.swift */; };
-		DD00002ESDMIGTST000000001 /* SwiftDataMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002ESDMIGTST000000000 /* SwiftDataMigrationTests.swift */; };
-		DD00002FSHRDTSTCNT000001 /* SharedTestContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00002FSHRDTSTCNT000000 /* SharedTestContainer.swift */; };
-		DD000030EVTFWNTST0000001 /* EventFirmwareNotificationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000030EVTFWNTST0000000 /* EventFirmwareNotificationTests.swift */; };
 		DD000031FWEDTENUM0000001 /* FirmwareEditionEnum.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000031FWEDTENUM0000000 /* FirmwareEditionEnum.swift */; };
 		DD00003ASUPPORTLVL0000001 /* SupportLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00003ASUPPORTLVL0000000 /* SupportLevel.swift */; };
 		DD00003C000SNAP00000001 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = DD00003B000SNAP00000000 /* SnapshotTesting */; };
-		DD0000CHSETST0000000001 /* ChannelSetSaveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000CHSETST0000000000 /* ChannelSetSaveTests.swift */; };
-		DD0000MQTTFWDFLTTST00001 /* MqttForwardFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000MQTTFWDFLTTST00000 /* MqttForwardFilterTests.swift */; };
-		DD0000DEVLNKTST000000001 /* DeviceLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000DEVLNKTST000000000 /* DeviceLinkTests.swift */; };
-		DD1827FB0000000000000002 /* RegionCodesFirmwareLocaleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1827FA0000000000000002 /* RegionCodesFirmwareLocaleTests.swift */; };
 		DD007BAE2AA4E91200F5FA12 /* MyInfoEntityExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD007BAD2AA4E91200F5FA12 /* MyInfoEntityExtension.swift */; };
 		DD007BB02AA5981000F5FA12 /* NodeInfoEntityExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD007BAF2AA5981000F5FA12 /* NodeInfoEntityExtension.swift */; };
 		DD09240001E7FAD600E70001 /* MapLegend.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD09240002E7FAD600E70001 /* MapLegend.swift */; };
@@ -432,7 +361,6 @@
 		DD994B69295F88B60013760A /* IntervalEnums.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD994B68295F88B60013760A /* IntervalEnums.swift */; };
 		DD9C700D2E8D5A9500106227 /* ChannelMessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9C700C2E8D5A8900106227 /* ChannelMessageRow.swift */; };
 		DD9C700F2E8DE80800106227 /* UserMessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9C700E2E8DE7FF00106227 /* UserMessageRow.swift */; };
-		DD9C70102E9F2A0000029299 /* DeviceOnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9C70112E9F2A0000029299 /* DeviceOnboardingTests.swift */; };
 		DD9C70112E916EBD00106227 /* UpdateIntervalPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9C70102E916EA200106227 /* UpdateIntervalPicker.swift */; };
 		DDA0B6B2294CDC55001356EC /* Channels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA0B6B1294CDC55001356EC /* Channels.swift */; };
 		DDA1C48E28DB49D3009933EC /* ChannelRoles.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA1C48D28DB49D3009933EC /* ChannelRoles.swift */; };
@@ -536,15 +464,12 @@
 		EBC37722779D4F2E9D537D74 /* DeviceLinksSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 281DB7C20B6F46B89F4AB29E /* DeviceLinksSection.swift */; };
 		EE7E2D900ACAC8053153354A /* DiscoveryScanEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC99855DBF52EBBBE07CEBA9 /* DiscoveryScanEngine.swift */; };
 		FCEFC176A62447319948ACEF /* DeviceLinkDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24506086F81240A9BFE18FA6 /* DeviceLinkDirectory.swift */; };
-		FDAF8808342245C4817C93EC /* NetworkConfigIPConversionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18295AFE686247778632C6DE /* NetworkConfigIPConversionTests.swift */; };
 		FE508F9AF5AD5DA20AA64DBF /* AccessoryManager+TAK.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82232A3CF2DD284ED5B9B8ED /* AccessoryManager+TAK.swift */; };
 		DD7E5750000000000000007A /* AccessoryManager+Lockdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007A /* AccessoryManager+Lockdown.swift */; };
 		DD7E5750000000000000007B /* LockdownSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007B /* LockdownSheet.swift */; };
 		DD7E5750000000000000007C /* LockdownCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007C /* LockdownCoordinator.swift */; };
 		DD7E5750000000000000007D /* LockdownPassphraseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007D /* LockdownPassphraseStore.swift */; };
 		DD7E5750000000000000007E /* LockdownState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000007E /* LockdownState.swift */; };
-		DD7E5750000000000000008A /* LockdownCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */; };
-		DD7E5750000000000000008B /* LockdownPassphraseStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */; };
 		FE57A71500000000000000A2 /* StatusMessageConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE57A71500000000000000A1 /* StatusMessageConfig.swift */; };
 /* End PBXBuildFile section */
 
@@ -608,10 +533,6 @@
 
 /* Begin PBXFileReference section */
 		01028778B8BFD81F7A039593 /* TAKConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TAKConnection.swift; sourceTree = "<group>"; };
-		DD0000A20EDD5A00000000B2 /* XEdDSASigningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XEdDSASigningTests.swift; sourceTree = "<group>"; };
-		DD0000C20EDD5A00000000C2 /* InvalidUTF8Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvalidUTF8Tests.swift; sourceTree = "<group>"; };
-		05A1B2C42F70000100D0FC40 /* SettingsNodeSortTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsNodeSortTests.swift; sourceTree = "<group>"; };
-		05DCA1AE2F646B3B00D0724C /* NodeFilterParametersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeFilterParametersTests.swift; sourceTree = "<group>"; };
 		05E0BD1A81CF4F6A90D56CE3 /* MeshtasticSchemaV1.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshtasticSchemaV1.swift; sourceTree = "<group>"; };
 		0618E6D0DF90B74EE32E6C06 /* TAKServerConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TAKServerConfig.swift; sourceTree = "<group>"; };
 		09936BEBD6D82479B2360FDC /* TAKCertificateManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TAKCertificateManager.swift; sourceTree = "<group>"; };
@@ -619,7 +540,6 @@
 		10794B242F8C2C90000CA23F /* RouteDataPackageGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteDataPackageGenerator.swift; sourceTree = "<group>"; };
 		108FFECA2DD3F43C00BFAA81 /* ShareContactQRDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareContactQRDialog.swift; sourceTree = "<group>"; };
 		108FFECC2DD4005600BFAA81 /* NodeInfoEntityToNodeInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeInfoEntityToNodeInfo.swift; sourceTree = "<group>"; };
-		18295AFE686247778632C6DE /* NetworkConfigIPConversionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkConfigIPConversionTests.swift; sourceTree = "<group>"; };
 		1CAEAD87807B4F34820A60C2 /* MeshtasticMigrationPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshtasticMigrationPlan.swift; sourceTree = "<group>"; };
 		1D5AD8037A0D583C614B0597 /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		230A983F2EF86A44004D87F1 /* AsyncCentral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncCentral.swift; sourceTree = "<group>"; };
@@ -708,7 +628,6 @@
 		25F5D5BF2C3F6DA6008036E3 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
 		25F5D5C12C3F6E4B008036E3 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		25F5D5C72C4375A8008036E3 /* MeshtasticTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MeshtasticTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		25F5D5D02C4375DF008036E3 /* RouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouterTests.swift; sourceTree = "<group>"; };
 		281DB7C20B6F46B89F4AB29E /* DeviceLinksSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLinksSection.swift; sourceTree = "<group>"; };
 		2B37CCEE8B44A4BA123ED118 /* TAKServerManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TAKServerManager.swift; sourceTree = "<group>"; };
 		31483AF5F5354D3481698E32 /* TelemetryEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryEntity.swift; sourceTree = "<group>"; };
@@ -730,7 +649,6 @@
 		509A1C42A695463093654617 /* DeviceMetadataEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceMetadataEntity.swift; sourceTree = "<group>"; };
 		518D504DED9874EBF9D76578 /* Certificates */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = Certificates; sourceTree = "<group>"; };
 		5FCB3877F157D9011FA5C6CF /* SendMessageIntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendMessageIntentHandler.swift; sourceTree = "<group>"; };
-		64C6057F9508D4356DAF411F /* DiscoveryModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryModelTests.swift; sourceTree = "<group>"; };
 		6D825E612C34786C008DBEE4 /* CommonRegex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonRegex.swift; sourceTree = "<group>"; };
 		6DA39D8D2A92DC52007E311C /* MeshtasticAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshtasticAppDelegate.swift; sourceTree = "<group>"; };
 		6DEDA5592A957B8E00321D2E /* DetectionSensorLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionSensorLog.swift; sourceTree = "<group>"; };
@@ -744,8 +662,6 @@
 		DD7E5740000000000000007C /* LockdownCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownCoordinator.swift; sourceTree = "<group>"; };
 		DD7E5740000000000000007D /* LockdownPassphraseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownPassphraseStore.swift; sourceTree = "<group>"; };
 		DD7E5740000000000000007E /* LockdownState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownState.swift; sourceTree = "<group>"; };
-		DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownCoordinatorTests.swift; sourceTree = "<group>"; };
-		DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockdownPassphraseStoreTests.swift; sourceTree = "<group>"; };
 		84CCF00CDD3D48C9B9DCA554 /* WatchSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionManager.swift; sourceTree = "<group>"; };
 		87D006C85B250291D5925F30 /* TAKMeshtasticBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TAKMeshtasticBridge.swift; sourceTree = "<group>"; };
 		8A96594950B87789C0BB96DB /* NodeListHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeListHelp.swift; sourceTree = "<group>"; };
@@ -758,13 +674,11 @@
 		AA0000000000000000000000 /* PMTilesArchive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PMTilesArchive.swift; path = Meshtastic/Helpers/Map/PMTilesArchive.swift; sourceTree = SOURCE_ROOT; };
 		AA000002303050030000B001 /* Color+Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Brand.swift"; sourceTree = "<group>"; };
 		AA0001000000000000000000 /* MBTilesArchive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MBTilesArchive.swift; path = Meshtastic/Helpers/Map/MBTilesArchive.swift; sourceTree = SOURCE_ROOT; };
-		AA00010022E2730EC0060000 /* ConnectViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectViewTests.swift; sourceTree = "<group>"; };
 		AA0001022F07A4B000600001 /* MeshtasticDataModelV 57.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "MeshtasticDataModelV 57.xcdatamodel"; sourceTree = "<group>"; };
 		AA0001042F07A4B000600001 /* TAKModuleConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TAKModuleConfig.swift; sourceTree = "<group>"; };
 		AA000201CPLAY000000000001 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
 		AA000201CPLAY000000000003 /* CarPlayIntentDonation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayIntentDonation.swift; sourceTree = "<group>"; };
 		AA0003000000000000000000 /* PMTilesMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PMTilesMapView.swift; path = Meshtastic/Views/Nodes/Helpers/Map/PMTilesMapView.swift; sourceTree = SOURCE_ROOT; };
-		AA000301CPTST000000000001 /* CarPlayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayTests.swift; sourceTree = "<group>"; };
 		AA0004000000000000000000 /* ClusterMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ClusterMapView.swift; path = Meshtastic/Views/Nodes/Helpers/Map/ClusterMapView.swift; sourceTree = SOURCE_ROOT; };
 		AA000401SIRI000000000010 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = en; path = en.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
 		AA000401SIRI000000000011 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = de; path = de.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
@@ -801,33 +715,23 @@
 		AA003DOC0000001000000002 /* DocBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocBrowserView.swift; sourceTree = "<group>"; };
 		AA003DOC0000001000000003 /* DocPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocPageView.swift; sourceTree = "<group>"; };
 		AA003DOC0000001000000004 /* AIDocAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIDocAssistantView.swift; sourceTree = "<group>"; };
-		AA003DOC0000001000000005 /* DocBundleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocBundleTests.swift; sourceTree = "<group>"; };
 		AA003DOC0000001000000006 /* DocTranslationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocTranslationService.swift; sourceTree = "<group>"; };
 		AA003DOC0000001000000007 /* TranslationCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TranslationCache.swift; path = Meshtastic/Services/TranslationCache.swift; sourceTree = "<group>"; };
-		AA003DOC0000001000000008 /* DocTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocTranslationTests.swift; sourceTree = "<group>"; };
-		DD000031STATMSGDISP00000 /* StatusMessageDisplayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMessageDisplayTests.swift; sourceTree = "<group>"; };
 		AA003DOC0000005000000001 /* docs */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = docs; sourceTree = "<group>"; };
 		AA003FM00000001000000001 /* FoundationModelAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FoundationModelAvailability.swift; path = Meshtastic/Services/FoundationModelAvailability.swift; sourceTree = "<group>"; };
 		AA004FMT0000001000000001 /* MarkdownFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownFormatting.swift; sourceTree = "<group>"; };
 		AA004FMT0000001000000002 /* FormattingToolbarButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingToolbarButtons.swift; sourceTree = "<group>"; };
 		AA004FMT0000001000000003 /* MessagePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagePreview.swift; sourceTree = "<group>"; };
-		AA004FMT0000001000000004 /* MarkdownFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownFormattingTests.swift; sourceTree = "<group>"; };
 		AA009CTF0000001000000001 /* CommunityTranslationFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CommunityTranslationFetcher.swift; path = Meshtastic/Services/CommunityTranslationFetcher.swift; sourceTree = "<group>"; };
 		AA009DTU0000001000000001 /* DocsTranslationUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DocsTranslationUploader.swift; path = Meshtastic/Services/DocsTranslationUploader.swift; sourceTree = "<group>"; };
-		AA009MCT0000001000000001 /* MarkdownConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownConverterTests.swift; sourceTree = "<group>"; };
 		AA009MDC0000001000000001 /* MarkdownConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MarkdownConverter.swift; path = Meshtastic/Services/MarkdownConverter.swift; sourceTree = "<group>"; };
 		AA00SDRF0001 /* DeviceHardwareImageEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHardwareImageEntity.swift; sourceTree = "<group>"; };
 		AA00SDRF0002 /* DeviceHardwareTagEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHardwareTagEntity.swift; sourceTree = "<group>"; };
 		AA00SDRF0003 /* FirmwareReleaseEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirmwareReleaseEntity.swift; sourceTree = "<group>"; };
 		AA0120250000000000000B02 /* PacketStreamModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketStreamModel.swift; sourceTree = "<group>"; };
-		AA0120250000000000000C02 /* PacketStreamModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketStreamModelTests.swift; sourceTree = "<group>"; };
 		AA0F1900000000000000F190 /* TraceRouteFlyover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TraceRouteFlyover.swift; path = Meshtastic/Views/Nodes/Helpers/Map/TraceRouteFlyover.swift; sourceTree = SOURCE_ROOT; };
 		AA10D0002D00000000000001 /* DiscoverySummaryPDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoverySummaryPDF.swift; sourceTree = "<group>"; };
 		AA11223344556677AABB0002 /* DiscoveryTips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryTips.swift; sourceTree = "<group>"; };
-		AAD14FA280F0A130730DEB93 /* DiscoveryScanEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryScanEngineTests.swift; sourceTree = "<group>"; };
-		DDBEAC0010000000000000C1 /* DiscoveredBeaconEntityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveredBeaconEntityTests.swift; sourceTree = "<group>"; };
-		DDBEAC001000000000000121 /* ModemPresetFrequencySlotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModemPresetFrequencySlotTests.swift; sourceTree = "<group>"; };
-		DDBEAC001000000000000141 /* BeaconAddVsSwitchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeaconAddVsSwitchTests.swift; sourceTree = "<group>"; };
 		AAFF00000000000000000001 /* OfflineMapRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OfflineMapRegion.swift; path = Meshtastic/Helpers/Map/OfflineMapRegion.swift; sourceTree = SOURCE_ROOT; };
 		AAFF00000000000000000002 /* OfflineMapManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = OfflineMapManager.swift; path = Meshtastic/Helpers/Map/OfflineMapManager.swift; sourceTree = SOURCE_ROOT; };
 		AAFF00000000000000000003 /* PMTilesExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PMTilesExtractor.swift; path = Meshtastic/Helpers/Map/PMTilesExtractor.swift; sourceTree = SOURCE_ROOT; };
@@ -858,7 +762,6 @@
 		BCCA0BAC2F1C5C60007648E5 /* RequestLocalStatsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequestLocalStatsButton.swift; sourceTree = "<group>"; };
 		BCD7448C2E0F2FA300F265A2 /* ContactURLHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactURLHandler.swift; sourceTree = "<group>"; };
 		BEEF00102F00000100000001 /* MeshtasticChannelURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshtasticChannelURL.swift; sourceTree = "<group>"; };
-		BEEF00102F00000100000003 /* MeshtasticChannelURLTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshtasticChannelURLTests.swift; sourceTree = "<group>"; };
 		BCD93CB92D9E11A2006C9214 /* DisconnectNodeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisconnectNodeIntent.swift; sourceTree = "<group>"; };
 		BCDDFA992DBB180D0065189C /* ScrollToBottomButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollToBottomButton.swift; sourceTree = "<group>"; };
 		BCE2D3C22C7ADF42008E6199 /* ShutDownNodeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShutDownNodeIntent.swift; sourceTree = "<group>"; };
@@ -871,7 +774,6 @@
 		DDBEAC001000000000000101 /* DiscoveryBeaconsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryBeaconsView.swift; sourceTree = "<group>"; };
 		DDBEAC001000000000000161 /* MeshBeaconConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshBeaconConfig.swift; sourceTree = "<group>"; };
 		DDBEAC001000000000000181 /* MeshBeaconConfigHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshBeaconConfigHelper.swift; sourceTree = "<group>"; };
-		DDBEAC001000000000000201 /* MeshBeaconConfigEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshBeaconConfigEditorTests.swift; sourceTree = "<group>"; };
 		BF1A0002CABF0002DEAD0002 /* AllTraceRoutesLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllTraceRoutesLog.swift; sourceTree = "<group>"; };
 		BF32D1D722C64814981AB215 /* DeviceLinkEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLinkEntity.swift; sourceTree = "<group>"; };
 		CA63632A10C2DD076FA222BE /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
@@ -895,59 +797,8 @@
 		DC5970BC1CAF4B66999C7248 /* MyInfoEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyInfoEntity.swift; sourceTree = "<group>"; };
 		DD000000275499A500A42001 /* PerformanceSeedData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceSeedData.swift; sourceTree = "<group>"; };
 		DD000002275499A500A42001 /* MarketingCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketingCapture.swift; sourceTree = "<group>"; };
-		DD000001NODNAVTST00000000 /* NodeNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeNavigationTests.swift; sourceTree = "<group>"; };
-		DD000002STREXTTST00000000 /* StringExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensionTests.swift; sourceTree = "<group>"; };
-		DD000003NUMEXTTST00000000 /* NumericExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumericExtensionTests.swift; sourceTree = "<group>"; };
-		DD000004URLTST0000000000 /* URLExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLExtensionTests.swift; sourceTree = "<group>"; };
-		DD000005ENUMTST000000000 /* EnumTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnumTests.swift; sourceTree = "<group>"; };
-		DD000006GEOTST0000000000 /* GeoExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoExtensionTests.swift; sourceTree = "<group>"; };
-		DD000007LORATST000000000 /* LoraDeviceEnumTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoraDeviceEnumTests.swift; sourceTree = "<group>"; };
-		DD000008APPSTST000000000 /* AppSettingsEnumTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsEnumTests.swift; sourceTree = "<group>"; };
-		DD000009INTVTST000000000 /* IntervalEnumTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntervalEnumTests.swift; sourceTree = "<group>"; };
-		DD00000AEXTNTST000000000 /* ExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionTests.swift; sourceTree = "<group>"; };
-		DD00000BTAKCTST000000000 /* TAKCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TAKCodecTests.swift; sourceTree = "<group>"; };
-		DD00000CCOTTST0000000000 /* CoTMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoTMessageTests.swift; sourceTree = "<group>"; };
-		DD00000DGEOJSNTST0000000 /* GeoJSONTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoJSONTests.swift; sourceTree = "<group>"; };
-		DD00000ETAKBRGTST0000000 /* TAKBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TAKBridgeTests.swift; sourceTree = "<group>"; };
-		DD00000FCOTXMLTST0000000 /* CoTXMLParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoTXMLParserTests.swift; sourceTree = "<group>"; };
-		DD000010GENCOTTST0000000 /* GenericCoTHandlerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenericCoTHandlerTests.swift; sourceTree = "<group>"; };
-		DD000011UTILENTST0000000 /* UtilityAndEnumTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UtilityAndEnumTests.swift; sourceTree = "<group>"; };
-		DD000012COTEXTTST0000000 /* CoTExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoTExtensionTests.swift; sourceTree = "<group>"; };
-		DD000013FWAPITST00000000 /* FirmwareAndAPITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirmwareAndAPITests.swift; sourceTree = "<group>"; };
-		DD000014RTRDLTST00000000 /* RouterDeepLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouterDeepLinkTests.swift; sourceTree = "<group>"; };
-		DD000016NAVSTATST00000000 /* NavigationStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationStateTests.swift; sourceTree = "<group>"; };
-		DD000017MTRVZTST00000000 /* MetricsVisualizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsVisualizationTests.swift; sourceTree = "<group>"; };
-		DD000018RTMISCTST0000000 /* RoutingAndMiscTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutingAndMiscTests.swift; sourceTree = "<group>"; };
-		DD000019NYMEACTST0000000 /* NymeaConstantsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NymeaConstantsTests.swift; sourceTree = "<group>"; };
-		DD00001AASYNCCTST0000000 /* AsyncConcurrencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncConcurrencyTests.swift; sourceTree = "<group>"; };
-		DD00001BINTCVRTST0000000 /* IntentConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentConverterTests.swift; sourceTree = "<group>"; };
-		DD00001CMAPDATTST0000000 /* MapDataModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapDataModelTests.swift; sourceTree = "<group>"; };
-		DD00001CMAPDMGRTST000000 /* MapDataManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapDataManagerTests.swift; sourceTree = "<group>"; };
-		DD00001DCDENTTST00000000 /* EntityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntityTests.swift; sourceTree = "<group>"; };
-		DD00001EURLDETTST0000000 /* URLExtensionDetailedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLExtensionDetailedTests.swift; sourceTree = "<group>"; };
-		DD00001FFWVMERRTST000000 /* FirmwareViewModelErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirmwareViewModelErrorTests.swift; sourceTree = "<group>"; };
-		DD000020TAKBRDTST0000000 /* TAKBridgeDetailedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TAKBridgeDetailedTests.swift; sourceTree = "<group>"; };
-		DD000021ENMCMPTST0000000 /* EnumComprehensiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnumComprehensiveTests.swift; sourceTree = "<group>"; };
-		DD000022GEOJSNCFG0000000 /* GeoJSONOverlayConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeoJSONOverlayConfigTests.swift; sourceTree = "<group>"; };
-		DD000023EXTDETTST0000000 /* ExtensionDetailedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionDetailedTests.swift; sourceTree = "<group>"; };
-		DD000024ENMBATTST0000000 /* EnumBatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnumBatchTests.swift; sourceTree = "<group>"; };
-		DD000025COTMSGDTL0000000 /* CoTMessageDetailedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoTMessageDetailedTests.swift; sourceTree = "<group>"; };
-		DD000026STREXTDTL0000000 /* StringExtensionDetailedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensionDetailedTests.swift; sourceTree = "<group>"; };
-		DD000027REMEUTLTST000000 /* RemainingEnumAndUtilTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemainingEnumAndUtilTests.swift; sourceTree = "<group>"; };
-		DD000029APSTFWTST0000000 /* AppSettingsAndFirmwareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsAndFirmwareTests.swift; sourceTree = "<group>"; };
-		DD00002AINTREMTST00000000 /* IntentAndRemainingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentAndRemainingTests.swift; sourceTree = "<group>"; };
-		DD00002BMSHPKTELTST000000 /* MeshPacketsAndTelemetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshPacketsAndTelemetryTests.swift; sourceTree = "<group>"; };
-		DD00002BACKSTATUSRT000000 /* MessageAckStatusRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageAckStatusRefreshTests.swift; sourceTree = "<group>"; };
-		DD00002DSNPVWTST000000000 /* SwiftUIViewSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIViewSnapshotTests.swift; sourceTree = "<group>"; };
-		DD00002ESDMIGTST000000000 /* SwiftDataMigrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataMigrationTests.swift; sourceTree = "<group>"; };
-		DD00002FSHRDTSTCNT000000 /* SharedTestContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTestContainer.swift; sourceTree = "<group>"; };
-		DD000030EVTFWNTST0000000 /* EventFirmwareNotificationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventFirmwareNotificationTests.swift; sourceTree = "<group>"; };
 		DD000031FWEDTENUM0000000 /* FirmwareEditionEnum.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirmwareEditionEnum.swift; sourceTree = "<group>"; };
 		DD00003ASUPPORTLVL0000000 /* SupportLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportLevel.swift; sourceTree = "<group>"; };
-		DD0000CHSETST0000000000 /* ChannelSetSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelSetSaveTests.swift; sourceTree = "<group>"; };
-		DD0000MQTTFWDFLTTST00000 /* MqttForwardFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MqttForwardFilterTests.swift; sourceTree = "<group>"; };
-		DD0000DEVLNKTST000000000 /* DeviceLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLinkTests.swift; sourceTree = "<group>"; };
-		DD1827FA0000000000000002 /* RegionCodesFirmwareLocaleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionCodesFirmwareLocaleTests.swift; sourceTree = "<group>"; };
 		DD007BAD2AA4E91200F5FA12 /* MyInfoEntityExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyInfoEntityExtension.swift; sourceTree = "<group>"; };
 		DD007BAF2AA5981000F5FA12 /* NodeInfoEntityExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeInfoEntityExtension.swift; sourceTree = "<group>"; };
 		DD04804A2E9295A5005F946C /* MeshtasticDataModelV 55.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "MeshtasticDataModelV 55.xcdatamodel"; sourceTree = "<group>"; };
@@ -1081,7 +932,6 @@
 		DD9C700C2E8D5A8900106227 /* ChannelMessageRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelMessageRow.swift; sourceTree = "<group>"; };
 		DD9C700E2E8DE7FF00106227 /* UserMessageRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserMessageRow.swift; sourceTree = "<group>"; };
 		DD9C70102E916EA200106227 /* UpdateIntervalPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateIntervalPicker.swift; sourceTree = "<group>"; };
-		DD9C70112E9F2A0000029299 /* DeviceOnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceOnboardingTests.swift; sourceTree = "<group>"; };
 		DDA0B6B1294CDC55001356EC /* Channels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Channels.swift; sourceTree = "<group>"; };
 		DDA1C48D28DB49D3009933EC /* ChannelRoles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelRoles.swift; sourceTree = "<group>"; };
 		DDA28B1B2D32C89200EF726F /* MeshtasticDataModelV 48.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "MeshtasticDataModelV 48.xcdatamodel"; sourceTree = "<group>"; };
@@ -1282,6 +1132,7 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		236CA20D2EE3036A00A47F96 /* images */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (236CA24C2EE3071A00A47F96 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = images; sourceTree = "<group>"; };
 		DD4C11E02E8099C3003F2F2E /* PreferenceKeys */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = PreferenceKeys; sourceTree = "<group>"; };
+		25F5D5C82C4375A8008036E3 /* MeshtasticTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = MeshtasticTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1618,88 +1469,6 @@
 				25F5D5BF2C3F6DA6008036E3 /* Router.swift */,
 			);
 			path = Router;
-			sourceTree = "<group>";
-		};
-		25F5D5C82C4375A8008036E3 /* MeshtasticTests */ = {
-			isa = PBXGroup;
-			children = (
-				AA00010022E2730EC0060000 /* ConnectViewTests.swift */,
-				DD9C70112E9F2A0000029299 /* DeviceOnboardingTests.swift */,
-				25F5D5D02C4375DF008036E3 /* RouterTests.swift */,
-				05DCA1AE2F646B3B00D0724C /* NodeFilterParametersTests.swift */,
-				DD0000A20EDD5A00000000B2 /* XEdDSASigningTests.swift */,
-				DD0000C20EDD5A00000000C2 /* InvalidUTF8Tests.swift */,
-				05A1B2C42F70000100D0FC40 /* SettingsNodeSortTests.swift */,
-				AA0120250000000000000C02 /* PacketStreamModelTests.swift */,
-				AA000301CPTST000000000001 /* CarPlayTests.swift */,
-				DD000001NODNAVTST00000000 /* NodeNavigationTests.swift */,
-				DD000002STREXTTST00000000 /* StringExtensionTests.swift */,
-				DD000003NUMEXTTST00000000 /* NumericExtensionTests.swift */,
-				DD000004URLTST0000000000 /* URLExtensionTests.swift */,
-				DD000005ENUMTST000000000 /* EnumTests.swift */,
-				DD000006GEOTST0000000000 /* GeoExtensionTests.swift */,
-				DD000007LORATST000000000 /* LoraDeviceEnumTests.swift */,
-				AAD14FA280F0A130730DEB93 /* DiscoveryScanEngineTests.swift */,
-				DDBEAC0010000000000000C1 /* DiscoveredBeaconEntityTests.swift */,
-				DDBEAC001000000000000121 /* ModemPresetFrequencySlotTests.swift */,
-				DDBEAC001000000000000141 /* BeaconAddVsSwitchTests.swift */,
-				DDBEAC001000000000000201 /* MeshBeaconConfigEditorTests.swift */,
-				18295AFE686247778632C6DE /* NetworkConfigIPConversionTests.swift */,
-				64C6057F9508D4356DAF411F /* DiscoveryModelTests.swift */,
-				AA003DOC0000001000000005 /* DocBundleTests.swift */,
-				DD000008APPSTST000000000 /* AppSettingsEnumTests.swift */,
-				DD000009INTVTST000000000 /* IntervalEnumTests.swift */,
-				DD00000AEXTNTST000000000 /* ExtensionTests.swift */,
-				DD00000BTAKCTST000000000 /* TAKCodecTests.swift */,
-				DD00000CCOTTST0000000000 /* CoTMessageTests.swift */,
-				DD00000DGEOJSNTST0000000 /* GeoJSONTests.swift */,
-				DD00000ETAKBRGTST0000000 /* TAKBridgeTests.swift */,
-				DD00000FCOTXMLTST0000000 /* CoTXMLParserTests.swift */,
-				DD000010GENCOTTST0000000 /* GenericCoTHandlerTests.swift */,
-				DD000011UTILENTST0000000 /* UtilityAndEnumTests.swift */,
-				DD000012COTEXTTST0000000 /* CoTExtensionTests.swift */,
-				DD000013FWAPITST00000000 /* FirmwareAndAPITests.swift */,
-				DD000014RTRDLTST00000000 /* RouterDeepLinkTests.swift */,
-				DD000016NAVSTATST00000000 /* NavigationStateTests.swift */,
-				DD000017MTRVZTST00000000 /* MetricsVisualizationTests.swift */,
-				DD000018RTMISCTST0000000 /* RoutingAndMiscTests.swift */,
-				DD000019NYMEACTST0000000 /* NymeaConstantsTests.swift */,
-				DD00001AASYNCCTST0000000 /* AsyncConcurrencyTests.swift */,
-				DD00001BINTCVRTST0000000 /* IntentConverterTests.swift */,
-				DD00001CMAPDATTST0000000 /* MapDataModelTests.swift */,
-				DD00001CMAPDMGRTST000000 /* MapDataManagerTests.swift */,
-				DD00001DCDENTTST00000000 /* EntityTests.swift */,
-				DD00001EURLDETTST0000000 /* URLExtensionDetailedTests.swift */,
-				DD00001FFWVMERRTST000000 /* FirmwareViewModelErrorTests.swift */,
-				DD000020TAKBRDTST0000000 /* TAKBridgeDetailedTests.swift */,
-				DD000021ENMCMPTST0000000 /* EnumComprehensiveTests.swift */,
-				DD000022GEOJSNCFG0000000 /* GeoJSONOverlayConfigTests.swift */,
-				DD000023EXTDETTST0000000 /* ExtensionDetailedTests.swift */,
-				DD000024ENMBATTST0000000 /* EnumBatchTests.swift */,
-				DD000025COTMSGDTL0000000 /* CoTMessageDetailedTests.swift */,
-				DD000026STREXTDTL0000000 /* StringExtensionDetailedTests.swift */,
-				DD000027REMEUTLTST000000 /* RemainingEnumAndUtilTests.swift */,
-				DD000029APSTFWTST0000000 /* AppSettingsAndFirmwareTests.swift */,
-				DD00002AINTREMTST00000000 /* IntentAndRemainingTests.swift */,
-				DD00002BMSHPKTELTST000000 /* MeshPacketsAndTelemetryTests.swift */,
-				DD00002BACKSTATUSRT000000 /* MessageAckStatusRefreshTests.swift */,
-				DD00002DSNPVWTST000000000 /* SwiftUIViewSnapshotTests.swift */,
-				AA004FMT0000001000000004 /* MarkdownFormattingTests.swift */,
-				DD00002ESDMIGTST000000000 /* SwiftDataMigrationTests.swift */,
-				DD00002FSHRDTSTCNT000000 /* SharedTestContainer.swift */,
-				DD000030EVTFWNTST0000000 /* EventFirmwareNotificationTests.swift */,
-				AA009MCT0000001000000001 /* MarkdownConverterTests.swift */,
-				AA003DOC0000001000000008 /* DocTranslationTests.swift */,
-				DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */,
-				DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */,
-				DD0000DEVLNKTST000000000 /* DeviceLinkTests.swift */,
-				BEEF00102F00000100000003 /* MeshtasticChannelURLTests.swift */,
-				DD0000CHSETST0000000000 /* ChannelSetSaveTests.swift */,
-				DD0000MQTTFWDFLTTST00000 /* MqttForwardFilterTests.swift */,
-				DD1827FA0000000000000002 /* RegionCodesFirmwareLocaleTests.swift */,
-				DD000031STATMSGDISP00000 /* StatusMessageDisplayTests.swift */,
-			);
-			path = MeshtasticTests;
 			sourceTree = "<group>";
 		};
 		5EC3D356BFF0031F67B3499A /* Services */ = {
@@ -2511,6 +2280,9 @@
 			dependencies = (
 				25F5D5CC2C4375A8008036E3 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				25F5D5C82C4375A8008036E3 /* MeshtasticTests */,
+			);
 			name = MeshtasticTests;
 			packageProductDependencies = (
 				DD00003B000SNAP00000000 /* SnapshotTesting */,
@@ -2766,82 +2538,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C54AC9F4DA920A4F718CE21A /* DiscoveryScanEngineTests.swift in Sources */,
-				DDBEAC0010000000000000D1 /* DiscoveredBeaconEntityTests.swift in Sources */,
-				DDBEAC001000000000000131 /* ModemPresetFrequencySlotTests.swift in Sources */,
-				DDBEAC001000000000000151 /* BeaconAddVsSwitchTests.swift in Sources */,
-				DDBEAC001000000000000211 /* MeshBeaconConfigEditorTests.swift in Sources */,
-				FDAF8808342245C4817C93EC /* NetworkConfigIPConversionTests.swift in Sources */,
-				1396606FC903D7DA662B6326 /* DiscoveryModelTests.swift in Sources */,
-				AA003DOC0000002000000005 /* DocBundleTests.swift in Sources */,
-				AA003DOC0000002000000008 /* DocTranslationTests.swift in Sources */,
-				DD7E5750000000000000008A /* LockdownCoordinatorTests.swift in Sources */,
-				DD7E5750000000000000008B /* LockdownPassphraseStoreTests.swift in Sources */,
-				DD0000DEVLNKTST000000001 /* DeviceLinkTests.swift in Sources */,
-				DD0000CHSETST0000000001 /* ChannelSetSaveTests.swift in Sources */,
-				DD0000MQTTFWDFLTTST00001 /* MqttForwardFilterTests.swift in Sources */,
-				DD1827FB0000000000000002 /* RegionCodesFirmwareLocaleTests.swift in Sources */,
-				DD000031STATMSGDISP00001 /* StatusMessageDisplayTests.swift in Sources */,
-				AA009MCT0000002000000001 /* MarkdownConverterTests.swift in Sources */,
-				AA0001012E2730EC00600001 /* ConnectViewTests.swift in Sources */,
-				DD9C70102E9F2A0000029299 /* DeviceOnboardingTests.swift in Sources */,
-				25F5D5D12C4375DF008036E3 /* RouterTests.swift in Sources */,
-				0516B3FE2F68892000D0FC40 /* NodeFilterParametersTests.swift in Sources */,
-				DD0000A10EDD5A00000000B1 /* XEdDSASigningTests.swift in Sources */,
-				DD0000C10EDD5A00000000C1 /* InvalidUTF8Tests.swift in Sources */,
-				05A1B2C32F70000100D0FC40 /* SettingsNodeSortTests.swift in Sources */,
-				AA0120250000000000000C01 /* PacketStreamModelTests.swift in Sources */,
-				AA000301CPTST000000000002 /* CarPlayTests.swift in Sources */,
-				DD000001NODNAVTST00000001 /* NodeNavigationTests.swift in Sources */,
-				DD000002STREXTTST00000001 /* StringExtensionTests.swift in Sources */,
-				DD000003NUMEXTTST00000001 /* NumericExtensionTests.swift in Sources */,
-				DD000004URLTST0000000001 /* URLExtensionTests.swift in Sources */,
-				DD000005ENUMTST000000001 /* EnumTests.swift in Sources */,
-				DD000006GEOTST0000000001 /* GeoExtensionTests.swift in Sources */,
-				DD000007LORATST000000001 /* LoraDeviceEnumTests.swift in Sources */,
-				DD000008APPSTST000000001 /* AppSettingsEnumTests.swift in Sources */,
-				DD000009INTVTST000000001 /* IntervalEnumTests.swift in Sources */,
-				DD00000AEXTNTST000000001 /* ExtensionTests.swift in Sources */,
-				DD00000BTAKCTST000000001 /* TAKCodecTests.swift in Sources */,
-				DD00000CCOTTST0000000001 /* CoTMessageTests.swift in Sources */,
-				DD00000DGEOJSNTST0000001 /* GeoJSONTests.swift in Sources */,
-				DD00000ETAKBRGTST0000001 /* TAKBridgeTests.swift in Sources */,
-				DD00000FCOTXMLTST0000001 /* CoTXMLParserTests.swift in Sources */,
-				DD000010GENCOTTST0000001 /* GenericCoTHandlerTests.swift in Sources */,
-				DD000011UTILENTST0000001 /* UtilityAndEnumTests.swift in Sources */,
-				DD000012COTEXTTST0000001 /* CoTExtensionTests.swift in Sources */,
-				DD000013FWAPITST00000001 /* FirmwareAndAPITests.swift in Sources */,
-				DD000014RTRDLTST00000001 /* RouterDeepLinkTests.swift in Sources */,
-				DD000016NAVSTATST00000001 /* NavigationStateTests.swift in Sources */,
-				DD000017MTRVZTST00000001 /* MetricsVisualizationTests.swift in Sources */,
-				DD000018RTMISCTST0000001 /* RoutingAndMiscTests.swift in Sources */,
-				DD000019NYMEACTST0000001 /* NymeaConstantsTests.swift in Sources */,
-				DD00001AASYNCCTST0000001 /* AsyncConcurrencyTests.swift in Sources */,
-				DD00001BINTCVRTST0000001 /* IntentConverterTests.swift in Sources */,
-				DD00001CMAPDATTST0000001 /* MapDataModelTests.swift in Sources */,
-				DD00001CMAPDMGRTST000001 /* MapDataManagerTests.swift in Sources */,
 				BBFF00000000000000000009 /* PMTilesExtractorTests.swift in Sources */,
-				DD00001DCDENTTST00000001 /* EntityTests.swift in Sources */,
-				DD00001EURLDETTST0000001 /* URLExtensionDetailedTests.swift in Sources */,
-				DD00001FFWVMERRTST000001 /* FirmwareViewModelErrorTests.swift in Sources */,
-				DD000020TAKBRDTST0000001 /* TAKBridgeDetailedTests.swift in Sources */,
-				DD000021ENMCMPTST0000001 /* EnumComprehensiveTests.swift in Sources */,
-				DD000022GEOJSNCFG0000001 /* GeoJSONOverlayConfigTests.swift in Sources */,
-				DD000023EXTDETTST0000001 /* ExtensionDetailedTests.swift in Sources */,
-				DD000024ENMBATTST0000001 /* EnumBatchTests.swift in Sources */,
-				DD000025COTMSGDTL0000001 /* CoTMessageDetailedTests.swift in Sources */,
-				DD000026STREXTDTL0000001 /* StringExtensionDetailedTests.swift in Sources */,
-				DD000027REMEUTLTST000001 /* RemainingEnumAndUtilTests.swift in Sources */,
-				DD000029APSTFWTST0000001 /* AppSettingsAndFirmwareTests.swift in Sources */,
-				DD00002AINTREMTST00000001 /* IntentAndRemainingTests.swift in Sources */,
-				DD00002BMSHPKTELTST000001 /* MeshPacketsAndTelemetryTests.swift in Sources */,
-				DD00002BACKSTATUSRT000001 /* MessageAckStatusRefreshTests.swift in Sources */,
-				DD00002DSNPVWTST000000001 /* SwiftUIViewSnapshotTests.swift in Sources */,
-				AA004FMT0000002000000004 /* MarkdownFormattingTests.swift in Sources */,
-				DD00002ESDMIGTST000000001 /* SwiftDataMigrationTests.swift in Sources */,
-				DD00002FSHRDTSTCNT000001 /* SharedTestContainer.swift in Sources */,
-				DD000030EVTFWNTST0000001 /* EventFirmwareNotificationTests.swift in Sources */,
-				BEEF00102F00000100000004 /* MeshtasticChannelURLTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
