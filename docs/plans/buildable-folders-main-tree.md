@@ -1,5 +1,22 @@
 # Plan: Convert the main `Meshtastic/` app tree to Xcode 16 buildable folders
 
+> **STATUS: EXECUTED** (commit `d919e4cc`). 17 source folders converted to
+> `PBXFileSystemSynchronizedRootGroup` (Accessory, API, AppIntents, CarPlay, Enums,
+> Export, Extensions, Helpers, Intents, Measurement, Model, Persistence, Provisioning,
+> Router, Services, Tips, Views). project.pbxproj: **+179 / −2143**. Verified
+> **416/416** source files compile (0 orphans); the 7 wire-ins auto-included;
+> `Constants.swift` preserved for WidgetsExtension via explicit ref; nested
+> `PreferenceKeys` folded into `Views/`; ~19 stale duplicate refs removed. App +
+> WidgetsExtension + Watch App all **BUILD SUCCEEDED**; MeshtasticTests XCTest suite
+> passes. **`Resources/` deliberately left classic** (image build-script/exception
+> pipeline — not source). Done sub-folder-by-sub-folder rather than one root flip,
+> which sidestepped the images exception-set re-homing entirely.
+>
+> Remaining/optional: (1) convert `Resources/` later if desired, handling the
+> `images` SVG exception set; (2) the ~3 loose top-level source files
+> (`MeshtasticApp.swift`, `AppState.swift`, `MeshtasticAppDelegate.swift`) stay as
+> explicit refs. The original all-at-once plan below is retained for reference.
+
 Follow-up to issue #2026 (Option A) and PR #2085 (which converted `MeshtasticTests/`
 and `Meshtastic Watch App/`). Scope here: the **main `Meshtastic/` app source tree
 only**. `Widgets/` is explicitly out of scope (mixed target membership).
