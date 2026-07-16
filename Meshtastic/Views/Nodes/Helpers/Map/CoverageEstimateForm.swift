@@ -33,10 +33,6 @@ struct CoverageEstimateForm: View {
 	@Environment(\.dismiss) private var dismiss
 
 	@State private var params: SitePlannerParameters
-	@State private var transmitterExpanded = true
-	@State private var receiverExpanded = false
-	@State private var simulationExpanded = false
-	@State private var displayExpanded = true
 	@State private var errorMessage: String?
 	/// In-flight reverse geocode for the chosen coordinate; cancelled when a newer coordinate is picked.
 	@State private var geocodeTask: Task<Void, Never>?
@@ -59,6 +55,7 @@ struct CoverageEstimateForm: View {
 				simulationSection
 				displaySection
 			}
+			.scrollDismissesKeyboard(.immediately)
 			.navigationTitle("Estimate Coverage")
 			.navigationBarTitleDisplayMode(.inline)
 			.toolbar {
@@ -114,65 +111,59 @@ struct CoverageEstimateForm: View {
 
 	private var transmitterSection: some View {
 		Section {
-			DisclosureGroup(isExpanded: $transmitterExpanded) {
-				TextField("Site name", text: $params.name)
-					.accessibilityLabel("Site name")
+			TextField("Site name", text: $params.name)
+				.accessibilityLabel("Site name")
 
-				locationShortcuts
+			locationShortcuts
 
-				DecimalField("Latitude", value: $params.latitude)
-				DecimalField("Longitude", value: $params.longitude)
-				labeledNumber("Transmit power (W)", value: $params.txPowerWatts)
-				labeledNumber("Frequency (MHz)", value: $params.txFrequencyMHz)
-				lengthField("Antenna height", canonical: $params.txHeightMeters, storedUnit: .meters, imperialUnit: .feet)
-				labeledNumber("Antenna gain (dBi)", value: $params.txGainDBi)
-			} label: {
-				Label {
-					Text("Site / Transmitter")
-				} icon: {
-					Image("custom.radio.tower")
-				}
+			DecimalField("Latitude", value: $params.latitude)
+			DecimalField("Longitude", value: $params.longitude)
+			labeledNumber("Transmit power (W)", value: $params.txPowerWatts)
+			labeledNumber("Frequency (MHz)", value: $params.txFrequencyMHz)
+			lengthField("Antenna height", canonical: $params.txHeightMeters, storedUnit: .meters, imperialUnit: .feet)
+			labeledNumber("Antenna gain (dBi)", value: $params.txGainDBi)
+		} header: {
+			Label {
+				Text("Site / Transmitter")
+			} icon: {
+				Image("custom.radio.tower")
 			}
 		}
 	}
 
 	private var receiverSection: some View {
 		Section {
-			DisclosureGroup(isExpanded: $receiverExpanded) {
-				DecimalField("Sensitivity (dBm)", value: $params.rxSensitivityDBm)
-			} label: {
-				Label("Receiver", systemImage: "dot.radiowaves.left.and.right")
-			}
+			DecimalField("Sensitivity (dBm)", value: $params.rxSensitivityDBm)
+		} header: {
+			Label("Receiver", systemImage: "dot.radiowaves.left.and.right")
 		}
 	}
 
 	private var simulationSection: some View {
 		Section {
-			DisclosureGroup(isExpanded: $simulationExpanded) {
-				lengthField("Max range", canonical: $params.maxRangeKm, storedUnit: .kilometers, imperialUnit: .miles)
-				Toggle("High-resolution terrain", isOn: $params.highResolution)
-					.onChange(of: params.highResolution) { _, _ in
-						// High-res caps the range at 70 km — clamp so the value stays valid.
-						let bounds = params.maxRangeBounds
-						params.maxRangeKm = min(max(params.maxRangeKm, bounds.lowerBound), bounds.upperBound)
-					}
-			} label: {
-				Label("Simulation Options", systemImage: "slider.horizontal.3")
-			}
+			lengthField("Max range", canonical: $params.maxRangeKm, storedUnit: .kilometers, imperialUnit: .miles)
+			Toggle("High-resolution terrain", isOn: $params.highResolution)
+				.onChange(of: params.highResolution) { _, _ in
+					// High-res caps the range at 70 km — clamp so the value stays valid.
+					let bounds = params.maxRangeBounds
+					params.maxRangeKm = min(max(params.maxRangeKm, bounds.lowerBound), bounds.upperBound)
+				}
+		} header: {
+			Label("Simulation Options", systemImage: "slider.horizontal.3")
+		} footer: {
+			Text("High-resolution terrain gives a more detailed estimate but caps the maximum range at 70 km.")
 		}
 	}
 
 	private var displaySection: some View {
 		Section {
-			DisclosureGroup(isExpanded: $displayExpanded) {
-				Picker("Palette", selection: $params.colorScale) {
-					ForEach(SitePlannerColorScale.allCases) { scale in
-						Text(scale.displayName).tag(scale)
-					}
+			Picker("Palette", selection: $params.colorScale) {
+				ForEach(SitePlannerColorScale.allCases) { scale in
+					Text(scale.displayName).tag(scale)
 				}
-			} label: {
-				Label("Display", systemImage: "paintpalette")
 			}
+		} header: {
+			Label("Display", systemImage: "paintpalette")
 		}
 	}
 
@@ -270,7 +261,7 @@ struct CoverageEstimateForm: View {
 			Text(title)
 			Spacer()
 			TextField("", value: value, format: .number)
-				.keyboardType(.numbersAndPunctuation)
+				.keyboardType(.decimalPad)
 				.multilineTextAlignment(.trailing)
 				.frame(maxWidth: 140)
 				.accessibilityLabel(Text(title))
@@ -294,7 +285,7 @@ struct CoverageEstimateForm: View {
 				.foregroundStyle(.secondary)
 			Spacer()
 			TextField("", value: display, format: .number.precision(.fractionLength(0...2)))
-				.keyboardType(.numbersAndPunctuation)
+				.keyboardType(.decimalPad)
 				.multilineTextAlignment(.trailing)
 				.frame(maxWidth: 140)
 				.accessibilityLabel(Text(title))
