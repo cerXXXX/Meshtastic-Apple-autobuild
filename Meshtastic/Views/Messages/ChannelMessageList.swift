@@ -379,6 +379,9 @@ struct ChannelMessageList: View {
 									  }
 									  #endif
 								  }
+							  },
+							  onMessageRetried: {
+								  loadMessages(markReadAfterLoad: routerIsShowingThisChannel())
 							  }
 						  )
 
