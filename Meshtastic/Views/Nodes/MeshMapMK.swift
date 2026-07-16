@@ -104,6 +104,9 @@ struct MeshMapMK: View {
 	@State var newWaypointCoord: CLLocationCoordinate2D?
 	@State var isMeshMap = true
 	@State private var showLegend = false
+	/// Site Planner coverage-estimate flow: the headless WebView+bridge runner and the form seed.
+	@StateObject private var coverageRunner = CoverageEstimateRunner()
+	@State private var coverageSeed: CoverageEstimateSeed?
 	/// Filter
 	@ObservedObject var filters = NodeFilterParameters.shared
 	/// Track whether a detached Mesh Map window is currently open.
@@ -396,6 +399,7 @@ struct MeshMapMK: View {
 				.onChange(of: router.mapState) {
 					guard case .map = router.selectedTab else { return }
 					applyTraceRouteSelection()
+					consumeCoverageEstimateState()
 					// TODO: handle deep link for waypoints
 				}
 				.onChange(of: selectedMapLayer) { _, newMapLayer in
@@ -428,9 +432,24 @@ struct MeshMapMK: View {
 						#endif
 						.presentationBackgroundInteraction(.enabled(upThrough: .medium))
 				}
+				.sheet(item: $coverageSeed) { seed in
+					CoverageEstimateForm(seed: seed, runner: coverageRunner)
+						.presentationDetents([.large])
+						#if !targetEnvironment(macCatalyst)
+						.presentationDragIndicator(.visible)
+						#endif
+				}
 				.safeAreaInset(edge: .bottom, alignment: .trailing) {
 					HStack(spacing: 12) {
 						Spacer()
+						Button(action: {
+							presentCoverageEstimateFromMap()
+						}) {
+							Image(systemName: "cellularbars")
+						}
+						.accessibilityLabel("Estimate coverage")
+						.accessibilityHint("Runs a Site Planner coverage estimate and adds it to the map.")
+						.glassButtonStyle()
 						Button(action: {
 							withAnimation {
 								editingFilters = !editingFilters
@@ -517,10 +536,15 @@ struct MeshMapMK: View {
 				// snapshots are dropped when backgrounded and rebuilt when foregrounded.
 				refreshVisiblePositionSnapshots(from: positionState.positions)
 			}
+			.onChange(of: coverageRunner.importedResult) { _, result in
+				guard let result else { return }
+				applyImportedCoverage(result)
+			}
 			.onAppear {
 				UIApplication.shared.isIdleTimerDisabled = true
 				syncFallbackLocation()
 				refreshMapWindowOpenState()
+				consumeCoverageEstimateState()
 			// Initialize enabled overlay configs with all active files
 			// Migrate the legacy `.offline` base layer to the new independent offline-tiles overlay.
 			if selectedMapLayer == .offline {
@@ -561,6 +585,7 @@ struct MeshMapMK: View {
 				UIApplication.shared.isIdleTimerDisabled = true
 				refreshVisiblePositionSnapshots()
 				applyTraceRouteSelection()
+				consumeCoverageEstimateState()
 			} else {
 				flyover.stop(restoreCamera: false)
 				UIApplication.shared.isIdleTimerDisabled = false
@@ -578,6 +603,93 @@ struct MeshMapMK: View {
 		}
 		.onReceive(NotificationCenter.default.publisher(for: UIScene.didDisconnectNotification)) { _ in
 			refreshMapWindowOpenState()
+		}
+	}
+
+	/// A successful import turns on the overlay master toggle, enables the imported file's config,
+	/// refreshes the styled overlays, and recenters the map on the transmitter.
+	private func applyImportedCoverage(_ result: CoverageEstimateResult) {
+		GeoJSONOverlayManager.shared.clearCache()
+		mapOverlaysEnabled = true
+		enabledOverlayConfigs.insert(result.metadata.id)
+		rebuildGeoJSONOverlays()
+		cameraCommand = ClusterMapCameraCommand(
+			id: UUID(),
+			region: MKCoordinateRegion(
+				center: result.coordinate,
+				span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+			),
+			animated: true
+		)
+	}
+
+	/// The connected radio's LoRa config, used to prefill frequency / power / sensitivity.
+	private var connectedLoRaConfig: LoRaConfigEntity? {
+		guard let num = accessoryManager.activeDeviceNum else { return nil }
+		return getNodeInfo(id: num, context: context)?.loRaConfig
+	}
+
+	/// The connected radio's primary channel name (for the firmware-accurate frequency-slot hash).
+	private var connectedPrimaryChannelName: String {
+		guard let num = accessoryManager.activeDeviceNum,
+			  let node = getNodeInfo(id: num, context: context) else { return "LongFast" }
+		if let primary = node.myInfo?.channels.first(where: { $0.index == 0 || $0.role == 1 }),
+		   let name = primary.name, !name.isEmpty {
+			return name
+		}
+		if node.loRaConfig?.usePreset == false { return "Custom" }
+		let preset = ModemPresets(rawValue: Int(node.loRaConfig?.modemPreset ?? 0)) ?? .longFast
+		return preset.androidChannelName
+	}
+
+	/// Open the estimate form from the map toolbar, prefilled from the connected radio and located at
+	/// the current map centre (falling back to device / connected-device GPS).
+	private func presentCoverageEstimateFromMap() {
+		let center = visibleRegion?.center
+		let coordinate = center ?? LocationsHandler.currentLocation ?? activeDeviceCoordinate
+		let params = SitePlannerParameters.prefilled(
+			name: "",
+			coordinate: coordinate,
+			loRaConfig: connectedLoRaConfig,
+			primaryChannelName: connectedPrimaryChannelName
+		)
+		coverageSeed = CoverageEstimateSeed(parameters: params, nodeCoordinate: nil, mapCenter: center)
+	}
+
+	/// Consume a `.coverageEstimate` map-state hand-off. Called from `onChange(of: router.mapState)`,
+	/// `onChange(of: router.selectedTab)`, and `onAppear` — mirroring `applyTraceRouteSelection` — so a
+	/// hand-off from node detail isn't dropped when the Map tab mounts fresh and misses the change.
+	private func consumeCoverageEstimateState() {
+		guard case .map = router.selectedTab else { return }
+		if case let .coverageEstimate(nodeNum)? = router.mapState {
+			presentCoverageEstimate(forNode: nodeNum)
+		}
+	}
+
+	/// Open the estimate form for a specific node (node-detail handoff), prefilled from the connected
+	/// radio and located at the node's latest position, and recenter the map on it. Consumes the
+	/// `.coverageEstimate` map state.
+	private func presentCoverageEstimate(forNode nodeNum: Int64) {
+		defer { router.mapState = nil }
+		guard let node = getNodeInfo(id: nodeNum, context: context) else { return }
+		let coordinate = node.latestPosition?.nodeCoordinate
+		let name = node.user?.displayLongName ?? node.user?.shortName ?? ""
+		let params = SitePlannerParameters.prefilled(
+			name: name,
+			coordinate: coordinate,
+			loRaConfig: connectedLoRaConfig,
+			primaryChannelName: connectedPrimaryChannelName
+		)
+		coverageSeed = CoverageEstimateSeed(parameters: params, nodeCoordinate: coordinate, mapCenter: visibleRegion?.center)
+		if let coordinate {
+			cameraCommand = ClusterMapCameraCommand(
+				id: UUID(),
+				region: MKCoordinateRegion(
+					center: coordinate,
+					span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+				),
+				animated: true
+			)
 		}
 	}
 
