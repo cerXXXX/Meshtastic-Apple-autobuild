@@ -371,6 +371,7 @@
             "hardware",
             "firmware",
             "broadcasts",
+            "show",
             "section",
             "row",
             "public",
@@ -378,7 +379,6 @@
             "direct",
             "client",
             "supported",
-            "show",
             "position",
             "mesh",
             "map",
@@ -387,7 +387,7 @@
             "links",
             "hops"
         ],
-        "charCount": 9013
+        "charCount": 9146
     },
     {
         "id": "settings",

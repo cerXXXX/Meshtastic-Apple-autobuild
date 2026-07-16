@@ -156,6 +156,7 @@ Tap any node to see the full detail view with hardware info, signal metrics, env
 
 ![Node Detail](../assets/screenshots/nodeDetail.png)
 
+For messageable nodes, use **Actions > Share Contact QR** to show a Meshtastic contact link and QR code that another device can scan.
 ### Air Quality
 
 Nodes with a particulate-matter sensor — reporting the firmware's Air Quality telemetry — show an **Air Quality** section with the latest PM2.5, PM1.0, and PM10 readings in µg/m³.

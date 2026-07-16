@@ -94,6 +94,93 @@ struct CreateNodeInfoTests {
 	}
 }
 
+// MARK: - Share Contact QR Tests
+
+@Suite("ShareContactQR")
+struct ShareContactQRTests {
+
+	private func makeNodeInfo(num: UInt32 = 0x1234_ABCD, unmessagable: Bool = false) -> NodeInfo {
+		var user = User()
+		user.id = "!\(String(num, radix: 16))"
+		user.longName = "Node Alpha"
+		user.shortName = "ALFA"
+		user.hwModel = .tbeam
+		user.role = .client
+		user.publicKey = Data([0x01, 0x02, 0x03, 0x04])
+		user.isUnmessagable = unmessagable
+
+		var node = NodeInfo()
+		node.num = num
+		node.user = user
+		return node
+	}
+
+	@Test func contactURLRoundTripsSharedContactPayload() throws {
+		let node = makeNodeInfo()
+
+		let urlString = try #require(ShareContactQR.urlString(for: node, manuallyVerified: true))
+		#expect(urlString.hasPrefix("https://meshtastic.org/v/#"))
+
+		let payload = try #require(urlString.split(separator: "#").last.map(String.init))
+		let decodedData = try #require(Data(base64Encoded: payload.base64urlToBase64()))
+		let contact = try SharedContact(serializedBytes: decodedData)
+
+		#expect(contact.nodeNum == node.num)
+		#expect(contact.user.longName == node.user.longName)
+		#expect(contact.user.shortName == node.user.shortName)
+		#expect(contact.user.publicKey == node.user.publicKey)
+		#expect(contact.manuallyVerified)
+	}
+
+	@Test func contactURLUnavailableForUnmessagableNode() {
+		let node = makeNodeInfo(unmessagable: true)
+
+		#expect(ShareContactQR.urlString(for: node, manuallyVerified: false) == nil)
+		#expect(ShareContactQR.urlString(for: node, manuallyVerified: true) == nil)
+	}
+
+	@Test func contactURLUnavailableWhenUserAbsent() {
+		let node = NodeInfo()
+
+		#expect(!ShareContactQR.canShareContact(for: node))
+		#expect(ShareContactQR.urlString(for: node, manuallyVerified: false) == nil)
+	}
+
+	@Test @MainActor func availabilityUsesNodeUserMessagingState() {
+		let node = NodeInfoEntity()
+		let user = UserEntity()
+		user.unmessagable = false
+		node.user = user
+
+		#expect(ShareContactQR.canShareContact(for: node))
+
+		user.unmessagable = true
+		#expect(!ShareContactQR.canShareContact(for: node))
+
+		node.user = nil
+		#expect(!ShareContactQR.canShareContact(for: node))
+	}
+
+	@Test @MainActor func nodeProtoPreservesUnmessagableStateForQRAvailability() {
+		let node = NodeInfoEntity()
+		let user = UserEntity()
+		user.unmessagable = true
+		node.user = user
+
+		let proto = node.toProto()
+
+		#expect(proto.user.isUnmessagable)
+		#expect(!ShareContactQR.canShareContact(for: proto))
+	}
+
+	@Test @MainActor func userProtoPreservesUnmessagableState() {
+		let user = UserEntity()
+		user.unmessagable = true
+
+		#expect(user.toProto().isUnmessagable)
+	}
+}
+
 // MARK: - findOrCreateNode Tests
 //
 // NodeInfoEntity.num is @Attribute(.unique). SwiftData resolves unique collisions against the saved

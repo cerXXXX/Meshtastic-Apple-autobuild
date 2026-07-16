@@ -50,6 +50,7 @@ struct NodeDetail: View {
 	@State private var airQualityNowCastAQI: Int?
 	@State private var latestPowerMetrics: TelemetryEntity?
 	@State private var logAvailability = NodeDetailLogAvailability()
+	@State private var showingShareContactQR = false
 
 	/// The currently BLE-connected (or remotely administered) node, derived reactively
 	/// from accessoryManager.activeDeviceNum so it stays current if the connection changes.
@@ -78,10 +79,16 @@ struct NodeDetail: View {
 					.frame(height: 0) // Ensure it has no height
 					.id("topOfList")
 					nodeDetailList
-					.sheet(isPresented: $showingCompassSheet) {
-						CompassView(waypointLocation: latestPosition?.nodeCoordinate ?? nil, waypointLongName: node.user?.displayLongName, waypointShortName: node.user?.shortName, color: Color(UIColor(hex: UInt32(node.num))))
-							}
-					.displayNameAlert(node: $nodeForDisplayNameEdit)
+						.sheet(isPresented: $showingCompassSheet) {
+							CompassView(waypointLocation: latestPosition?.nodeCoordinate ?? nil, waypointLongName: node.user?.displayLongName, waypointShortName: node.user?.shortName, color: Color(UIColor(hex: UInt32(node.num))))
+						}
+						.sheet(isPresented: $showingShareContactQR) {
+							ShareContactQRDialog(
+								manuallyVerified: node.num == accessoryManager.activeDeviceNum,
+								node: node.toProto()
+							)
+						}
+						.displayNameAlert(node: $nodeForDisplayNameEdit)
 					.onReceive(NotificationCenter.default.publisher(for: NodeDisplayNameStore.didChangeNotification)) { notification in
 						// Scoped to this node: the notification's object is unconditionally `nil`
 						// otherwise, and `displayNameRefresh` drives `.id()` below (which recreates
@@ -692,6 +699,13 @@ struct NodeDetail: View {
 					node: node,
 					user: user
 				)
+				if ShareContactQR.canShareContact(for: node) {
+					Button {
+						showingShareContactQR = true
+					} label: {
+						Label("Share Contact QR", systemImage: "qrcode")
+					}
+				}
 			}
 			if let connectedNode {
 				FavoriteNodeButton(
