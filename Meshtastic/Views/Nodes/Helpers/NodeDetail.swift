@@ -18,6 +18,7 @@ private struct NodeDetailLogAvailability {
 	var hasDeviceMetrics = false
 	var hasPositions = false
 	var hasEnvironmentMetrics = false
+	var hasAirQualityMetrics = false
 	var hasTraceRoutes = false
 	var hasPowerMetrics = false
 	var hasDetectionSensorMetrics = false
@@ -36,6 +37,7 @@ struct NodeDetail: View {
 	) ?? ModemPresets.longFast
 	@Environment(\.modelContext) private var context
 	@EnvironmentObject var accessoryManager: AccessoryManager
+	@EnvironmentObject var router: Router
 	@State private var showingShutdownConfirm: Bool = false
 	@State private var showingRebootConfirm: Bool = false
 	@State private var dateFormatRelative: Bool = true
@@ -44,6 +46,8 @@ struct NodeDetail: View {
 	@State private var latestPosition: PositionEntity?
 	@State private var latestDeviceMetrics: TelemetryEntity?
 	@State private var latestEnvironmentMetrics: TelemetryEntity?
+	@State private var latestAirQualityMetrics: TelemetryEntity?
+	@State private var airQualityNowCastAQI: Int?
 	@State private var latestPowerMetrics: TelemetryEntity?
 	@State private var logAvailability = NodeDetailLogAvailability()
 	@State private var showingShareContactQR = false
@@ -123,6 +127,7 @@ struct NodeDetail: View {
 			NodeInfoItem(node: node)
 			nodeSection
 			environmentSection
+			airQualitySection
 			powerSection
 			logsSection
 			actionsSection
@@ -493,6 +498,39 @@ struct NodeDetail: View {
 		}
 	}
 
+	// MARK: - Air Quality Section
+
+	@ViewBuilder
+	private var airQualitySection: some View {
+		if let metrics = latestAirQualityMetrics,
+		   metrics.pm25Standard != nil || metrics.pm10Standard != nil || metrics.pm100Standard != nil {
+			Section("Air Quality") {
+				VStack {
+					// design#54: once ~12h of PM2.5 history exists, headline the NowCast-derived EPA AQI
+					// gauge above the raw particulate-matter readings (µg/m³). Without enough history the
+					// gauge is omitted and only the raw readings show — never a misleading instantaneous AQI.
+					if let aqi = airQualityNowCastAQI {
+						AirQualityIndex(aqi: aqi, displayMode: .gradient)
+							.padding(.vertical)
+					}
+					LazyVGrid(columns: gridItemLayout) {
+						if let pm25 = metrics.pm25Standard {
+							ParticulateMatterCompactWidget(label: "PM2.5", value: pm25)
+						}
+						if let pm10 = metrics.pm10Standard {
+							ParticulateMatterCompactWidget(label: "PM1.0", value: pm10)
+						}
+						if let pm100 = metrics.pm100Standard {
+							ParticulateMatterCompactWidget(label: "PM10", value: pm100)
+						}
+					}
+					.padding(.bottom)
+				}
+			}
+			.accessibilityElement(children: .combine)
+		}
+	}
+
 	// MARK: - Power Section
 
 	@ViewBuilder
@@ -514,6 +552,7 @@ struct NodeDetail: View {
 		let hasDeviceMetrics = logAvailability.hasDeviceMetrics
 		let hasPositions = logAvailability.hasPositions
 		let hasEnvironmentMetrics = logAvailability.hasEnvironmentMetrics
+		let hasAirQualityMetrics = logAvailability.hasAirQualityMetrics
 		let hasTraceRoutes = logAvailability.hasTraceRoutes
 		let hasPowerMetrics = logAvailability.hasPowerMetrics
 		let hasDetectionSensorMetrics = logAvailability.hasDetectionSensorMetrics
@@ -543,6 +582,18 @@ struct NodeDetail: View {
 					}
 				}
 				.disabled(!hasPositions)
+				if hasPositions {
+					Button {
+						router.selectedTab = .map
+						router.mapState = .coverageEstimate(node.num)
+					} label: {
+						Label {
+							Text("Estimate Coverage")
+						} icon: {
+							Image("custom.radio.tower")
+						}
+					}
+				}
 			}
 			NavigationLink {
 				PositionLog(node: node)
@@ -566,6 +617,17 @@ struct NodeDetail: View {
 				}
 			}
 			.disabled(!hasEnvironmentMetrics)
+			NavigationLink {
+				AirQualityMetricsLog(node: node)
+			} label: {
+				Label {
+					Text("Air Quality Metrics Log")
+				} icon: {
+					Image(systemName: "aqi.medium")
+						.symbolRenderingMode(.multicolor)
+				}
+			}
+			.disabled(!hasAirQualityMetrics)
 			NavigationLink {
 				TraceRouteLog(node: node)
 			} label: {
@@ -808,16 +870,21 @@ struct NodeDetail: View {
 	private func refreshNodeSummary() {
 		let deviceMetrics = node.latestDeviceMetrics
 		let environmentMetrics = node.latestEnvironmentMetrics
+		let airQualityMetrics = node.latestAirQualityMetrics
+		let airQualityAQI = node.airQualityNowCastAQI
 		let powerMetrics = node.latestPowerMetrics
 		let position = node.latestPosition
 		latestDeviceMetrics = deviceMetrics
 		latestEnvironmentMetrics = environmentMetrics
+		latestAirQualityMetrics = airQualityMetrics
+		airQualityNowCastAQI = airQualityAQI
 		latestPowerMetrics = powerMetrics
 		latestPosition = position
 		logAvailability = NodeDetailLogAvailability(
 			hasDeviceMetrics: deviceMetrics != nil,
 			hasPositions: position != nil,
 			hasEnvironmentMetrics: environmentMetrics != nil,
+			hasAirQualityMetrics: airQualityMetrics != nil,
 			hasTraceRoutes: node.hasTraceRoutes,
 			hasPowerMetrics: powerMetrics != nil,
 			hasDetectionSensorMetrics: node.hasDetectionSensorMetrics,
