@@ -66,14 +66,14 @@
             "text",
             "session",
             "row",
-            "not",
             "live",
             "last",
             "interface",
             "heard",
             "device",
             "contact",
-            "channels"
+            "channels",
+            "automatically"
         ],
         "charCount": 3378
     },
@@ -129,31 +129,31 @@
             "app",
             "updates",
             "meshtastic",
+            "hardware",
             "connected",
+            "connect",
+            "version",
             "transfer",
             "tap",
+            "stable",
             "shows",
             "progress",
-            "connect",
             "ble",
-            "version",
             "standard",
             "settings",
             "screen",
-            "over",
+            "running",
+            "reminder",
+            "ota",
             "open",
             "once",
-            "not",
+            "notification",
+            "node",
+            "keep",
             "from",
-            "during",
-            "channel",
-            "badge",
-            "available",
-            "automatically",
-            "after",
-            "without"
+            "channel"
         ],
-        "charCount": 3377
+        "charCount": 3896
     },
     {
         "id": "getting-started",
@@ -279,46 +279,37 @@
         "navOrder": 3,
         "keywords": [
             "message",
-            "messages",
-            "channels",
-            "text",
-            "key",
-            "not",
-            "formatting",
-            "markdown",
-            "delimiters",
-            "direct",
-            "tap",
-            "selection",
-            "bold",
-            "from",
-            "button",
             "channel",
+            "key",
+            "messages",
             "circle",
+            "text",
             "fill",
+            "channels",
+            "formatting",
+            "direct",
             "available",
             "orange",
+            "markdown",
+            "delimiters",
             "retry",
             "exclamationmark",
+            "tap",
             "recipient",
             "node",
             "after",
+            "selection",
+            "bold",
             "public",
+            "button",
             "symbol",
             "radio",
             "preview",
             "press",
-            "encryption",
-            "destination",
-            "conversation",
-            "broadcast",
-            "verified",
-            "toolbar",
-            "tip",
-            "style",
-            "shield"
+            "from",
+            "encrypted"
         ],
-        "charCount": 10415
+        "charCount": 11223
     },
     {
         "id": "mqtt",
@@ -337,9 +328,7 @@
             "tls",
             "node",
             "channel",
-            "use",
             "org",
-            "not",
             "internet",
             "username",
             "uplink",
@@ -355,7 +344,9 @@
             "publishes",
             "password",
             "packet",
-            "over"
+            "optional",
+            "only",
+            "one"
         ],
         "charCount": 2443
     },
@@ -376,11 +367,11 @@
             "messages",
             "key",
             "shows",
-            "not",
             "list",
             "hardware",
             "firmware",
             "broadcasts",
+            "section",
             "row",
             "public",
             "location",
@@ -388,17 +379,15 @@
             "client",
             "supported",
             "show",
-            "section",
             "position",
             "mesh",
             "map",
             "long",
             "local",
             "links",
-            "hops",
-            "heard"
+            "hops"
         ],
-        "charCount": 8741
+        "charCount": 9013
     },
     {
         "id": "settings",
@@ -770,7 +759,6 @@
             "environmentobject",
             "wraps",
             "via",
-            "use",
             "url",
             "translations",
             "translation",
@@ -786,7 +774,8 @@
             "deep",
             "connectivity",
             "ble",
-            "app"
+            "app",
+            "after"
         ],
         "charCount": 4422
     },
@@ -858,13 +847,13 @@
             "var",
             "utility",
             "uses",
-            "use",
             "types",
             "typed",
             "transport",
             "tips",
             "tcp",
-            "swiftdata"
+            "swiftdata",
+            "subsystems"
         ],
         "charCount": 3538
     },
@@ -899,11 +888,11 @@
             "apple",
             "app",
             "xcode",
-            "use",
             "uikit",
             "type",
             "submodule",
-            "subject"
+            "subject",
+            "site"
         ],
         "charCount": 2890
     },
@@ -997,7 +986,6 @@
             "measurement",
             "swift",
             "views",
-            "use",
             "temperature",
             "let",
             "speed",
@@ -1020,7 +1008,8 @@
             "unitspeed",
             "unitlength",
             "text",
-            "string"
+            "string",
+            "nodes"
         ],
         "charCount": 6352
     },
@@ -1058,8 +1047,8 @@
             "per",
             "new",
             "messages",
-            "use",
-            "type"
+            "type",
+            "set"
         ],
         "charCount": 11360
     },
@@ -1114,7 +1103,6 @@
             "snapshots",
             "run",
             "let",
-            "use",
             "reference",
             "png",
             "expect",
@@ -1137,7 +1125,8 @@
             "using",
             "try",
             "suite",
-            "screenshots"
+            "screenshots",
+            "scale"
         ],
         "charCount": 3697
     },
@@ -1162,7 +1151,6 @@
             "radio",
             "packet",
             "only",
-            "not",
             "from",
             "decode",
             "data",
@@ -1176,7 +1164,8 @@
             "properties",
             "handlefromradio",
             "flow",
-            "field"
+            "field",
+            "disconnect"
         ],
         "charCount": 4859
     },
