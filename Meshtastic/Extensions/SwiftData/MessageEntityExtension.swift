@@ -40,6 +40,29 @@ extension MessageEntity {
 		return re?.canRetry ?? false
 	}
 
+	func deliveryStatus(isDirectMessage: Bool) -> MessageDeliveryStatus {
+		if receivedACK {
+			if isDirectMessage {
+				return realACK ? .deliveredToRecipient : .relayedNotConfirmed
+			}
+			return .deliveredToMesh
+		}
+
+		guard ackError != 0 else { return .sending }
+
+		if let routingError = RoutingError(rawValue: Int(ackError)) {
+			return .failed(routingError)
+		}
+
+		return MessageDeliveryStatus(
+			text: "Could not send message".localized,
+			detail: "The radio reported an unknown delivery error.".localized,
+			systemImage: "exclamationmark.circle.fill",
+			color: Color(uiColor: .systemOrange),
+			canRetry: true
+		)
+	}
+
 	@MainActor
 	var tapbacks: [MessageEntity] {
 		let context = PersistenceController.shared.context
