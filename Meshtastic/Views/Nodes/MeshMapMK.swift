@@ -615,12 +615,31 @@ struct MeshMapMK: View {
 		rebuildGeoJSONOverlays()
 		cameraCommand = ClusterMapCameraCommand(
 			id: UUID(),
-			region: MKCoordinateRegion(
-				center: result.coordinate,
-				span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-			),
+			region: coverageRegion(for: result),
 			animated: true
 		)
+	}
+
+	/// Frame the map on the imported coverage: fit its bounding box with padding so the whole
+	/// overlay is visible with breathing room. Falls back to a fixed span around the transmitter
+	/// when the GeoJSON yielded no bounds.
+	private func coverageRegion(for result: CoverageEstimateResult) -> MKCoordinateRegion {
+		guard let box = result.boundingBox else {
+			return MKCoordinateRegion(
+				center: result.coordinate,
+				span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+			)
+		}
+		let padding = 1.3 // ~15% margin on each side
+		let center = CLLocationCoordinate2D(
+			latitude: (box.minLatitude + box.maxLatitude) / 2,
+			longitude: (box.minLongitude + box.maxLongitude) / 2
+		)
+		let span = MKCoordinateSpan(
+			latitudeDelta: min(max((box.maxLatitude - box.minLatitude) * padding, 0.01), 180),
+			longitudeDelta: min(max((box.maxLongitude - box.minLongitude) * padding, 0.01), 360)
+		)
+		return MKCoordinateRegion(center: center, span: span)
 	}
 
 	/// The connected radio's LoRa config, used to prefill frequency / power / sensitivity.
