@@ -234,6 +234,10 @@
 		BB0001000000000000000000 /* MBTilesArchive.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000000 /* MBTilesArchive.swift */; };
 		BB0003000000000000000000 /* PMTilesMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0003000000000000000000 /* PMTilesMapView.swift */; };
 		BB0004000000000000000000 /* ClusterMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0004000000000000000000 /* ClusterMapView.swift */; };
+		517E000000000000000B0001 /* SitePlannerParameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517E000000000000000A0001 /* SitePlannerParameters.swift */; };
+		517E000000000000000B0002 /* CoverageEstimateRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517E000000000000000A0002 /* CoverageEstimateRunner.swift */; };
+		517E000000000000000B0003 /* CoverageEstimateForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517E000000000000000A0003 /* CoverageEstimateForm.swift */; };
+		517E000000000000000B0004 /* SitePlannerParametersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 517E000000000000000A0004 /* SitePlannerParametersTests.swift */; };
 		BB0005000000000000000000 /* MeshMapMK.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0005000000000000000000 /* MeshMapMK.swift */; };
 		BB0F1900000000000000F190 /* TraceRouteFlyover.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0F1900000000000000F190 /* TraceRouteFlyover.swift */; };
 		BBFF00000000000000000001 /* OfflineMapRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFF00000000000000000001 /* OfflineMapRegion.swift */; };
@@ -789,6 +793,10 @@
 		AA0003000000000000000000 /* PMTilesMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PMTilesMapView.swift; path = Meshtastic/Views/Nodes/Helpers/Map/PMTilesMapView.swift; sourceTree = SOURCE_ROOT; };
 		AA000301CPTST000000000001 /* CarPlayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayTests.swift; sourceTree = "<group>"; };
 		AA0004000000000000000000 /* ClusterMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ClusterMapView.swift; path = Meshtastic/Views/Nodes/Helpers/Map/ClusterMapView.swift; sourceTree = SOURCE_ROOT; };
+		517E000000000000000A0001 /* SitePlannerParameters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SitePlannerParameters.swift; path = Meshtastic/Helpers/SitePlanner/SitePlannerParameters.swift; sourceTree = SOURCE_ROOT; };
+		517E000000000000000A0002 /* CoverageEstimateRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoverageEstimateRunner.swift; path = Meshtastic/Helpers/SitePlanner/CoverageEstimateRunner.swift; sourceTree = SOURCE_ROOT; };
+		517E000000000000000A0003 /* CoverageEstimateForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CoverageEstimateForm.swift; path = Meshtastic/Views/Nodes/Helpers/Map/CoverageEstimateForm.swift; sourceTree = SOURCE_ROOT; };
+		517E000000000000000A0004 /* SitePlannerParametersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SitePlannerParametersTests.swift; sourceTree = "<group>"; };
 		AA000401SIRI000000000010 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = en; path = en.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
 		AA000401SIRI000000000011 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = de; path = de.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
 		AA000401SIRI000000000012 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = es; path = es.lproj/AppIntentVocabulary.plist; sourceTree = "<group>"; };
@@ -1715,6 +1723,7 @@
 				DD00001BINTCVRTST0000000 /* IntentConverterTests.swift */,
 				DD00001CMAPDATTST0000000 /* MapDataModelTests.swift */,
 				DD00001CMAPDMGRTST000000 /* MapDataManagerTests.swift */,
+				517E000000000000000A0004 /* SitePlannerParametersTests.swift */,
 				DD00001DCDENTTST00000000 /* EntityTests.swift */,
 				DD00001EURLDETTST0000000 /* URLExtensionDetailedTests.swift */,
 				DD00001FFWVMERRTST000000 /* FirmwareViewModelErrorTests.swift */,
@@ -2199,6 +2208,7 @@
 				AA0003000000000000000000 /* PMTilesMapView.swift */,
 				AA0005000000000000000000 /* MeshMapMK.swift */,
 				AA0004000000000000000000 /* ClusterMapView.swift */,
+				517E000000000000000A0003 /* CoverageEstimateForm.swift */,
 				AA0F1900000000000000F190 /* TraceRouteFlyover.swift */,
 				DDD3A2B12D5127B40045EB48 /* ci_scripts */,
 				DDDBC87A2BC62E4E001E8DF7 /* Settings.bundle */,
@@ -2401,6 +2411,8 @@
 			isa = PBXGroup;
 			children = (
 				3D3417D12E2DC260006A988B /* MapDataManager.swift */,
+				517E000000000000000A0001 /* SitePlannerParameters.swift */,
+				517E000000000000000A0002 /* CoverageEstimateRunner.swift */,
 				3D3417C72E29D38A006A988B /* GeoJSONOverlayConfig.swift */,
 				BCD7448C2E0F2FA300F265A2 /* ContactURLHandler.swift */,
 				BEEF00102F00000100000001 /* MeshtasticChannelURL.swift */,
@@ -2880,6 +2892,7 @@
 				DD00001BINTCVRTST0000001 /* IntentConverterTests.swift in Sources */,
 				DD00001CMAPDATTST0000001 /* MapDataModelTests.swift in Sources */,
 				DD00001CMAPDMGRTST000001 /* MapDataManagerTests.swift in Sources */,
+				517E000000000000000B0004 /* SitePlannerParametersTests.swift in Sources */,
 				BBFF00000000000000000009 /* PMTilesExtractorTests.swift in Sources */,
 				DD00001DCDENTTST00000001 /* EntityTests.swift in Sources */,
 				DD00001EURLDETTST0000001 /* URLExtensionDetailedTests.swift in Sources */,
@@ -2938,6 +2951,9 @@
 				BB0003000000000000000000 /* PMTilesMapView.swift in Sources */,
 				BB0005000000000000000000 /* MeshMapMK.swift in Sources */,
 				BB0004000000000000000000 /* ClusterMapView.swift in Sources */,
+				517E000000000000000B0001 /* SitePlannerParameters.swift in Sources */,
+				517E000000000000000B0002 /* CoverageEstimateRunner.swift in Sources */,
+				517E000000000000000B0003 /* CoverageEstimateForm.swift in Sources */,
 				BB0F1900000000000000F190 /* TraceRouteFlyover.swift in Sources */,
 				86CCA3EEDD7E1036893B2663 /* DiscoverySessionEntity.swift in Sources */,
 				82F6BD3326F1BFEAF0F16723 /* DiscoveryPresetResultEntity.swift in Sources */,
