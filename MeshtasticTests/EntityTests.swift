@@ -54,7 +54,7 @@ struct HardwareCatalogPresentationTests {
 			activelySupported: true,
 			supportLevel: .flagship
 		)
-		let tracksenger = record(
+		let smallTracksenger = record(
 			model: 48,
 			slug: "HELTEC_WIRELESS_TRACKER",
 			target: "tracksenger",
@@ -62,12 +62,69 @@ struct HardwareCatalogPresentationTests {
 			activelySupported: true,
 			supportLevel: .legacy
 		)
+		let largeTracksenger = record(
+			model: 48,
+			slug: "HELTEC_WIRELESS_TRACKER",
+			target: "tracksenger-lcd",
+			displayName: "TrackSenger (big TFT)",
+			activelySupported: false,
+			supportLevel: .legacy
+		)
+		let oledTracksenger = record(
+			model: 48,
+			slug: "HELTEC_WIRELESS_TRACKER",
+			target: "tracksenger-oled",
+			displayName: "TrackSenger (OLED)",
+			activelySupported: true,
+			supportLevel: .legacy
+		)
 
-		let presentation = HardwareCatalogResolver.presentation(for: 48, in: [tracksenger, heltec])
+		let presentation = HardwareCatalogResolver.presentation(
+			for: 48,
+			in: [oledTracksenger, largeTracksenger, smallTracksenger, heltec]
+		)
 
 		#expect(presentation?.displayName == "Heltec Wireless Tracker V1.1")
 		#expect(presentation?.platformioTarget == "heltec-wireless-tracker")
 		#expect(presentation?.supportLevel == .flagship)
+	}
+
+	@Test func preservesMissingCatalogMetadata() {
+		let entity = DeviceHardwareEntity()
+		entity.hwModel = 1
+		entity.hwModelSlug = nil
+		entity.platformioTarget = nil
+		entity.displayName = nil
+
+		let record = HardwareCatalogRecord(entity)
+
+		#expect(record.hwModelSlug == nil)
+		#expect(record.platformioTarget == nil)
+		#expect(record.displayName == nil)
+	}
+
+	@Test func usesRawStringOrderingForEqualPriorityRecords() {
+		let naturalFirst = record(
+			model: 1_000,
+			slug: "AMBIGUOUS_DEVICE",
+			target: "natural-first",
+			displayName: "Device 2",
+			activelySupported: true,
+			supportLevel: .flagship
+		)
+		let rawFirst = record(
+			model: 1_000,
+			slug: "AMBIGUOUS_DEVICE",
+			target: "raw-first",
+			displayName: "Device 10",
+			activelySupported: true,
+			supportLevel: .flagship
+		)
+
+		let presentation = HardwareCatalogResolver.presentation(for: 1_000, in: [naturalFirst, rawFirst])
+
+		#expect(presentation?.displayName == "Device 10")
+		#expect(presentation?.platformioTarget == "raw-first")
 	}
 
 	@Test func choosesPreferredVariantWhenTheProtocolCannotDistinguishIt() {

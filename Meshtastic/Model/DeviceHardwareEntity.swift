@@ -39,18 +39,18 @@ final class DeviceHardwareEntity {
 /// over the mesh protocol: multiple targets can intentionally report the same `hwModel`.
 struct HardwareCatalogRecord: Equatable {
 	let hwModel: Int64
-	let hwModelSlug: String
-	let platformioTarget: String
-	let displayName: String
+	let hwModelSlug: String?
+	let platformioTarget: String?
+	let displayName: String?
 	let activelySupported: Bool
 	let supportLevel: SupportLevel
 	let architecture: String?
 
 	init(
 		hwModel: Int64,
-		hwModelSlug: String,
-		platformioTarget: String,
-		displayName: String,
+		hwModelSlug: String?,
+		platformioTarget: String?,
+		displayName: String?,
 		activelySupported: Bool,
 		supportLevel: SupportLevel,
 		architecture: String? = nil
@@ -67,9 +67,9 @@ struct HardwareCatalogRecord: Equatable {
 	init(_ entity: DeviceHardwareEntity) {
 		self.init(
 			hwModel: entity.hwModel,
-			hwModelSlug: entity.hwModelSlug ?? "",
-			platformioTarget: entity.platformioTarget ?? "",
-			displayName: entity.displayName ?? "",
+			hwModelSlug: entity.hwModelSlug,
+			platformioTarget: entity.platformioTarget,
+			displayName: entity.displayName,
 			activelySupported: entity.activelySupported,
 			supportLevel: SupportLevel(rawValue: entity.supportLevel) ?? .discontinued,
 			architecture: entity.architecture
@@ -101,8 +101,10 @@ enum HardwareCatalogResolver {
 			return presentation(for: record)
 		}
 
-		let canonicalTargets = matches.filter {
-			$0.platformioTarget == normalizedTarget(from: $0.hwModelSlug)
+		let canonicalTargets = matches.filter { record in
+			guard let target = record.platformioTarget,
+			      let slug = record.hwModelSlug else { return false }
+			return target == normalizedTarget(from: slug)
 		}
 		if canonicalTargets.count == 1, let canonical = canonicalTargets.first {
 			return presentation(for: canonical)
@@ -136,8 +138,19 @@ enum HardwareCatalogResolver {
 			return lhs.activelySupported
 		}
 		if lhs.displayName != rhs.displayName {
-			return lhs.displayName.localizedStandardCompare(rhs.displayName) == .orderedAscending
+			return isPreferred(lhs.displayName, over: rhs.displayName)
 		}
-		return lhs.platformioTarget.localizedStandardCompare(rhs.platformioTarget) == .orderedAscending
+		return isPreferred(lhs.platformioTarget, over: rhs.platformioTarget)
+	}
+
+	private static func isPreferred(_ lhs: String?, over rhs: String?) -> Bool {
+		switch (lhs, rhs) {
+		case let (lhs?, rhs?):
+			return lhs < rhs
+		case (.some, nil):
+			return true
+		case (nil, .some), (nil, nil):
+			return false
+		}
 	}
 }
