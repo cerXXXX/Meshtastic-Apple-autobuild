@@ -26,6 +26,9 @@ final class NodeInfoEntity {
 	var nodeStatus: String?
 	@Attribute(.unique) var num: Int64 = 0
 	var peripheralId: String?
+	/// User-editable per-channel power labels (e.g. "Solar", "Battery", "Load"), indexed 0-2.
+	/// A missing/empty entry falls back to the generic "Channel N" in the UI. Per meshtastic/design#53.
+	var powerChannelLabels: [String] = []
 	var rssi: Int32 = 0
 	var sessionExpiration: Date?
 	var sessionPasskey: Data?
