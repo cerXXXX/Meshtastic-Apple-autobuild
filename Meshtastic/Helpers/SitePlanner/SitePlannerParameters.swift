@@ -68,7 +68,7 @@ struct SitePlannerParameters: Equatable {
 	var highResolution: Bool = false
 
 	// MARK: Display
-	var colorScale: SitePlannerColorScale = .plasma
+	var colorScale: SitePlannerColorScale = .turbo
 
 	// MARK: - Validation bounds (mirror the planner's `store.ts` / input ranges)
 	static let frequencyRange: ClosedRange<Double> = 20...20_000

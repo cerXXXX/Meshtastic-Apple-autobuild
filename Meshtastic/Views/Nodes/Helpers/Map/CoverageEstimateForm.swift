@@ -33,11 +33,9 @@ struct CoverageEstimateForm: View {
 	@Environment(\.dismiss) private var dismiss
 
 	@State private var params: SitePlannerParameters
-	@State private var transmitterExpanded = true
-	@State private var receiverExpanded = false
-	@State private var simulationExpanded = false
-	@State private var displayExpanded = true
 	@State private var errorMessage: String?
+	/// In-flight reverse geocode for the chosen coordinate; cancelled when a newer coordinate is picked.
+	@State private var geocodeTask: Task<Void, Never>?
 
 	init(seed: CoverageEstimateSeed, runner: CoverageEstimateRunner) {
 		self.seed = seed
@@ -57,14 +55,22 @@ struct CoverageEstimateForm: View {
 				simulationSection
 				displaySection
 			}
+			.scrollDismissesKeyboard(.immediately)
 			.navigationTitle("Estimate Coverage")
 			.navigationBarTitleDisplayMode(.inline)
 			.toolbar {
 				ToolbarItem(placement: .cancellationAction) {
-					Button("Cancel") {
+					Button {
 						runner.reset()
 						dismiss()
+					} label: {
+						Image(systemName: "xmark.circle.fill")
+							.font(.title2)
+							.symbolRenderingMode(.palette)
+							.foregroundStyle(.white, Color(.systemGray3))
 					}
+					.buttonStyle(.plain)
+					.accessibilityLabel("Close")
 				}
 				ToolbarItem(placement: .confirmationAction) {
 					Button("Estimate") {
@@ -78,6 +84,7 @@ struct CoverageEstimateForm: View {
 					estimatingOverlay
 				}
 			}
+			.onAppear(perform: generateInitialNameIfNeeded)
 			.onDisappear {
 				// Tear down a still-running headless run if the sheet is swipe-dismissed. Safe on the
 				// success path too — the import already published its result before `dismiss()`.
@@ -108,61 +115,59 @@ struct CoverageEstimateForm: View {
 
 	private var transmitterSection: some View {
 		Section {
-			DisclosureGroup(isExpanded: $transmitterExpanded) {
-				TextField("Site name", text: $params.name)
-					.accessibilityLabel("Site name")
+			TextField("Site name", text: $params.name)
+				.accessibilityLabel("Site name")
 
-				locationShortcuts
+			locationShortcuts
 
-				DecimalField("Latitude", value: $params.latitude)
-				DecimalField("Longitude", value: $params.longitude)
-				labeledNumber("Transmit power (W)", value: $params.txPowerWatts)
-				labeledNumber("Frequency (MHz)", value: $params.txFrequencyMHz)
-				labeledNumber("Antenna height (m)", value: $params.txHeightMeters)
-				labeledNumber("Antenna gain (dBi)", value: $params.txGainDBi)
-			} label: {
-				Label("Site / Transmitter", systemImage: "antenna.radiowaves.left.and.right")
+			DecimalField("Latitude", value: $params.latitude)
+			DecimalField("Longitude", value: $params.longitude)
+			labeledNumber("Transmit power (W)", value: $params.txPowerWatts)
+			labeledNumber("Frequency (MHz)", value: $params.txFrequencyMHz)
+			lengthField("Antenna height", canonical: $params.txHeightMeters, storedUnit: .meters, imperialUnit: .feet)
+			labeledNumber("Antenna gain (dBi)", value: $params.txGainDBi)
+		} header: {
+			Label {
+				Text("Site / Transmitter")
+			} icon: {
+				Image("custom.radio.tower")
 			}
 		}
 	}
 
 	private var receiverSection: some View {
 		Section {
-			DisclosureGroup(isExpanded: $receiverExpanded) {
-				DecimalField("Sensitivity (dBm)", value: $params.rxSensitivityDBm)
-			} label: {
-				Label("Receiver", systemImage: "dot.radiowaves.left.and.right")
-			}
+			DecimalField("Sensitivity (dBm)", value: $params.rxSensitivityDBm)
+		} header: {
+			Label("Receiver", systemImage: "dot.radiowaves.left.and.right")
 		}
 	}
 
 	private var simulationSection: some View {
 		Section {
-			DisclosureGroup(isExpanded: $simulationExpanded) {
-				labeledNumber("Max range (km)", value: $params.maxRangeKm)
-				Toggle("High-resolution terrain", isOn: $params.highResolution)
-					.onChange(of: params.highResolution) { _, _ in
-						// High-res caps the range at 70 km — clamp so the value stays valid.
-						let bounds = params.maxRangeBounds
-						params.maxRangeKm = min(max(params.maxRangeKm, bounds.lowerBound), bounds.upperBound)
-					}
-			} label: {
-				Label("Simulation Options", systemImage: "slider.horizontal.3")
-			}
+			lengthField("Max range", canonical: $params.maxRangeKm, storedUnit: .kilometers, imperialUnit: .miles)
+			Toggle("High-resolution terrain", isOn: $params.highResolution)
+				.onChange(of: params.highResolution) { _, _ in
+					// High-res caps the range at 70 km — clamp so the value stays valid.
+					let bounds = params.maxRangeBounds
+					params.maxRangeKm = min(max(params.maxRangeKm, bounds.lowerBound), bounds.upperBound)
+				}
+		} header: {
+			Label("Simulation Options", systemImage: "slider.horizontal.3")
+		} footer: {
+			Text("High-resolution terrain gives a more detailed estimate but caps the maximum range at 70 km.")
 		}
 	}
 
 	private var displaySection: some View {
 		Section {
-			DisclosureGroup(isExpanded: $displayExpanded) {
-				Picker("Palette", selection: $params.colorScale) {
-					ForEach(SitePlannerColorScale.allCases) { scale in
-						Text(scale.displayName).tag(scale)
-					}
+			Picker("Palette", selection: $params.colorScale) {
+				ForEach(SitePlannerColorScale.allCases) { scale in
+					Text(scale.displayName).tag(scale)
 				}
-			} label: {
-				Label("Display", systemImage: "paintpalette")
 			}
+		} header: {
+			Label("Display", systemImage: "paintpalette")
 		}
 	}
 
@@ -213,6 +218,54 @@ struct CoverageEstimateForm: View {
 	private func apply(_ coordinate: CLLocationCoordinate2D) {
 		params.latitude = coordinate.latitude
 		params.longitude = coordinate.longitude
+		reverseGeocodeName(for: coordinate)
+	}
+
+	/// Auto-fills the site name from the chosen coordinate's placemark. Prefers a named point of
+	/// interest (coverage sites are usually a landmark/hill/park/tower), then the placemark name,
+	/// then progressively coarser locality/street/water fields. Cancels any in-flight lookup so the
+	/// newest pick wins, and leaves the existing name untouched when the geocode yields nothing or fails.
+	/// On launch, if the site name is empty but the seed already carries a usable coordinate (e.g.
+	/// presented from the map toolbar), reverse-geocode it to fill the name — the same result as
+	/// tapping a location shortcut, just automatic. Skipped when a name is already set (the
+	/// node-detail hand-off prefills the node's name) or the coordinate is the 0,0 sentinel.
+	private func generateInitialNameIfNeeded() {
+		guard params.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+			  params.hasValidCoordinate else { return }
+		reverseGeocodeName(for: CLLocationCoordinate2D(latitude: params.latitude, longitude: params.longitude))
+	}
+
+	private func reverseGeocodeName(for coordinate: CLLocationCoordinate2D) {
+		geocodeTask?.cancel()
+		geocodeTask = Task {
+			let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+			let placemark = try? await CLGeocoder().reverseGeocodeLocation(location).first
+			guard !Task.isCancelled, let placemark, let name = Self.siteName(from: placemark) else { return }
+			await MainActor.run { params.name = name }
+		}
+	}
+
+	/// Picks a human place name for a coordinate. Prefers a named point of interest, then the
+	/// placemark's `name` ONLY when it isn't a street address (`CLPlacemark.name` degrades to the
+	/// street address whenever there's no landmark), then neighborhood → city → street → water. This
+	/// keeps residential coordinates from filling the field with "13500 SE Newport Way".
+	static func siteName(from placemark: CLPlacemark) -> String? {
+		if let poi = placemark.areasOfInterest?.first { return poi }
+		if let name = placemark.name, !placemarkNameIsStreetAddress(name, placemark) { return name }
+		return placemark.subLocality
+			?? placemark.locality
+			?? placemark.thoroughfare
+			?? placemark.inlandWater
+			?? placemark.ocean
+	}
+
+	/// `CLPlacemark.name` is the formatted street address when the placemark resolves to a building:
+	/// a house number is present, or the name leads with a digit, or it contains the street name.
+	private static func placemarkNameIsStreetAddress(_ name: String, _ placemark: CLPlacemark) -> Bool {
+		if placemark.subThoroughfare != nil { return true }
+		if name.first?.isNumber == true { return true }
+		if let street = placemark.thoroughfare, name.localizedCaseInsensitiveContains(street) { return true }
+		return false
 	}
 
 	// MARK: - Helpers
@@ -222,7 +275,31 @@ struct CoverageEstimateForm: View {
 			Text(title)
 			Spacer()
 			TextField("", value: value, format: .number)
-				.keyboardType(.numbersAndPunctuation)
+				.keyboardType(.decimalPad)
+				.multilineTextAlignment(.trailing)
+				.frame(maxWidth: 140)
+				.accessibilityLabel(Text(title))
+		}
+	}
+
+	/// An editable length field that keeps the model in its canonical unit (`storedUnit`, what the
+	/// Site Planner expects) but displays and edits in the device locale's measurement system —
+	/// `imperialUnit` for non-metric locales. `Measurement.FormatStyle` isn't `ParseableFormatStyle`,
+	/// so a converting `Binding<Double>` bridges the two rather than a `format:` on the field. The
+	/// number itself still formats per locale via `.number`.
+	private func lengthField(_ title: LocalizedStringKey, canonical: Binding<Double>, storedUnit: UnitLength, imperialUnit: UnitLength) -> some View {
+		let displayUnit = Locale.current.measurementSystem == .metric ? storedUnit : imperialUnit
+		let display = Binding<Double>(
+			get: { Measurement(value: canonical.wrappedValue, unit: storedUnit).converted(to: displayUnit).value },
+			set: { canonical.wrappedValue = Measurement(value: $0, unit: displayUnit).converted(to: storedUnit).value }
+		)
+		return HStack {
+			Text(title)
+			Text(verbatim: "(\(displayUnit.symbol))")
+				.foregroundStyle(.secondary)
+			Spacer()
+			TextField("", value: display, format: .number.precision(.fractionLength(0...2)))
+				.keyboardType(.decimalPad)
 				.multilineTextAlignment(.trailing)
 				.frame(maxWidth: 140)
 				.accessibilityLabel(Text(title))

@@ -28,13 +28,23 @@ enum CoverageEstimateState: Equatable {
 	case failed(String)
 }
 
-/// The result of a successful run: the imported overlay's metadata plus the
-/// transmitter coordinate to recenter the map on. `Equatable` (by a per-result
+/// Geographic bounding box (degrees) of an imported coverage overlay, used to frame the map on it.
+struct CoverageBounds {
+	let minLatitude: Double
+	let maxLatitude: Double
+	let minLongitude: Double
+	let maxLongitude: Double
+}
+
+/// The result of a successful run: the imported overlay's metadata, the transmitter coordinate, and
+/// the coverage geometry's bounding box (to frame the map on it). `Equatable` (by a per-result
 /// token) so it can drive a SwiftUI `onChange`.
 struct CoverageEstimateResult: Equatable {
 	let token = UUID()
 	let metadata: MapDataMetadata
 	let coordinate: CLLocationCoordinate2D
+	/// Bounding box of the imported coverage geometry, when derivable from the GeoJSON.
+	let boundingBox: CoverageBounds?
 
 	static func == (lhs: CoverageEstimateResult, rhs: CoverageEstimateResult) -> Bool {
 		lhs.token == rhs.token
@@ -166,6 +176,7 @@ final class CoverageEstimateRunner: NSObject, ObservableObject {
 		let coordinate = CLLocationCoordinate2D(latitude: params.latitude, longitude: params.longitude)
 		let layerName = params.name.trimmingCharacters(in: .whitespacesAndNewlines)
 		let importName = layerName.isEmpty ? "Coverage" : layerName
+		let boundingBox = Self.boundingBox(fromGeoJSON: geoJSON)
 
 		// This method is `@MainActor`, so the Task inherits MainActor isolation — after each
 		// `await` we're back on the main actor and can assign published state directly.
@@ -173,12 +184,38 @@ final class CoverageEstimateRunner: NSObject, ObservableObject {
 			do {
 				let metadata = try await MapDataManager.shared.importFromString(geoJSON, name: importName)
 				guard let self else { return }
-				self.importedResult = CoverageEstimateResult(metadata: metadata, coordinate: coordinate)
+				self.importedResult = CoverageEstimateResult(metadata: metadata, coordinate: coordinate, boundingBox: boundingBox)
 				self.state = .imported
 			} catch {
 				self?.state = .failed(error.localizedDescription)
 			}
 		}
+	}
+
+	/// Compute the bounding box of every position in a GeoJSON string. Walks the parsed JSON
+	/// generically: any array whose first element is a number is a `[lon, lat, …]` position, and
+	/// everything else is a container to recurse into — so it works for Point / LineString / Polygon /
+	/// MultiPolygon without a schema. Returns nil when no positions are found.
+	static func boundingBox(fromGeoJSON geoJSON: String) -> CoverageBounds? {
+		guard let data = geoJSON.data(using: .utf8),
+			  let root = try? JSONSerialization.jsonObject(with: data) else { return nil }
+		var minLat = Double.infinity, maxLat = -Double.infinity
+		var minLon = Double.infinity, maxLon = -Double.infinity
+		func walk(_ node: Any) {
+			if let array = node as? [Any] {
+				if let lon = array.first as? Double, array.count >= 2, let lat = array[1] as? Double {
+					minLat = min(minLat, lat); maxLat = max(maxLat, lat)
+					minLon = min(minLon, lon); maxLon = max(maxLon, lon)
+				} else {
+					array.forEach(walk)
+				}
+			} else if let dict = node as? [String: Any] {
+				dict.values.forEach(walk)
+			}
+		}
+		walk(root)
+		guard minLat <= maxLat, minLon <= maxLon else { return nil }
+		return CoverageBounds(minLatitude: minLat, maxLatitude: maxLat, minLongitude: minLon, maxLongitude: maxLon)
 	}
 
 	/// The foreground key window to host the headless WebView.

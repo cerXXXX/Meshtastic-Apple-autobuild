@@ -575,18 +575,18 @@ struct NodeDetail: View {
 					}
 				}
 				.disabled(!hasPositions)
-				Button {
-					router.selectedTab = .map
-					router.mapState = .coverageEstimate(node.num)
-				} label: {
-					Label {
-						Text("Estimate Coverage")
-					} icon: {
-						Image(systemName: "cellularbars")
-							.symbolRenderingMode(.multicolor)
+				if hasPositions {
+					Button {
+						router.selectedTab = .map
+						router.mapState = .coverageEstimate(node.num)
+					} label: {
+						Label {
+							Text("Estimate Coverage")
+						} icon: {
+							Image("custom.radio.tower")
+						}
 					}
 				}
-				.disabled(!hasPositions)
 			}
 			NavigationLink {
 				PositionLog(node: node)
