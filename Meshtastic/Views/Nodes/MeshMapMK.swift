@@ -445,7 +445,7 @@ struct MeshMapMK: View {
 						Button(action: {
 							presentCoverageEstimateFromMap()
 						}) {
-							Image(systemName: "cellularbars")
+							Image("custom.radio.tower")
 						}
 						.accessibilityLabel("Estimate coverage")
 						.accessibilityHint("Runs a Site Planner coverage estimate and adds it to the map.")
