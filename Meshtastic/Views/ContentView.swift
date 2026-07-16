@@ -110,7 +110,7 @@ struct ContentView: View {
 				}
 				.badge(appState.totalUnreadMessages)
 
-				Tab("Nodes", systemImage: "flipphone", value: NavigationState.Tab.nodes) {
+				Tab("Nodes", image: "custom.mesh.radio", value: NavigationState.Tab.nodes) {
 					NodeList()
 				}
 
@@ -143,7 +143,7 @@ struct ContentView: View {
 
 				NodeList()
 				.tabItem {
-					Label("Nodes", systemImage: "flipphone")
+					Label("Nodes", image: "custom.mesh.radio")
 				}
 				.tag(NavigationState.Tab.nodes)
 
