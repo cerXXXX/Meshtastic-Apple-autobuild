@@ -81,6 +81,7 @@ struct CoverageEstimateForm: View {
 					estimatingOverlay
 				}
 			}
+			.onAppear(perform: generateInitialNameIfNeeded)
 			.onDisappear {
 				// Tear down a still-running headless run if the sheet is swipe-dismissed. Safe on the
 				// success path too — the import already published its result before `dismiss()`.
@@ -221,6 +222,16 @@ struct CoverageEstimateForm: View {
 	/// interest (coverage sites are usually a landmark/hill/park/tower), then the placemark name,
 	/// then progressively coarser locality/street/water fields. Cancels any in-flight lookup so the
 	/// newest pick wins, and leaves the existing name untouched when the geocode yields nothing or fails.
+	/// On launch, if the site name is empty but the seed already carries a usable coordinate (e.g.
+	/// presented from the map toolbar), reverse-geocode it to fill the name — the same result as
+	/// tapping a location shortcut, just automatic. Skipped when a name is already set (the
+	/// node-detail hand-off prefills the node's name) or the coordinate is the 0,0 sentinel.
+	private func generateInitialNameIfNeeded() {
+		guard params.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+			  params.hasValidCoordinate else { return }
+		reverseGeocodeName(for: CLLocationCoordinate2D(latitude: params.latitude, longitude: params.longitude))
+	}
+
 	private func reverseGeocodeName(for coordinate: CLLocationCoordinate2D) {
 		geocodeTask?.cancel()
 		geocodeTask = Task {
