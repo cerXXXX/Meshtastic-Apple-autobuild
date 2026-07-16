@@ -124,7 +124,7 @@ struct CoverageEstimateForm: View {
 				DecimalField("Longitude", value: $params.longitude)
 				labeledNumber("Transmit power (W)", value: $params.txPowerWatts)
 				labeledNumber("Frequency (MHz)", value: $params.txFrequencyMHz)
-				labeledNumber("Antenna height (m)", value: $params.txHeightMeters)
+				lengthField("Antenna height", canonical: $params.txHeightMeters, storedUnit: .meters, imperialUnit: .feet)
 				labeledNumber("Antenna gain (dBi)", value: $params.txGainDBi)
 			} label: {
 				Label {
@@ -149,7 +149,7 @@ struct CoverageEstimateForm: View {
 	private var simulationSection: some View {
 		Section {
 			DisclosureGroup(isExpanded: $simulationExpanded) {
-				labeledNumber("Max range (km)", value: $params.maxRangeKm)
+				lengthField("Max range", canonical: $params.maxRangeKm, storedUnit: .kilometers, imperialUnit: .miles)
 				Toggle("High-resolution terrain", isOn: $params.highResolution)
 					.onChange(of: params.highResolution) { _, _ in
 						// High-res caps the range at 70 km — clamp so the value stays valid.
@@ -270,6 +270,30 @@ struct CoverageEstimateForm: View {
 			Text(title)
 			Spacer()
 			TextField("", value: value, format: .number)
+				.keyboardType(.numbersAndPunctuation)
+				.multilineTextAlignment(.trailing)
+				.frame(maxWidth: 140)
+				.accessibilityLabel(Text(title))
+		}
+	}
+
+	/// An editable length field that keeps the model in its canonical unit (`storedUnit`, what the
+	/// Site Planner expects) but displays and edits in the device locale's measurement system —
+	/// `imperialUnit` for non-metric locales. `Measurement.FormatStyle` isn't `ParseableFormatStyle`,
+	/// so a converting `Binding<Double>` bridges the two rather than a `format:` on the field. The
+	/// number itself still formats per locale via `.number`.
+	private func lengthField(_ title: LocalizedStringKey, canonical: Binding<Double>, storedUnit: UnitLength, imperialUnit: UnitLength) -> some View {
+		let displayUnit = Locale.current.measurementSystem == .metric ? storedUnit : imperialUnit
+		let display = Binding<Double>(
+			get: { Measurement(value: canonical.wrappedValue, unit: storedUnit).converted(to: displayUnit).value },
+			set: { canonical.wrappedValue = Measurement(value: $0, unit: displayUnit).converted(to: storedUnit).value }
+		)
+		return HStack {
+			Text(title)
+			Text(verbatim: "(\(displayUnit.symbol))")
+				.foregroundStyle(.secondary)
+			Spacer()
+			TextField("", value: display, format: .number.precision(.fractionLength(0...2)))
 				.keyboardType(.numbersAndPunctuation)
 				.multilineTextAlignment(.trailing)
 				.frame(maxWidth: 140)
