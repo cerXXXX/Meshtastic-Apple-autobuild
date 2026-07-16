@@ -65,7 +65,7 @@ struct CoverageEstimateForm: View {
 						dismiss()
 					} label: {
 						Image(systemName: "xmark.circle.fill")
-							.font(.title)
+							.font(.title2)
 							.symbolRenderingMode(.palette)
 							.foregroundStyle(.white, Color(.systemGray3))
 					}
