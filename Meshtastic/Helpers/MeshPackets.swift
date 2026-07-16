@@ -487,8 +487,8 @@ actor MeshPackets {
 						let hwDescriptor = FetchDescriptor<DeviceHardwareEntity>(
 							predicate: #Predicate { $0.hwModel == hwModelValue }
 						)
-						if let hardwareEntity = try? modelContext.fetch(hwDescriptor).first {
-							newUser.hwDisplayName = hardwareEntity.displayName
+						if let hardware = try? modelContext.fetch(hwDescriptor) {
+							newUser.hwDisplayName = HardwareCatalogResolver.presentation(for: hwModelValue, in: hardware)?.displayName
 						}
 						newUser.isLicensed = nodeInfo.user.isLicensed
 						newUser.role = Int32(nodeInfo.user.role.rawValue)
@@ -612,8 +612,8 @@ actor MeshPackets {
 							let hwDescriptor2 = FetchDescriptor<DeviceHardwareEntity>(
 								predicate: #Predicate { $0.hwModel == hwModelValue2 }
 							)
-							if let hardwareEntity = try? modelContext.fetch(hwDescriptor2).first {
-								user.hwDisplayName = hardwareEntity.displayName
+							if let hardware = try? modelContext.fetch(hwDescriptor2) {
+								user.hwDisplayName = HardwareCatalogResolver.presentation(for: hwModelValue2, in: hardware)?.displayName
 							}
 						}
 					} else {

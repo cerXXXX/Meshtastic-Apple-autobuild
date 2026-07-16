@@ -20,6 +20,112 @@ private func makeTestContainer() throws -> ModelContainer {
 	return sharedModelContainer
 }
 
+// MARK: - Hardware catalog presentation
+
+@Suite("Hardware catalog presentation")
+struct HardwareCatalogPresentationTests {
+
+	private func record(
+		model: Int64,
+		slug: String,
+		target: String,
+		displayName: String,
+		activelySupported: Bool,
+		supportLevel: SupportLevel,
+		architecture: String? = nil
+	) -> HardwareCatalogRecord {
+		HardwareCatalogRecord(
+			hwModel: model,
+			hwModelSlug: slug,
+			platformioTarget: target,
+			displayName: displayName,
+			activelySupported: activelySupported,
+			supportLevel: supportLevel,
+			architecture: architecture
+		)
+	}
+
+	@Test func usesCanonicalTargetForTrackerAliasesRegardlessOfCatalogOrder() {
+		let heltec = record(
+			model: 48,
+			slug: "HELTEC_WIRELESS_TRACKER",
+			target: "heltec-wireless-tracker",
+			displayName: "Heltec Wireless Tracker V1.1",
+			activelySupported: true,
+			supportLevel: .flagship
+		)
+		let tracksenger = record(
+			model: 48,
+			slug: "HELTEC_WIRELESS_TRACKER",
+			target: "tracksenger",
+			displayName: "TrackSenger (small TFT)",
+			activelySupported: true,
+			supportLevel: .legacy
+		)
+
+		let presentation = HardwareCatalogResolver.presentation(for: 48, in: [tracksenger, heltec])
+
+		#expect(presentation?.displayName == "Heltec Wireless Tracker V1.1")
+		#expect(presentation?.platformioTarget == "heltec-wireless-tracker")
+		#expect(presentation?.supportLevel == .flagship)
+	}
+
+	@Test func choosesPreferredVariantWhenTheProtocolCannotDistinguishIt() {
+		let smallDisplay = record(
+			model: 16,
+			slug: "TLORA_T3_S3",
+			target: "tlora-t3s3-v1",
+			displayName: "LILYGO T-LoRa T3-S3",
+			activelySupported: true,
+			supportLevel: .flagship,
+			architecture: "esp32-s3"
+		)
+		let eInk = record(
+			model: 16,
+			slug: "TLORA_T3_S3",
+			target: "tlora-t3s3-epaper",
+			displayName: "LILYGO T-LoRa T3-S3 E-Ink",
+			activelySupported: true,
+			supportLevel: .flagship,
+			architecture: "esp32-s3"
+		)
+
+		let presentation = HardwareCatalogResolver.presentation(for: 16, in: [eInk, smallDisplay])
+
+		#expect(presentation?.displayName == "LILYGO T-LoRa T3-S3")
+		#expect(presentation?.platformioTarget == "tlora-t3s3-v1")
+		#expect(presentation?.supportLevel == .flagship)
+		#expect(presentation?.activelySupported == true)
+		#expect(presentation?.architecture == "esp32-s3")
+	}
+
+	@Test func choosesBestSupportedVariantForFutureAmbiguousModels() {
+		let active = record(
+			model: 999,
+			slug: "FUTURE_DEVICE",
+			target: "future-device-a",
+			displayName: "Future Device A",
+			activelySupported: true,
+			supportLevel: .flagship
+		)
+		let legacy = record(
+			model: 999,
+			slug: "FUTURE_DEVICE",
+			target: "future-device-b",
+			displayName: "Future Device B",
+			activelySupported: false,
+			supportLevel: .legacy
+		)
+
+		let presentation = HardwareCatalogResolver.presentation(for: 999, in: [legacy, active])
+
+		#expect(presentation?.displayName == "Future Device A")
+		#expect(presentation?.platformioTarget == "future-device-a")
+		#expect(presentation?.supportLevel == .flagship)
+		#expect(presentation?.activelySupported == true)
+	}
+}
+
 // MARK: - createUser Tests
 
 @Suite("createUser")
