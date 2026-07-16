@@ -350,6 +350,7 @@
 		DD0000CHSETST0000000001 /* ChannelSetSaveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000CHSETST0000000000 /* ChannelSetSaveTests.swift */; };
 		DD0000MQTTFWDFLTTST00001 /* MqttForwardFilterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000MQTTFWDFLTTST00000 /* MqttForwardFilterTests.swift */; };
 		DD0000DEVLNKTST000000001 /* DeviceLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000DEVLNKTST000000000 /* DeviceLinkTests.swift */; };
+		E5E5E5E501000000000000A1 /* GeofenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E5E5E501000000000000A0 /* GeofenceTests.swift */; };
 		E4E4E4E403000000000000C1 /* EventFirmwareMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4E4E4E403000000000000C0 /* EventFirmwareMetadataTests.swift */; };
 		DD1827FB0000000000000002 /* RegionCodesFirmwareLocaleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1827FA0000000000000002 /* RegionCodesFirmwareLocaleTests.swift */; };
 		DD007BAE2AA4E91200F5FA12 /* MyInfoEntityExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD007BAD2AA4E91200F5FA12 /* MyInfoEntityExtension.swift */; };
@@ -984,6 +985,7 @@
 		DD0000CHSETST0000000000 /* ChannelSetSaveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelSetSaveTests.swift; sourceTree = "<group>"; };
 		DD0000MQTTFWDFLTTST00000 /* MqttForwardFilterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MqttForwardFilterTests.swift; sourceTree = "<group>"; };
 		DD0000DEVLNKTST000000000 /* DeviceLinkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLinkTests.swift; sourceTree = "<group>"; };
+		E5E5E5E501000000000000A0 /* GeofenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeofenceTests.swift; sourceTree = "<group>"; };
 		E4E4E4E403000000000000C0 /* EventFirmwareMetadataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventFirmwareMetadataTests.swift; sourceTree = "<group>"; };
 		DD1827FA0000000000000002 /* RegionCodesFirmwareLocaleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionCodesFirmwareLocaleTests.swift; sourceTree = "<group>"; };
 		DD007BAD2AA4E91200F5FA12 /* MyInfoEntityExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyInfoEntityExtension.swift; sourceTree = "<group>"; };
@@ -1749,6 +1751,7 @@
 				DD7E5740000000000000008A /* LockdownCoordinatorTests.swift */,
 				DD7E5740000000000000008B /* LockdownPassphraseStoreTests.swift */,
 				DD0000DEVLNKTST000000000 /* DeviceLinkTests.swift */,
+				E5E5E5E501000000000000A0 /* GeofenceTests.swift */,
 				E4E4E4E403000000000000C0 /* EventFirmwareMetadataTests.swift */,
 				BEEF00102F00000100000003 /* MeshtasticChannelURLTests.swift */,
 				DD0000CHSETST0000000000 /* ChannelSetSaveTests.swift */,
@@ -2848,6 +2851,7 @@
 				DD7E5750000000000000008A /* LockdownCoordinatorTests.swift in Sources */,
 				DD7E5750000000000000008B /* LockdownPassphraseStoreTests.swift in Sources */,
 				DD0000DEVLNKTST000000001 /* DeviceLinkTests.swift in Sources */,
+				E5E5E5E501000000000000A1 /* GeofenceTests.swift in Sources */,
 				E4E4E4E403000000000000C1 /* EventFirmwareMetadataTests.swift in Sources */,
 				DD0000CHSETST0000000001 /* ChannelSetSaveTests.swift in Sources */,
 				DD0000MQTTFWDFLTTST00001 /* MqttForwardFilterTests.swift in Sources */,
