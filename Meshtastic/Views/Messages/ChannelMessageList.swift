@@ -54,7 +54,6 @@ struct ChannelMessageList: View {
 	@State private var messageToHighlight: Int64 = 0
 	@State private var messageLimit: Int = 100
 	@State private var messages: [MessageEntity] = []
-	@State private var isSearching = false
 	@State private var searchQuery = ""
 	@State private var searchMatches: [MessageSearchMatch] = []
 	@State private var currentMatchIndex = -1
@@ -335,7 +334,7 @@ struct ChannelMessageList: View {
 
 	var body: some View {
 		VStack(spacing: 0) {
-		if isSearching { searchBar }
+		if !searchQuery.isEmpty { searchBar }
 		ScrollViewReader { scrollView in
 			ScrollView {
 				LazyVStack {
@@ -458,9 +457,10 @@ struct ChannelMessageList: View {
 		}
 		}
 		.navigationBarTitleDisplayMode(.inline)
+		.searchable(text: $searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Find in conversation")
+		.autocorrectionDisabled()
 		.task(id: searchQuery) { await debouncedSearch() }
 		.toolbar {
-			ToolbarItem(placement: .navigationBarTrailing) { searchToolbarButton }
 			ToolbarItem(placement: .principal) {
 				HStack {
 					CircleText(text: String(channel.index), color: .accentColor, circleSize: 44).fixedSize()
@@ -495,12 +495,10 @@ struct ChannelMessageList: View {
 private extension ChannelMessageList {
 	@ViewBuilder var searchBar: some View {
 		MessageSearchBar(
-			query: $searchQuery,
 			matchCount: searchMatches.count,
 			currentIndex: currentMatchIndex,
 			onPrevious: goToPreviousMatch,
-			onNext: goToNextMatch,
-			onClose: closeSearch
+			onNext: goToNextMatch
 		)
 	}
 
@@ -513,20 +511,10 @@ private extension ChannelMessageList {
 		}
 	}
 
-	@ViewBuilder var searchToolbarButton: some View {
-		Button {
-			if isSearching { closeSearch() } else { isSearching = true }
-		} label: {
-			Image(systemName: isSearching ? "magnifyingglass.circle.fill" : "magnifyingglass")
-		}
-		.accessibilityLabel("Find in conversation")
-	}
-
 	/// Debounces search so a full-store scan doesn't run on every keystroke. Cancelled and
 	/// restarted by `.task(id: searchQuery)` whenever the query changes.
 	@MainActor
 	func debouncedSearch() async {
-		guard isSearching else { return }
 		// Clearing the field should empty the results immediately, not after the debounce.
 		guard !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
 			await runSearch()
@@ -599,13 +587,5 @@ private extension ChannelMessageList {
 	func goToPreviousMatch() {
 		guard !searchMatches.isEmpty else { return }
 		focusMatch(at: currentMatchIndex - 1 < 0 ? searchMatches.count - 1 : currentMatchIndex - 1)
-	}
-
-	func closeSearch() {
-		isSearching = false
-		searchQuery = ""
-		searchMatches = []
-		currentMatchIndex = -1
-		messageToHighlight = -1
 	}
 }
