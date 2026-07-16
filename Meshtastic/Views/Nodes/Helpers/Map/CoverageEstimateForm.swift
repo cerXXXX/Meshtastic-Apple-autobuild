@@ -69,6 +69,7 @@ struct CoverageEstimateForm: View {
 							.symbolRenderingMode(.palette)
 							.foregroundStyle(.white, Color(.systemGray3))
 					}
+					.buttonStyle(.plain)
 					.accessibilityLabel("Close")
 				}
 				ToolbarItem(placement: .confirmationAction) {
