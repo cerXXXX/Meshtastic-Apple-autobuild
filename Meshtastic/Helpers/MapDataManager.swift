@@ -635,7 +635,8 @@ extension MapDataManager {
 ///   the response. This is best-effort defense-in-depth (metrics-based, so it prevents the fetched
 ///   content from being imported rather than blocking the initial GET, which `URLSession` gives no
 ///   pre-connect hook to stop).
-private final class SSRFGuardDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+// Internal (not private) so `SSRFGuardDelegateTests` can drive the redirect re-validation directly.
+final class SSRFGuardDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
 	private let lock = NSLock()
 	private var disallowedPeer = false
 
