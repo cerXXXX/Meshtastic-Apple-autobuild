@@ -92,6 +92,8 @@ A green shield (🛡️) on a broadcast message bubble means the message is **si
 
 Long press any message and tap **Tapback** to send an emoji reaction.
 
+When someone reacts to a message, you get a notification such as **Alice reacted 👍 to "See you soon"** — unless the sender (for a direct message) or the channel is muted. Reactions notify **without** adding to the conversation's unread badge. If your radio hasn't seen the message that was reacted to, the reaction is saved but no notification is shown (there'd be nothing to display it against).
+
 ---
 
 {: .tip }
@@ -102,11 +104,11 @@ Long press any message and tap **Tapback** to send an emoji reaction.
 
 ## Find in Conversation
 
-Tap the **magnifying glass** in the top-right of any channel or direct-message conversation to open the find bar, then type to search that conversation's message text.
+Tap the **Find in conversation** search field below the title of any channel or direct-message conversation, then type to search that conversation's message text.
 
 - Matching is **case- and accent-insensitive**, and searches the **entire conversation history** — not just the messages currently on screen.
-- The bar shows your position in the results (e.g. **2/7**); use the **up/down chevrons** to jump to the previous or next match, wrapping around at the ends. The current match is highlighted and scrolled into view, loading older messages automatically if needed.
-- Tap **Done** (or the magnifying glass again) to close the bar and clear the search.
+- A results bar shows your position in the matches (e.g. **2 of 7**); use the **up/down chevrons** to jump to the previous or next match, wrapping around at the ends. The current match is highlighted and scrolled into view, loading older messages automatically if needed.
+- Tap **Cancel** (or clear the field) to dismiss the search and return to the conversation.
 
 Search covers the text of channel broadcasts and direct messages, matching exactly the messages each conversation shows. Emoji reactions aren't matched.
 
