@@ -156,6 +156,24 @@ struct MeshtasticAppleApp: App {
 					accessoryManager.startDiscovery()
 				}
 			}
+#if DEBUG
+			// Automated perf/stress testing: connect straight to a TCP radio (or replay
+			// server) with `-meshtastic-connect-tcp <host[:port]>`, skipping the Connect
+			// tab entirely. DEBUG-only, like the other automation hooks above.
+			let arguments = ProcessInfo.processInfo.arguments
+			if let flagIndex = arguments.firstIndex(of: "-meshtastic-connect-tcp"),
+			   arguments.indices.contains(flagIndex + 1),
+			   let tcpTransport = accessoryManager.transportForType(.tcp),
+			   let device = tcpTransport.device(forManualConnection: arguments[flagIndex + 1]) {
+				let manager = accessoryManager
+				Task {
+					// Give startup (container, transports, discovery) a beat to settle.
+					try? await Task.sleep(for: .seconds(2))
+					Logger.services.info("🧪 [App] Auto-connecting to TCP device \(device.identifier, privacy: .public) (launch argument)")
+					try? await manager.connect(to: device)
+				}
+			}
+#endif
 		}
 	}
 

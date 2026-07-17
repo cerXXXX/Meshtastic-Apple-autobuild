@@ -91,7 +91,7 @@ actor TCPConnection: Connection {
 						let payload = try await receiveData(min: Int(length), max: Int(length))
 						switch FromRadioDecoder.classify(payload) {
 						case .decoded(let fromRadio):
-							await connectionStreamContinuation?.yield(.data(fromRadio))
+							await self.yieldDataEvent(fromRadio)
 						case .skipInvalidUTF8(let error):
 							// A string field failed UTF-8 validation; skip this frame and keep reading
 							// rather than tearing down an otherwise healthy connection over one
@@ -204,11 +204,34 @@ actor TCPConnection: Connection {
 		// For TCP, reader is already started
 	}
 
+	/// Data events dropped by the bounded stream buffer since connect (see `getPacketStream`).
+	private var droppedDataEventCount = 0
+
+	/// Yields a decoded frame into the event stream, counting buffer-overflow drops so
+	/// sustained backpressure is visible in the logs instead of silent.
+	private func yieldDataEvent(_ fromRadio: FromRadio) {
+		guard let continuation = connectionStreamContinuation else { return }
+		if case .dropped = continuation.yield(.data(fromRadio)) {
+			droppedDataEventCount += 1
+			if droppedDataEventCount == 1 || droppedDataEventCount % 1_000 == 0 {
+				Logger.transport.warning("🌊 [TCP] Event buffer full — dropped oldest frame (\(self.droppedDataEventCount) dropped this session); consumer is behind the radio's packet rate")
+			}
+		}
+	}
+
 	private func getPacketStream() -> AsyncStream<ConnectionEvent> {
 		self.connectionStreamContinuation?.finish()
 		self.connectionStreamContinuation = nil
-		
-		return AsyncStream<ConnectionEvent> { continuation in
+
+		// Bounded buffer: the default unbounded policy let a fast producer (a TCP radio can
+		// sustain >100 packets/s) queue every frame the main-actor consumer hadn't processed
+		// yet — under a stress replay that backlog reached ~all packets of the session, holding
+		// their protobufs live (multi-hundred-MB) while the app fell minutes behind real time.
+		// Keeping the newest 4,096 events drops the OLDEST first under sustained overload —
+		// stale mesh traffic, exactly what a saturated real radio would shed — while a node-DB
+		// dump (one event per node) fits well inside the bound, and error/teardown events are
+		// always the newest when they occur.
+		return AsyncStream<ConnectionEvent>(bufferingPolicy: .bufferingNewest(4096)) { continuation in
 			self.connectionStreamContinuation = continuation
 			continuation.onTermination = { [weak self] termination in
 				guard let self else { return }

@@ -239,11 +239,13 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 	/// reached millions of live model objects / multi-GB RSS). Recreating the actor releases
 	/// them; connect-time recreation alone doesn't help a session that stays connected.
 	var packetsAtLastIngestRecycle: Int = 0
-	/// How many packets between recycles. On a busy mesh (~140 pkt/s) this is a few minutes;
-	/// on a quiet mesh it may never fire — which is fine, since accumulation is proportional
-	/// to packets processed. Recycling costs one context teardown + cold caches on the next
-	/// few fetches, so keep it infrequent.
-	static let ingestRecycleInterval = 20_000
+	/// How many packets between recycles. Each processed packet leaves a handful of registered
+	/// objects behind, so this bounds the ingest context's working set to a few hundred MB at
+	/// worst. Under a saturating TCP replay this fires every couple of minutes; on a busy real
+	/// mesh every ~10 minutes; on a quiet mesh it may never fire — which is fine, since
+	/// accumulation is proportional to packets processed. Recycling costs one context teardown
+	/// plus cold caches on the next few fetches.
+	static let ingestRecycleInterval = 5_000
 
 	// Debug counter: MQTT client-proxy downlink packets dropped before forwarding
 	// to the device because they carried no payload (see MqttForwardFilter). NOT
