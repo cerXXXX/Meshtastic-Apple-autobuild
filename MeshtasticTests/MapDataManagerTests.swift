@@ -14,7 +14,10 @@ private final class GeoJSONStubURLProtocol: URLProtocol {
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
-		let response = HTTPURLResponse(url: request.url!, statusCode: Self.statusCode, httpVersion: "HTTP/1.1", headerFields: nil)!
+		// Advertise `Content-Length` so `importFromRemote`'s streaming size guard can reject an oversized
+		// body up front instead of iterating every byte of the stub payload.
+		let headers = ["Content-Length": String(Self.responseData.count)]
+		let response = HTTPURLResponse(url: request.url!, statusCode: Self.statusCode, httpVersion: "HTTP/1.1", headerFields: headers)!
 		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
 		client?.urlProtocol(self, didLoad: Self.responseData)
 		client?.urlProtocolDidFinishLoading(self)
@@ -22,10 +25,12 @@ private final class GeoJSONStubURLProtocol: URLProtocol {
 
 	override func stopLoading() {}
 
-	static func makeSession() -> URLSession {
+	// Returns a stub-backed `URLSessionConfiguration` (not a full `URLSession`) so `importFromRemote`
+	// always constructs the session with its `SSRFGuardDelegate` — the guard is never bypassed.
+	static func makeConfiguration() -> URLSessionConfiguration {
 		let config = URLSessionConfiguration.ephemeral
 		config.protocolClasses = [GeoJSONStubURLProtocol.self]
-		return URLSession(configuration: config)
+		return config
 	}
 }
 
@@ -56,7 +61,7 @@ struct MapDataManagerImportFromRemoteTests {
 		let manager = MapDataManager()
 		let metadata = try await manager.importFromRemote(
 			urlString: "https://example.com/coverage-\(UUID().uuidString).geojson",
-			session: GeoJSONStubURLProtocol.makeSession()
+			configuration: GeoJSONStubURLProtocol.makeConfiguration()
 		)
 		defer { Task { await cleanUp(manager, metadata) } }
 
@@ -72,7 +77,7 @@ struct MapDataManagerImportFromRemoteTests {
 		await #expect(throws: Error.self) {
 			try await manager.importFromRemote(
 				urlString: "https://example.com/missing.geojson",
-				session: GeoJSONStubURLProtocol.makeSession()
+				configuration: GeoJSONStubURLProtocol.makeConfiguration()
 			)
 		}
 	}
@@ -85,7 +90,7 @@ struct MapDataManagerImportFromRemoteTests {
 		await #expect(throws: MapDataError.self) {
 			try await manager.importFromRemote(
 				urlString: "https://example.com/huge.geojson",
-				session: GeoJSONStubURLProtocol.makeSession()
+				configuration: GeoJSONStubURLProtocol.makeConfiguration()
 			)
 		}
 	}
@@ -99,8 +104,13 @@ struct MapDataManagerImportFromRemoteTests {
 		defer { try? FileManager.default.removeItem(at: tempURL) }
 
 		let manager = MapDataManager()
-		await #expect(throws: MapDataError.self) {
-			try await manager.importFromRemote(urlString: tempURL.absoluteString, session: GeoJSONStubURLProtocol.makeSession())
+		// Assert the *specific* rejection reason so this stays a security regression test: a `file://` URL
+		// must be refused as a disallowed host, not pass for some unrelated map-data error.
+		await #expect {
+			try await manager.importFromRemote(urlString: tempURL.absoluteString, configuration: GeoJSONStubURLProtocol.makeConfiguration())
+		} throws: { error in
+			guard case MapDataError.disallowedHost = error else { return false }
+			return true
 		}
 	}
 }
@@ -139,7 +149,9 @@ struct MapDataManagerDisallowedHostTests {
 	@Test("public IP literals are allowed", arguments: [
 		"8.8.8.8",
 		"1.1.1.1",
-		"93.184.216.34"
+		"93.184.216.34",
+		"[2606:4700:4700::1111]", // Cloudflare public IPv6 — guards against IPv6 being blanket-rejected
+		"[2001:4860:4860::8888]"  // Google public IPv6
 	])
 	func allowsPublicHosts(_ host: String) {
 		#expect(!MapDataManager.isDisallowedHost(host), "expected \(host) to be allowed")

@@ -109,7 +109,7 @@ class MapDataManager: ObservableObject {
 	/// Because the deep-link caller is untrusted, this rejects any non-`http(s)` scheme and blocks
 	/// loopback / link-local / private / reserved hosts (SSRF hardening). Local `file://`
 	/// imports go through `processUploadedFile` directly, not this path.
-	func importFromRemote(urlString: String, session injectedSession: URLSession? = nil) async throws -> MapDataMetadata {
+	func importFromRemote(urlString: String, configuration injectedConfiguration: URLSessionConfiguration? = nil) async throws -> MapDataMetadata {
 		guard let url = URL(string: urlString) else {
 			throw MapDataError.invalidDestination
 		}
@@ -135,41 +135,48 @@ class MapDataManager: ObservableObject {
 		// The up-front host check above can be defeated by two SSRF tricks that both re-enter DNS/URL
 		// handling *after* validation: (1) an HTTP redirect to an internal host, and (2) DNS rebinding
 		// (a short-TTL record that answers with a public IP at validation time and an internal IP when
-		// `URLSession` re-resolves at connect time). When the caller doesn't inject a session (tests do),
-		// build one backed by `SSRFGuardDelegate`: redirect re-validation is the reliable control; the
-		// connected-peer check is opportunistic (see below).
-		//
-		// WARNING: an *injected* session bypasses `SSRFGuardDelegate` entirely (redirect + peer checks).
-		// Injection exists only for the test stub, which uses fixed public hostnames; never route
-		// untrusted production URLs through a caller-supplied session.
+		// `URLSession` re-resolves at connect time). The session is always backed by `SSRFGuardDelegate`:
+		// redirect re-validation is the reliable control; the connected-peer check is opportunistic (see
+		// below). Tests inject only a `URLSessionConfiguration` (e.g. a `URLProtocol` stub), so a caller
+		// can never supply a session that bypasses the guard.
 		let guardDelegate = SSRFGuardDelegate()
-		let session: URLSession
-		let ownsSession: Bool
-		if let injectedSession {
-			session = injectedSession
-			ownsSession = false
-		} else {
-			session = URLSession(configuration: .ephemeral, delegate: guardDelegate, delegateQueue: nil)
-			ownsSession = true
+		let session = URLSession(
+			configuration: injectedConfiguration ?? .ephemeral,
+			delegate: guardDelegate,
+			delegateQueue: nil
+		)
+		defer { session.finishTasksAndInvalidate() }
+
+		// Stream the body instead of buffering it whole. `data(from:)` would materialise the entire
+		// (possibly attacker-sized or endless) response in memory before the size guard could run, so we
+		// read the async byte stream and abort the moment the running total exceeds `maxFileSize`.
+		let (byteStream, response) = try await session.bytes(from: url)
+
+		// Cheap early reject when the server honestly declares an oversized body.
+		if response.expectedContentLength > maxFileSize {
+			throw MapDataError.fileTooLarge
 		}
-		defer { if ownsSession { session.finishTasksAndInvalidate() } }
-
-		let (data, response) = try await session.data(from: url)
-
-		// Opportunistic DNS-rebinding catch: if the connection landed on an internal peer, discard the
-		// response so its content is never imported/rendered. This only fires when `didFinishCollecting`
-		// wins the race with the `data(from:)` continuation, so it catches a subset of rebinding cases
-		// rather than all of them — redirect re-validation remains the reliable control. `URLSession`
-		// exposes no pre-connect IP hook, so the initial GET can't be blocked outright here.
-		if guardDelegate.connectedToDisallowedPeer {
-			throw MapDataError.disallowedHost
-		}
-
 		if let httpResponse = response as? HTTPURLResponse, !(200..<300).contains(httpResponse.statusCode) {
 			throw MapDataError.invalidContent
 		}
-		guard data.count <= maxFileSize else {
-			throw MapDataError.fileTooLarge
+
+		var data = Data()
+		if response.expectedContentLength > 0 {
+			data.reserveCapacity(Int(min(response.expectedContentLength, maxFileSize)))
+		}
+		for try await byte in byteStream {
+			data.append(byte)
+			if data.count > maxFileSize {
+				throw MapDataError.fileTooLarge
+			}
+		}
+
+		// Opportunistic DNS-rebinding catch: transaction metrics are collected once the body finishes, so
+		// by the time the stream is drained the guard has seen the real peer address. If the connection
+		// landed on an internal peer, discard the response so its content is never imported/rendered —
+		// redirect re-validation remains the reliable control (`URLSession` exposes no pre-connect IP hook).
+		if guardDelegate.connectedToDisallowedPeer {
+			throw MapDataError.disallowedHost
 		}
 
 		let suggestedName = url.pathExtension.lowercased() == "geojson" || url.pathExtension.lowercased() == "json"
@@ -593,7 +600,8 @@ extension MapDataManager {
 	}
 
 	/// `bytes` is a 16-byte IPv6 address. Blocks loopback (`::1`), unspecified (`::`), link-local
-	/// (`fe80::/10`), unique-local (`fc00::/7`), and IPv4-mapped addresses in a blocked v4 range.
+	/// (`fe80::/10`), unique-local (`fc00::/7`), deprecated site-local (`fec0::/10`), multicast
+	/// (`ff00::/8`), and IPv4-mapped addresses in a blocked v4 range.
 	private static func isDisallowedIPv6(_ bytes: [UInt8]) -> Bool {
 		guard bytes.count == 16 else { return true }
 		// Loopback ::1
@@ -604,6 +612,10 @@ extension MapDataManager {
 		if bytes[0] == 0xfe && (bytes[1] & 0xc0) == 0x80 { return true }
 		// Unique-local fc00::/7
 		if (bytes[0] & 0xfe) == 0xfc { return true }
+		// Deprecated site-local fec0::/10 (RFC 3879)
+		if bytes[0] == 0xfe && (bytes[1] & 0xc0) == 0xc0 { return true }
+		// Multicast ff00::/8
+		if bytes[0] == 0xff { return true }
 		// IPv4-mapped ::ffff:a.b.c.d — re-check the embedded v4 address.
 		if bytes[0..<10].allSatisfy({ $0 == 0 }) && bytes[10] == 0xff && bytes[11] == 0xff {
 			let ipv4 = (UInt32(bytes[12]) << 24) | (UInt32(bytes[13]) << 16) | (UInt32(bytes[14]) << 8) | UInt32(bytes[15])
@@ -673,6 +685,9 @@ final class SSRFGuardDelegate: NSObject, URLSessionTaskDelegate, @unchecked Send
 		didFinishCollecting metrics: URLSessionTaskMetrics
 	) {
 		for transaction in metrics.transactionMetrics {
+			// When the connection is proxied (e.g. iCloud Private Relay), `remoteAddress` is the proxy's IP,
+			// not the origin's — checking it would give a false internal / rebinding verdict, so skip it.
+			if transaction.isProxyConnection { continue }
 			guard let peer = transaction.remoteAddress, !peer.isEmpty else { continue }
 			// `remoteAddress` is a literal IP; `isDisallowedHost` resolves literals locally (no network).
 			if MapDataManager.isDisallowedHost(peer) {
