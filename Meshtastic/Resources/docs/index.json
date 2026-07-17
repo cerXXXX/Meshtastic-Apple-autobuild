@@ -66,14 +66,14 @@
             "text",
             "session",
             "row",
-            "not",
             "live",
             "last",
             "interface",
             "heard",
             "device",
             "contact",
-            "channels"
+            "channels",
+            "automatically"
         ],
         "charCount": 3378
     },
@@ -129,31 +129,31 @@
             "app",
             "updates",
             "meshtastic",
+            "hardware",
             "connected",
+            "connect",
+            "version",
             "transfer",
             "tap",
+            "stable",
             "shows",
             "progress",
-            "connect",
             "ble",
-            "version",
             "standard",
             "settings",
             "screen",
-            "over",
+            "running",
+            "reminder",
+            "ota",
             "open",
             "once",
-            "not",
+            "notification",
+            "node",
+            "keep",
             "from",
-            "during",
-            "channel",
-            "badge",
-            "available",
-            "automatically",
-            "after",
-            "without"
+            "channel"
         ],
-        "charCount": 3377
+        "charCount": 3896
     },
     {
         "id": "getting-started",
@@ -240,37 +240,37 @@
         "navOrder": 6,
         "keywords": [
             "map",
-            "nodes",
             "tap",
+            "nodes",
+            "node",
+            "from",
             "waypoint",
             "show",
-            "node",
             "only",
+            "coverage",
             "position",
             "mesh",
+            "site",
+            "radio",
+            "open",
             "lora",
+            "location",
+            "estimate",
+            "planner",
             "path",
+            "options",
             "line",
+            "layer",
             "geofence",
-            "from",
+            "device",
             "description",
             "box",
             "bounding",
             "waypoints",
             "via",
-            "route",
-            "location",
-            "icon",
-            "filter",
-            "favorites",
-            "circle",
-            "trace",
-            "right",
-            "radius",
-            "over",
-            "open"
+            "route"
         ],
-        "charCount": 5717
+        "charCount": 8086
     },
     {
         "id": "messages",
@@ -281,12 +281,12 @@
             "message",
             "channel",
             "key",
-            "not",
-            "circle",
             "messages",
+            "circle",
+            "text",
             "fill",
             "channels",
-            "text",
+            "direct",
             "formatting",
             "available",
             "orange",
@@ -294,22 +294,22 @@
             "delimiters",
             "retry",
             "exclamationmark",
-            "direct",
+            "tap",
             "recipient",
             "node",
+            "conversation",
             "after",
             "selection",
             "bold",
-            "tap",
+            "radio",
             "public",
+            "field",
             "button",
             "symbol",
-            "radio",
             "preview",
-            "press",
-            "from"
+            "press"
         ],
-        "charCount": 10415
+        "charCount": 11637
     },
     {
         "id": "mqtt",
@@ -328,9 +328,7 @@
             "tls",
             "node",
             "channel",
-            "use",
             "org",
-            "not",
             "internet",
             "username",
             "uplink",
@@ -346,7 +344,9 @@
             "publishes",
             "password",
             "packet",
-            "over"
+            "optional",
+            "only",
+            "one"
         ],
         "charCount": 2443
     },
@@ -367,27 +367,27 @@
             "messages",
             "key",
             "shows",
-            "not",
             "list",
             "hardware",
             "firmware",
             "broadcasts",
+            "show",
+            "section",
             "row",
             "public",
             "location",
             "direct",
             "client",
             "supported",
-            "show",
-            "section",
+            "position",
             "mesh",
+            "map",
             "long",
             "local",
             "links",
-            "hops",
-            "heard"
+            "hops"
         ],
-        "charCount": 8741
+        "charCount": 9146
     },
     {
         "id": "settings",
@@ -672,14 +672,15 @@
             "jun",
             "settings",
             "nodes",
-            "node",
             "messages",
+            "node",
             "map",
             "page",
+            "now",
             "mesh",
             "local",
             "channel",
-            "now",
+            "quot",
             "show",
             "region",
             "list",
@@ -688,18 +689,17 @@
             "app",
             "signed",
             "radios",
-            "quot",
             "per",
             "only",
             "message",
+            "jul",
             "docs",
             "amp",
             "waypoints",
             "watch",
-            "verified",
-            "translation"
+            "verified"
         ],
-        "charCount": 6314
+        "charCount": 6609
     },
     {
         "id": "adding-features",
@@ -759,7 +759,6 @@
             "environmentobject",
             "wraps",
             "via",
-            "use",
             "url",
             "translations",
             "translation",
@@ -775,7 +774,8 @@
             "deep",
             "connectivity",
             "ble",
-            "app"
+            "app",
+            "after"
         ],
         "charCount": 4422
     },
@@ -847,13 +847,13 @@
             "var",
             "utility",
             "uses",
-            "use",
             "types",
             "typed",
             "transport",
             "tips",
             "tcp",
-            "swiftdata"
+            "swiftdata",
+            "subsystems"
         ],
         "charCount": 3538
     },
@@ -888,11 +888,11 @@
             "apple",
             "app",
             "xcode",
-            "use",
             "uikit",
             "type",
             "submodule",
-            "subject"
+            "subject",
+            "site"
         ],
         "charCount": 2890
     },
@@ -986,7 +986,6 @@
             "measurement",
             "swift",
             "views",
-            "use",
             "temperature",
             "let",
             "speed",
@@ -1009,7 +1008,8 @@
             "unitspeed",
             "unitlength",
             "text",
-            "string"
+            "string",
+            "nodes"
         ],
         "charCount": 6352
     },
@@ -1047,8 +1047,8 @@
             "per",
             "new",
             "messages",
-            "use",
-            "type"
+            "type",
+            "set"
         ],
         "charCount": 11360
     },
@@ -1103,7 +1103,6 @@
             "snapshots",
             "run",
             "let",
-            "use",
             "reference",
             "png",
             "expect",
@@ -1126,7 +1125,8 @@
             "using",
             "try",
             "suite",
-            "screenshots"
+            "screenshots",
+            "scale"
         ],
         "charCount": 3697
     },
@@ -1151,7 +1151,6 @@
             "radio",
             "packet",
             "only",
-            "not",
             "from",
             "decode",
             "data",
@@ -1165,7 +1164,8 @@
             "properties",
             "handlefromradio",
             "flow",
-            "field"
+            "field",
+            "disconnect"
         ],
         "charCount": 4859
     },

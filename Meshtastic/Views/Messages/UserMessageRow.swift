@@ -95,8 +95,12 @@ struct UserMessageRow: View {
 							scrollView.scrollTo(messageNum, anchor: .center)
 							Task {
 								DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-									withAnimation(.easeInOut(duration: 0.5)) {
-										messageToHighlight = -1
+									// Only clear if this jump's highlight is still the active one — a search
+									// (or later jump) may have moved the highlight elsewhere in the meantime.
+									if messageToHighlight == messageNum {
+										withAnimation(.easeInOut(duration: 0.5)) {
+											messageToHighlight = -1
+										}
 									}
 								}
 							}
@@ -172,5 +176,11 @@ struct UserMessageRow: View {
 			
 		}
 		.id(message.messageId)
+		.background(
+			RoundedRectangle(cornerRadius: 8)
+				.fill(Color.yellow.opacity(messageToHighlight == message.messageId ? 0.18 : 0))
+				.padding(.horizontal, 4)
+		)
+		.animation(.easeInOut(duration: 0.3), value: messageToHighlight)
 	}
 }

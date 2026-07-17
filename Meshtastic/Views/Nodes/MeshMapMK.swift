@@ -104,6 +104,9 @@ struct MeshMapMK: View {
 	@State var newWaypointCoord: CLLocationCoordinate2D?
 	@State var isMeshMap = true
 	@State private var showLegend = false
+	/// Site Planner coverage-estimate flow: the headless WebView+bridge runner and the form seed.
+	@StateObject private var coverageRunner = CoverageEstimateRunner()
+	@State private var coverageSeed: CoverageEstimateSeed?
 	/// Filter
 	@ObservedObject var filters = NodeFilterParameters.shared
 	/// Track whether a detached Mesh Map window is currently open.
@@ -134,8 +137,36 @@ struct MeshMapMK: View {
 		}
 	}
 
-	@Query(filter: #Predicate<PositionEntity> { $0.nodePosition != nil && $0.latest == true && $0.nodePosition?.ignored != true })
-	private var allLatestPositions: [PositionEntity]
+	/// Latest positions, refreshed on a throttled cadence (see the `.task` in `body`) instead of a
+	/// live `@Query`. Under heavy ingestion (large mesh, TCP replay, reconnect node-DB dump) a live
+	/// query invalidates `body` on every position write, and each evaluation re-ran the
+	/// filter + density sort over the whole set — pegging the main thread at ~100% CPU. A ~2s
+	/// refresh is imperceptible on a map while pan/zoom/filter changes still refresh immediately.
+	@State private var allLatestPositions: [PositionEntity] = []
+	/// Change-detection key of the last applied position state; skips snapshot/overlay rebuilds
+	/// when a periodic refresh finds nothing visibly different.
+	@State private var appliedPositionStateKey: Int64 = .min
+
+	private func fetchLatestPositions() -> [PositionEntity] {
+		let descriptor = FetchDescriptor<PositionEntity>(
+			predicate: #Predicate<PositionEntity> { $0.nodePosition != nil && $0.latest == true && $0.nodePosition?.ignored != true }
+		)
+		return (try? context.fetch(descriptor)) ?? []
+	}
+
+	/// Re-fetch positions, rebuild the derived state, and apply it when it actually changed.
+	/// `force` bypasses the change-detection key (used when visibility flips, so snapshots are
+	/// rebuilt after being dropped even though the underlying positions are unchanged).
+	@MainActor
+	private func refreshPositionState(force: Bool = false) {
+		allLatestPositions = fetchLatestPositions()
+		let state = visiblePositionState
+		guard force || state.key != appliedPositionStateKey else { return }
+		appliedPositionStateKey = state.key
+		refreshVisiblePositionSnapshots(from: state.positions)
+		syncFallbackLocation()
+		decodeOfflineIfVisible()
+	}
 
 	/// Enabled saved routes drawn as polylines + start/finish markers (parity with the old map).
 	@Query(filter: #Predicate<RouteEntity> { $0.enabled == true }, sort: \RouteEntity.name)
@@ -213,17 +244,15 @@ struct MeshMapMK: View {
 			combine(&key, Int64((visibleRegion.span.longitudeDelta * 10_000).rounded(.towardZero)))
 		}
 		combine(&key, filterRefreshKey)
-		for position in positions.prefix(64) {
+		// Hash EVERY visible position: since the throttled refresh, this key is the only gate for
+		// snapshot/overlay rebuilds, and a truncated sample would leave pins beyond it permanently
+		// stale when a node moves without changing the set's count or ordering.
+		for position in positions {
 			combine(&key, Int64(truncatingIfNeeded: position.persistentModelID.hashValue))
 			combine(&key, Int64(position.latitudeI))
 			combine(&key, Int64(position.longitudeI))
 			combine(&key, Int64(position.precisionBits))
 		}
-		if let last = positions.last {
-			combine(&key, Int64(truncatingIfNeeded: last.persistentModelID.hashValue))
-			combine(&key, Int64(last.latitudeI))
-				combine(&key, Int64(last.longitudeI))
-			}
 		return MeshMapVisiblePositionState(positions: positions, key: key)
 	}
 
@@ -396,6 +425,7 @@ struct MeshMapMK: View {
 				.onChange(of: router.mapState) {
 					guard case .map = router.selectedTab else { return }
 					applyTraceRouteSelection()
+					consumeCoverageEstimateState()
 					// TODO: handle deep link for waypoints
 				}
 				.onChange(of: selectedMapLayer) { _, newMapLayer in
@@ -428,9 +458,24 @@ struct MeshMapMK: View {
 						#endif
 						.presentationBackgroundInteraction(.enabled(upThrough: .medium))
 				}
+				.sheet(item: $coverageSeed) { seed in
+					CoverageEstimateForm(seed: seed, runner: coverageRunner)
+						.presentationDetents([.large])
+						#if !targetEnvironment(macCatalyst)
+						.presentationDragIndicator(.visible)
+						#endif
+				}
 				.safeAreaInset(edge: .bottom, alignment: .trailing) {
 					HStack(spacing: 12) {
 						Spacer()
+						Button(action: {
+							presentCoverageEstimateFromMap()
+						}) {
+							Image("custom.radio.tower")
+						}
+						.accessibilityLabel("Estimate coverage")
+						.accessibilityHint("Runs a Site Planner coverage estimate and adds it to the map.")
+						.glassButtonStyle()
 						Button(action: {
 							withAnimation {
 								editingFilters = !editingFilters
@@ -467,7 +512,6 @@ struct MeshMapMK: View {
 	}
 
 	var body: some View {
-		let positionState = visiblePositionState
 		NavigationStack {
 			ZStack {
 			mapWithSheets
@@ -495,10 +539,14 @@ struct MeshMapMK: View {
 			}
 			.toolbarBackground(.hidden, for: .navigationBar)
 		}
-			.onChange(of: positionState.key) {
-				refreshVisiblePositionSnapshots(from: positionState.positions)
-				syncFallbackLocation()
-				decodeOfflineIfVisible()
+			.task(id: isMapVisible) {
+				// Throttled position refresh: re-derive the visible positions on a gentle
+				// cadence instead of on every SwiftData write (see `allLatestPositions`).
+				guard isMapVisible else { return }
+				while !Task.isCancelled {
+					refreshPositionState()
+					try? await Task.sleep(for: .seconds(2))
+				}
 			}
 			.onChange(of: offlineMapManager.regions) {
 				reloadOfflineSource()
@@ -506,8 +554,14 @@ struct MeshMapMK: View {
 			.onChange(of: overlayInputsKey) {
 				rebuildAllMapContent()
 			}
-			.onChange(of: allLatestPositions) {
-				syncFallbackLocation()
+			.onChange(of: filterRefreshKey) {
+				// Filter/search edits should reflect immediately, not on the next tick.
+				refreshPositionState(force: true)
+			}
+			.onChange(of: regionRefreshKey) {
+				// Pan/zoom settled: re-filter to the new region now; the state key dedupes
+				// the rebuild when the visible set is unchanged.
+				refreshPositionState()
 			}
 			.onChange(of: accessoryManager.activeDeviceNum) {
 				syncFallbackLocation()
@@ -515,12 +569,17 @@ struct MeshMapMK: View {
 			.onChange(of: accessoryManager.isInBackground) {
 				// Foreground/background flips isMapVisible; refresh so the overlay-bearing
 				// snapshots are dropped when backgrounded and rebuilt when foregrounded.
-				refreshVisiblePositionSnapshots(from: positionState.positions)
+				refreshPositionState(force: true)
+			}
+			.onChange(of: coverageRunner.importedResult) { _, result in
+				guard let result else { return }
+				applyImportedCoverage(result)
 			}
 			.onAppear {
 				UIApplication.shared.isIdleTimerDisabled = true
 				syncFallbackLocation()
 				refreshMapWindowOpenState()
+				consumeCoverageEstimateState()
 			// Initialize enabled overlay configs with all active files
 			// Migrate the legacy `.offline` base layer to the new independent offline-tiles overlay.
 			if selectedMapLayer == .offline {
@@ -547,7 +606,7 @@ struct MeshMapMK: View {
 			case .offline:
 				mapStyle = MapStyle.hybrid(elevation: .realistic, pointsOfInterest: showPointsOfInterest ? .all : .excludingAll, showsTraffic: showTraffic)
 			}
-			refreshVisiblePositionSnapshots(from: positionState.positions)
+			refreshPositionState(force: true)
 		}
 		.onDisappear(perform: {
 			UIApplication.shared.isIdleTimerDisabled = false
@@ -559,8 +618,9 @@ struct MeshMapMK: View {
 				syncFallbackLocation()
 				refreshMapWindowOpenState()
 				UIApplication.shared.isIdleTimerDisabled = true
-				refreshVisiblePositionSnapshots()
+				refreshPositionState(force: true)
 				applyTraceRouteSelection()
+				consumeCoverageEstimateState()
 			} else {
 				flyover.stop(restoreCamera: false)
 				UIApplication.shared.isIdleTimerDisabled = false
@@ -581,10 +641,129 @@ struct MeshMapMK: View {
 		}
 	}
 
+	/// A successful import turns on the overlay master toggle, enables the imported file's config,
+	/// refreshes the styled overlays, and recenters the map on the transmitter.
+	private func applyImportedCoverage(_ result: CoverageEstimateResult) {
+		GeoJSONOverlayManager.shared.clearCache()
+		mapOverlaysEnabled = true
+		enabledOverlayConfigs.insert(result.metadata.id)
+		rebuildGeoJSONOverlays()
+		cameraCommand = ClusterMapCameraCommand(
+			id: UUID(),
+			region: coverageRegion(for: result),
+			animated: true
+		)
+	}
+
+	/// Frame the map on the imported coverage: fit its bounding box with padding so the whole
+	/// overlay is visible with breathing room. Falls back to a fixed span around the transmitter
+	/// when the GeoJSON yielded no bounds.
+	private func coverageRegion(for result: CoverageEstimateResult) -> MKCoordinateRegion {
+		guard let box = result.boundingBox else {
+			return MKCoordinateRegion(
+				center: result.coordinate,
+				span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+			)
+		}
+		let padding = 1.3 // ~15% margin on each side
+		let center = CLLocationCoordinate2D(
+			latitude: (box.minLatitude + box.maxLatitude) / 2,
+			longitude: (box.minLongitude + box.maxLongitude) / 2
+		)
+		let span = MKCoordinateSpan(
+			latitudeDelta: min(max((box.maxLatitude - box.minLatitude) * padding, 0.01), 180),
+			longitudeDelta: min(max((box.maxLongitude - box.minLongitude) * padding, 0.01), 360)
+		)
+		return MKCoordinateRegion(center: center, span: span)
+	}
+
+	/// The connected radio's LoRa config, used to prefill frequency / power / sensitivity.
+	private var connectedLoRaConfig: LoRaConfigEntity? {
+		guard let num = accessoryManager.activeDeviceNum else { return nil }
+		return getNodeInfo(id: num, context: context)?.loRaConfig
+	}
+
+	/// The connected radio's primary channel name (for the firmware-accurate frequency-slot hash).
+	private var connectedPrimaryChannelName: String {
+		guard let num = accessoryManager.activeDeviceNum,
+			  let node = getNodeInfo(id: num, context: context) else { return "LongFast" }
+		if let primary = node.myInfo?.channels.first(where: { $0.index == 0 || $0.role == 1 }),
+		   let name = primary.name, !name.isEmpty {
+			return name
+		}
+		if node.loRaConfig?.usePreset == false { return "Custom" }
+		let preset = ModemPresets(rawValue: Int(node.loRaConfig?.modemPreset ?? 0)) ?? .longFast
+		return preset.androidChannelName
+	}
+
+	/// Open the estimate form from the map toolbar, prefilled from the connected radio and located at
+	/// the current map centre (falling back to device / connected-device GPS).
+	private func presentCoverageEstimateFromMap() {
+		let center = visibleRegion?.center
+		let coordinate = center ?? LocationsHandler.currentLocation ?? activeDeviceCoordinate
+		let params = SitePlannerParameters.prefilled(
+			name: "",
+			coordinate: coordinate,
+			loRaConfig: connectedLoRaConfig,
+			primaryChannelName: connectedPrimaryChannelName
+		)
+		coverageSeed = CoverageEstimateSeed(parameters: params, nodeCoordinate: nil, mapCenter: center)
+	}
+
+	/// Consume a `.coverageEstimate` map-state hand-off. Called from `onChange(of: router.mapState)`,
+	/// `onChange(of: router.selectedTab)`, and `onAppear` — mirroring `applyTraceRouteSelection` — so a
+	/// hand-off from node detail isn't dropped when the Map tab mounts fresh and misses the change.
+	private func consumeCoverageEstimateState() {
+		guard case .map = router.selectedTab else { return }
+		if case let .coverageEstimate(nodeNum)? = router.mapState {
+			presentCoverageEstimate(forNode: nodeNum)
+		}
+	}
+
+	/// Open the estimate form for a specific node (node-detail handoff), prefilled from the connected
+	/// radio and located at the node's latest position, and recenter the map on it. Consumes the
+	/// `.coverageEstimate` map state.
+	private func presentCoverageEstimate(forNode nodeNum: Int64) {
+		defer { router.mapState = nil }
+		guard let node = getNodeInfo(id: nodeNum, context: context) else { return }
+		let coordinate = node.latestPosition?.nodeCoordinate
+		let name = node.user?.displayLongName ?? node.user?.shortName ?? ""
+		let params = SitePlannerParameters.prefilled(
+			name: name,
+			coordinate: coordinate,
+			loRaConfig: connectedLoRaConfig,
+			primaryChannelName: connectedPrimaryChannelName
+		)
+		coverageSeed = CoverageEstimateSeed(parameters: params, nodeCoordinate: coordinate, mapCenter: visibleRegion?.center)
+		if let coordinate {
+			cameraCommand = ClusterMapCameraCommand(
+				id: UUID(),
+				region: MKCoordinateRegion(
+					center: coordinate,
+					span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+				),
+				animated: true
+			)
+		}
+	}
+
 	private func refreshMapWindowOpenState() {
 		// One primary app window plus one detached window means > 1 attached scenes.
 		let attachedScenes = UIApplication.shared.connectedScenes.filter { $0.activationState != .unattached }
 		isMapWindowOpen = attachedScenes.count > 1
+	}
+
+	/// Quantized camera key so `.onChange` can react to pan/zoom settles even though
+	/// `MKCoordinateRegion` isn't `Equatable`. Same quantization the position-state key uses.
+	private var regionRefreshKey: Int64 {
+		var key: Int64 = 0
+		if let visibleRegion {
+			combine(&key, Int64((visibleRegion.center.latitude * 10_000).rounded(.towardZero)))
+			combine(&key, Int64((visibleRegion.center.longitude * 10_000).rounded(.towardZero)))
+			combine(&key, Int64((visibleRegion.span.latitudeDelta * 10_000).rounded(.towardZero)))
+			combine(&key, Int64((visibleRegion.span.longitudeDelta * 10_000).rounded(.towardZero)))
+		}
+		return key
 	}
 
 	private var filterRefreshKey: Int64 {
@@ -607,13 +786,6 @@ struct MeshMapMK: View {
 		combine(&key, filters.viaMqtt ? 1 : 0)
 		return key
 	}
-
-		private func refreshVisiblePositionSnapshots() {
-			visiblePositionSnapshots = makePositionSnapshots(from: visiblePositions)
-			spreadOverrides = computeSpreadOverrides(visiblePositionSnapshots)
-			frameInitialRegionIfNeeded()
-			rebuildOverlays()
-		}
 
 		private func refreshVisiblePositionSnapshots(from positions: [PositionEntity]) {
 			visiblePositionSnapshots = makePositionSnapshots(from: positions)
