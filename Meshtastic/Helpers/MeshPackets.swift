@@ -196,6 +196,17 @@ actor MeshPackets {
 		return true
 	}
 
+	/// Last time the direct-message unread badge was recomputed. Same O(unread) scan and same
+	/// burst hazard as the channel badge, so it gets the same ~1/sec rate limit — under a DM
+	/// flood the badge tolerates a brief lag and resyncs on app-active and on read.
+	private var lastDirectUnreadRecompute: ContinuousClock.Instant?
+	func shouldRecomputeDirectUnread() -> Bool {
+		let now = ContinuousClock.now
+		if let last = lastDirectUnreadRecompute, now - last < .seconds(1) { return false }
+		lastDirectUnreadRecompute = now
+		return true
+	}
+
 	func shouldPrunePositionHistory(for nodeNum: Int64) -> Bool {
 		let nextCount = (positionInsertsSincePrune[nodeNum] ?? 0) + 1
 		if nextCount >= Self.positionPruneInterval {
@@ -1412,8 +1423,10 @@ actor MeshPackets {
 							return
 						}
 						if newMessage.fromUser != nil && newMessage.toUser != nil {
-							// Set Unread Message Indicators
-							if packet.to == connectedNode {
+							// Set Unread Message Indicators. unreadMessages is O(unread); like the
+							// channel badge, recomputing it for every incoming DM turns a burst into
+							// quadratic work, so it gets the same ~1/sec rate limit.
+							if packet.to == connectedNode, shouldRecomputeDirectUnread() {
 								let unreadCount = await newMessage.toUser?.unreadMessages(context: modelContext, skipLastMessageCheck: true) ?? 0 // skipLastMessageCheck=true because we don't update lastMessage on our own connected node
 								Task { @MainActor in
 									appState?.unreadDirectMessages = unreadCount
