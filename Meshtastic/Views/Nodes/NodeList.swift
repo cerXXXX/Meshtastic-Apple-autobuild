@@ -375,11 +375,11 @@ private struct FilteredNodeList: View {
 			// During live ingestion every packet writes to SwiftData; running displayNodes
 			// (a scan over the whole node set) per write pegged the main thread on reconnect
 			// with a large DB. ~3/sec is imperceptible and keeps CPU sane. The scan only runs
-			// while the Nodes tab is frontmost — TabView keeps this view alive on other tabs,
-			// where the stale snapshot is invisible anyway; switching back restarts the task
-			// and refreshes immediately.
-			refreshDisplayedNodes()
+			// while the Nodes tab is frontmost — TabView keeps this view alive on other tabs
+			// (and this task re-fires on every tab switch), so the guard comes first; entering
+			// the tab re-fires the task and refreshes immediately.
 			guard router.selectedTab == .nodes else { return }
+			refreshDisplayedNodes()
 			while !Task.isCancelled {
 				try? await Task.sleep(for: .milliseconds(350))
 				refreshDisplayedNodes()

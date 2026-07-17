@@ -1204,8 +1204,8 @@ extension DiscoveryScanEngine {
 				rssi: Int(node.rssi),
 				// Infrastructure roles: Router (2), Router Late (11), Client Base (12)
 				isInfrastructure: [2, 11, 12].contains(Int(node.user?.role ?? 0)),
-				latitude: node.positions.last?.latitude ?? 0.0,
-				longitude: node.positions.last?.longitude ?? 0.0,
+				latitude: node.latestPosition?.latitude ?? 0.0,
+				longitude: node.latestPosition?.longitude ?? 0.0,
 				messageCount: messageCounts[node.num] ?? 0,
 				// Sensor packets ≈ environment (1) + air-quality (3) telemetry the node has reported,
 				// matching the live scan's sensorPacketCount (.environmentMetrics + .airQualityMetrics).

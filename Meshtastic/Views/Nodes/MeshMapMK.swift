@@ -244,17 +244,15 @@ struct MeshMapMK: View {
 			combine(&key, Int64((visibleRegion.span.longitudeDelta * 10_000).rounded(.towardZero)))
 		}
 		combine(&key, filterRefreshKey)
-		for position in positions.prefix(64) {
+		// Hash EVERY visible position: since the throttled refresh, this key is the only gate for
+		// snapshot/overlay rebuilds, and a truncated sample would leave pins beyond it permanently
+		// stale when a node moves without changing the set's count or ordering.
+		for position in positions {
 			combine(&key, Int64(truncatingIfNeeded: position.persistentModelID.hashValue))
 			combine(&key, Int64(position.latitudeI))
 			combine(&key, Int64(position.longitudeI))
 			combine(&key, Int64(position.precisionBits))
 		}
-		if let last = positions.last {
-			combine(&key, Int64(truncatingIfNeeded: last.persistentModelID.hashValue))
-			combine(&key, Int64(last.latitudeI))
-				combine(&key, Int64(last.longitudeI))
-			}
 		return MeshMapVisiblePositionState(positions: positions, key: key)
 	}
 

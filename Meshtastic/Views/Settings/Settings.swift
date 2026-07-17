@@ -771,10 +771,11 @@ struct Settings: View {
 			}
 			.task(id: router.selectedTab) {
 				// Refresh the node snapshot on a gentle cadence, and only while Settings is
-				// the frontmost tab — the stale snapshot is invisible from other tabs, and
-				// switching here restarts the task for an immediate refresh.
-				refreshNodes()
+				// the frontmost tab — the stale snapshot is invisible from other tabs, this
+				// task re-fires on every tab switch (so the guard comes first), and switching
+				// here restarts it for an immediate refresh.
 				guard router.selectedTab == .settings else { return }
+				refreshNodes()
 				while !Task.isCancelled {
 					try? await Task.sleep(for: .seconds(2))
 					refreshNodes()
