@@ -279,6 +279,10 @@ struct SecurityConfig: View {
 							// Should show a saved successfully alert once I know that to be true
 							// for now just disable the button after a successful save
 							if keyUpdated {
+								// This is the *local* node's own keypair being changed deliberately by the user in the
+								// Security config screen (gated behind `keyUpdated` + an explicit save), not an inbound
+								// mesh key — so the first-wins protection doesn't apply. `keyMatch`/`newPublicKey` track
+								// *remote* contacts' keys, so they are intentionally left untouched here.
 								node?.user?.publicKey = Data(base64Encoded: publicKey) ?? Data()
 								do {
 									try context.save()

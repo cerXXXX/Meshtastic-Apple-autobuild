@@ -511,10 +511,8 @@ extension MeshPackets {
 								fetchedNode[0].user?.unmessagable = false
 							}
 						}
-						if !nodeInfoMessage.user.publicKey.isEmpty {
-							fetchedNode[0].user?.pkiEncrypted = true
-							fetchedNode[0].user?.publicKey = nodeInfoMessage.user.publicKey
-						}
+						// Security (finding H1): first-wins on the public key. See `applyInboundPublicKey`.
+						fetchedNode[0].user?.applyInboundPublicKey(nodeInfoMessage.user.publicKey, nodeNum: Int64(nodeInfoMessage.num))
 						if let user = fetchedNode.first?.user {
 							let fetchHwModel2 = Int64(user.hwModelId)
 							let hwDescriptor2 = FetchDescriptor<DeviceHardwareEntity>(
@@ -546,10 +544,8 @@ extension MeshPackets {
 						let containsRole = roles.contains(Int(fetchedNode[0].user?.role ?? -1))
 						fetchedNode[0].user?.unmessagable = containsRole
 					}
-					if !userMessage.publicKey.isEmpty {
-						fetchedNode[0].user?.pkiEncrypted = true
-						fetchedNode[0].user?.publicKey = userMessage.publicKey
-					}
+					// Security (finding H1): first-wins on the public key. See `applyInboundPublicKey`.
+					fetchedNode[0].user?.applyInboundPublicKey(userMessage.publicKey, nodeNum: Int64(packet.from))
 					if packet.hopStart != 0 && packet.hopLimit <= packet.hopStart {
 						fetchedNode[0].hopsAway = Int32(packet.hopStart - packet.hopLimit)
 					}

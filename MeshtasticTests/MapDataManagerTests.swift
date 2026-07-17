@@ -90,17 +90,59 @@ struct MapDataManagerImportFromRemoteTests {
 		}
 	}
 
-	@Test func readsLocalFileURLWithoutNetworking() async throws {
+	@Test func rejectsLocalFileURL() async throws {
+		// The `importGeoJSON` deep link is untrusted, so `importFromRemote` must reject any non-http(s)
+		// scheme outright — a `file://` URL can no longer fall through to the local-file read pipeline
+		// (SSRF / local-file-read hardening). Legitimate local imports go via `processUploadedFile`.
 		let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("local-\(UUID().uuidString).geojson")
 		try sampleGeoJSON.write(to: tempURL)
 		defer { try? FileManager.default.removeItem(at: tempURL) }
 
 		let manager = MapDataManager()
-		// No session is consulted for a `file://` URL — passing the stub session anyway proves that.
-		let metadata = try await manager.importFromRemote(urlString: tempURL.absoluteString, session: GeoJSONStubURLProtocol.makeSession())
-		defer { Task { await cleanUp(manager, metadata) } }
+		await #expect(throws: MapDataError.self) {
+			try await manager.importFromRemote(urlString: tempURL.absoluteString, session: GeoJSONStubURLProtocol.makeSession())
+		}
+	}
+}
 
-		#expect(metadata.overlayCount == 2)
+/// Covers `MapDataManager.isDisallowedHost` — the SSRF host/IP denylist used by `importFromRemote`.
+/// Only numeric IP literals and `localhost`/`.local` names are exercised so the suite stays hermetic
+/// (those paths never hit DNS: `localhost`/`.local` short-circuit, and `getaddrinfo` resolves numeric
+/// literals locally without a network round-trip).
+@Suite("MapDataManager.isDisallowedHost")
+struct MapDataManagerDisallowedHostTests {
+
+	@Test("internal / non-routable hosts are blocked", arguments: [
+		"localhost",
+		"printer.local",
+		"0.0.0.0",             // "this host"
+		"127.0.0.1",           // loopback
+		"10.0.0.1",            // RFC 1918
+		"172.16.5.4",          // RFC 1918
+		"192.168.1.1",         // RFC 1918
+		"100.64.0.1",          // CGNAT
+		"169.254.169.254",     // link-local / cloud metadata
+		"192.0.2.5",           // TEST-NET-1 (RFC 5737)
+		"198.51.100.5",        // TEST-NET-2 (RFC 5737)
+		"203.0.113.5",         // TEST-NET-3 (RFC 5737)
+		"224.0.0.1",           // multicast
+		"[::1]",               // IPv6 loopback
+		"[fe80::1]",           // IPv6 link-local
+		"[fc00::1]",           // IPv6 unique-local
+		"[::ffff:127.0.0.1]",  // IPv4-mapped loopback
+		"[64:ff9b::a9fe:a9fe]" // NAT64-embedded 169.254.169.254
+	])
+	func blocksInternalHosts(_ host: String) {
+		#expect(MapDataManager.isDisallowedHost(host), "expected \(host) to be blocked")
+	}
+
+	@Test("public IP literals are allowed", arguments: [
+		"8.8.8.8",
+		"1.1.1.1",
+		"93.184.216.34"
+	])
+	func allowsPublicHosts(_ host: String) {
+		#expect(!MapDataManager.isDisallowedHost(host), "expected \(host) to be allowed")
 	}
 }
 
