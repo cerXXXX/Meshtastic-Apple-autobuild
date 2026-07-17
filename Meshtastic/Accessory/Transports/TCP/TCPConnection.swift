@@ -204,17 +204,21 @@ actor TCPConnection: Connection {
 		// For TCP, reader is already started
 	}
 
-	/// Data events dropped by the bounded stream buffer since connect (see `getPacketStream`).
-	private var droppedDataEventCount = 0
+	/// Yields into a full stream buffer since connect (see `getPacketStream`). With
+	/// `.bufferingNewest` each such yield evicts the oldest buffered frame, so this counts
+	/// evictions to within ±1 (the yield that exactly fills the buffer also reports 0 remaining).
+	private var saturatedYieldCount = 0
 
-	/// Yields a decoded frame into the event stream, counting buffer-overflow drops so
-	/// sustained backpressure is visible in the logs instead of silent.
+	/// Yields a decoded frame into the event stream, counting full-buffer yields so sustained
+	/// backpressure is visible in the logs instead of silent. `.bufferingNewest` never reports
+	/// `.dropped` — the NEW element is always enqueued and the OLDEST is evicted — so a full
+	/// buffer surfaces as `.enqueued(remaining: 0)`.
 	private func yieldDataEvent(_ fromRadio: FromRadio) {
 		guard let continuation = connectionStreamContinuation else { return }
-		if case .dropped = continuation.yield(.data(fromRadio)) {
-			droppedDataEventCount += 1
-			if droppedDataEventCount == 1 || droppedDataEventCount % 1_000 == 0 {
-				Logger.transport.warning("🌊 [TCP] Event buffer full — dropped oldest frame (\(self.droppedDataEventCount) dropped this session); consumer is behind the radio's packet rate")
+		if case .enqueued(let remaining) = continuation.yield(.data(fromRadio)), remaining == 0 {
+			saturatedYieldCount += 1
+			if saturatedYieldCount == 1 || saturatedYieldCount % 1_000 == 0 {
+				Logger.transport.warning("🌊 [TCP] Event buffer full — oldest frames are being evicted (\(self.saturatedYieldCount) saturated yields this session); consumer is behind the radio's packet rate")
 			}
 		}
 	}
