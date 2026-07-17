@@ -413,8 +413,8 @@ extension MeshPackets {
 						let hwDescriptor1 = FetchDescriptor<DeviceHardwareEntity>(
 							predicate: #Predicate { $0.hwModel == fetchHwModel1 }
 						)
-						if let hardwareEntity = try? modelContext.fetch(hwDescriptor1).first {
-							newUser.hwDisplayName = hardwareEntity.displayName
+						if let hardware = try? modelContext.fetch(hwDescriptor1) {
+							newUser.hwDisplayName = HardwareCatalogResolver.presentation(for: fetchHwModel1, in: hardware)?.displayName
 						}
 						newNode.user = newUser
 						
@@ -520,8 +520,8 @@ extension MeshPackets {
 							let hwDescriptor2 = FetchDescriptor<DeviceHardwareEntity>(
 								predicate: #Predicate { $0.hwModel == fetchHwModel2 }
 							)
-							if let hardwareEntity = try? modelContext.fetch(hwDescriptor2).first {
-								user.hwDisplayName = hardwareEntity.displayName
+							if let hardware = try? modelContext.fetch(hwDescriptor2) {
+								user.hwDisplayName = HardwareCatalogResolver.presentation(for: fetchHwModel2, in: hardware)?.displayName
 							}
 						}
 					}
