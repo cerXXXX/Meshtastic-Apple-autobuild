@@ -28,7 +28,6 @@
 		AA0005WTCH00000000BF0011 /* Meshtastic Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AA0005WTCH00000000FR0012 /* Meshtastic Watch App.app */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		AA003DOC0000004000000001 /* docs in Resources */ = {isa = PBXBuildFile; fileRef = AA003DOC0000005000000001 /* docs */; };
 		B734732C0C394582BD6CD0CA /* urls.json in Resources */ = {isa = PBXBuildFile; fileRef = AF44FDF549704E29A8E5FE2F /* urls.json */; };
-		BBFF00000000000000000009 /* PMTilesExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFF00000000000000000009 /* PMTilesExtractorTests.swift */; };
 		DD00003C000SNAP00000001 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = DD00003B000SNAP00000000 /* SnapshotTesting */; };
 		DD0D3D222A55CEB10066DB71 /* CocoaMQTT in Frameworks */ = {isa = PBXBuildFile; productRef = DD0D3D212A55CEB10066DB71 /* CocoaMQTT */; };
 		DD0E21012B8A6F1300F2D100 /* DeviceHardware.json in Resources */ = {isa = PBXBuildFile; fileRef = DD0E21002B8A6BC500F2D100 /* DeviceHardware.json */; };
@@ -137,7 +136,6 @@
 		AA000402IPLS000000000010 /* zh-Hant-TW */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant-TW"; path = "zh-Hant-TW.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		AA0005WTCH00000000FR0012 /* Meshtastic Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Meshtastic Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA003DOC0000005000000001 /* docs */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = docs; sourceTree = "<group>"; };
-		AAFF00000000000000000009 /* PMTilesExtractorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PMTilesExtractorTests.swift; path = MeshtasticTests/PMTilesExtractorTests.swift; sourceTree = SOURCE_ROOT; };
 		AF44FDF549704E29A8E5FE2F /* urls.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = urls.json; sourceTree = "<group>"; };
 		D93069062B81D8900066FBC8 /* MeshtasticDataModelV 27.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "MeshtasticDataModelV 27.xcdatamodel"; sourceTree = "<group>"; };
 		DD04804A2E9295A5005F946C /* MeshtasticDataModelV 55.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "MeshtasticDataModelV 55.xcdatamodel"; sourceTree = "<group>"; };
@@ -505,14 +503,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		DD86C7C62FE385D2000BC38E /* Recovered References */ = {
-			isa = PBXGroup;
-			children = (
-				AAFF00000000000000000009 /* PMTilesExtractorTests.swift */,
-			);
-			name = "Recovered References";
-			sourceTree = "<group>";
-		};
 		DD8EDE9226F97A2B00A5A10B /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -536,7 +526,6 @@
 				AA0005WTCH00000000GR0001 /* Meshtastic Watch App */,
 				DDC2E15526CE248E0042C5E4 /* Products */,
 				DD8EDE9226F97A2B00A5A10B /* Frameworks */,
-				DD86C7C62FE385D2000BC38E /* Recovered References */,
 			);
 			sourceTree = "<group>";
 			usesTabs = 1;
@@ -794,6 +783,7 @@
 				ru,
 				se,
 				sr,
+				uk,
 				"zh-Hans",
 				"zh-Hant",
 				"zh-Hant-TW",
@@ -917,7 +907,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BBFF00000000000000000009 /* PMTilesExtractorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
