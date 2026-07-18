@@ -196,6 +196,17 @@ struct MapColocatedNodesTests {
 		#expect(result.map(\.nodeNum) == [0, 7]) // one row per num, no collision
 	}
 
+	@Test("Coincident duplicates of one node collapse to a single selectable entry")
+	func coincidentDuplicatesCollapse() {
+		// Two snapshots for the SAME nodeNum at the same point (e.g. duplicate/nil-node positions).
+		let a = snapshot(5, lat: Self.baseLat, lon: Self.baseLon)
+		let b = snapshot(5, lat: Self.baseLat, lon: Self.baseLon)
+		let coincident = MeshMapPositionSnapshot.colocated(with: a, in: [a, b], withinMeters: Self.spread)
+		#expect(coincident.count == 2) // both fall within range...
+		let pickerReady = MeshMapPositionSnapshot.dedupedByNodeNumSortedByName(coincident)
+		#expect(pickerReady.count == 1) // ...but they are one node, so no picker (count 1 -> direct select)
+	}
+
 	@Test("Picker input is sorted by display name")
 	func sortsByName() {
 		let charlie = snapshot(1, lat: Self.baseLat, lon: Self.baseLon) // longName "Node 1"

@@ -844,10 +844,14 @@ struct MeshMapMK: View {
 	/// fully-occluded stack; without this the covered nodes would be permanently untappable. Detecting
 	/// coincident siblings here keeps every stacked node reachable regardless of the clustering setting.
 	private func presentNodeSelection(for snapshot: MeshMapPositionSnapshot) {
-		let coincident = MeshMapPositionSnapshot.colocated(
-			with: snapshot,
-			in: visiblePositionSnapshots,
-			withinMeters: MapColocation.spreadMeters
+		// De-dupe by nodeNum before deciding: two coincident snapshots that share a num (e.g. positions
+		// whose node is nil, both 0) are one selectable node, not a two-row picker.
+		let coincident = MeshMapPositionSnapshot.dedupedByNodeNumSortedByName(
+			MeshMapPositionSnapshot.colocated(
+				with: snapshot,
+				in: visiblePositionSnapshots,
+				withinMeters: MapColocation.spreadMeters
+			)
 		)
 		if coincident.count > 1 {
 			presentColocatedStack(coincident)
@@ -888,7 +892,7 @@ struct MeshMapMK: View {
 		#if DEBUG
 		// Coincident-node demo: frame tight on the seeded pins so the stack(s) fill the view without the
 		// user having to pinch-zoom for a screenshot. Overrides the usual "start zoomed out" framing.
-		if ProcessInfo.processInfo.arguments.contains("--meshtastic-cluster-demo") {
+		if PerformanceSeedData.configuration?.style == .clusterDemo {
 			let coords = mapEligiblePositions.compactMap { $0.nodeCoordinate ?? $0.fuzzedNodeCoordinate }
 			if let center = coordinateCentroid(of: coords) {
 				didInitialFrame = true

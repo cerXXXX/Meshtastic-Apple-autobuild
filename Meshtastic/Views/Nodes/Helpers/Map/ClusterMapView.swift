@@ -766,7 +766,10 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 				// How far apart are the members on the ground? If they're effectively coincident, zooming
 				// to fit can't separate them, so route the members to a disambiguation menu instead.
 				let metersPerPoint = MKMetersPerMapPointAtLatitude(cluster.coordinate.latitude)
-				let spreadMeters = max(rect.size.width, rect.size.height) * metersPerPoint
+				// Diagonal (corner-to-corner) of the members' bounding box, so this matches the
+				// CLLocation.distance metric the clustering-off pin path uses: a 4x4 m box is ~5.7 m
+				// across, not 4 m, and shouldn't be treated as an un-splittable coincident stack.
+				let spreadMeters = hypot(rect.size.width, rect.size.height) * metersPerPoint
 				if spreadMeters < Self.colocatedSpreadMeters, let onColocatedStack {
 					let items = cluster.memberAnnotations.compactMap { ($0 as? ItemAnnotation<Item>)?.item }
 					// Only present the picker for a genuine multi-node stack; a lone item (e.g. the rest of
