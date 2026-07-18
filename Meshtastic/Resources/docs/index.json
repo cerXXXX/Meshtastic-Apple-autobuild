@@ -240,8 +240,8 @@
         "navOrder": 6,
         "keywords": [
             "map",
-            "tap",
             "nodes",
+            "tap",
             "node",
             "from",
             "waypoint",
@@ -249,12 +249,12 @@
             "only",
             "coverage",
             "position",
-            "mesh",
-            "site",
             "radio",
+            "mesh",
+            "location",
+            "site",
             "open",
             "lora",
-            "location",
             "estimate",
             "planner",
             "path",
@@ -268,9 +268,9 @@
             "bounding",
             "waypoints",
             "via",
-            "route"
+            "then"
         ],
-        "charCount": 8086
+        "charCount": 8385
     },
     {
         "id": "messages",
