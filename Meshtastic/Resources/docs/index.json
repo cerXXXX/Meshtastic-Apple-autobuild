@@ -240,21 +240,21 @@
         "navOrder": 6,
         "keywords": [
             "map",
-            "tap",
             "nodes",
             "node",
+            "tap",
             "from",
             "waypoint",
             "show",
+            "position",
             "only",
             "coverage",
-            "position",
+            "open",
             "mesh",
+            "location",
             "site",
             "radio",
-            "open",
             "lora",
-            "location",
             "estimate",
             "planner",
             "path",
@@ -270,7 +270,7 @@
             "via",
             "route"
         ],
-        "charCount": 8086
+        "charCount": 8616
     },
     {
         "id": "messages",
