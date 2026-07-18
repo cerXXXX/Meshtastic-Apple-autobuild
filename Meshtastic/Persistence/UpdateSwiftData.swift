@@ -1251,7 +1251,8 @@ extension MeshPackets {
 				if fetchedNode[0].cannedMessageConfig == nil {
 					let newCannedMessageConfig = CannedMessageConfigEntity()
 					modelContext.insert(newCannedMessageConfig)
-					newCannedMessageConfig.enabled = config.enabled
+					// config.enabled is deprecated (no successor, removed from active use);
+					// tolerated on read but intentionally not persisted. (#2021)
 					newCannedMessageConfig.sendBell = config.sendBell
 					newCannedMessageConfig.rotary1Enabled = config.rotary1Enabled
 					newCannedMessageConfig.updown1Enabled = config.updown1Enabled
@@ -1263,7 +1264,7 @@ extension MeshPackets {
 					newCannedMessageConfig.inputbrokerEventPress = Int32(config.inputbrokerEventPress.rawValue)
 					fetchedNode[0].cannedMessageConfig = newCannedMessageConfig
 				} else {
-					fetchedNode[0].cannedMessageConfig?.enabled = config.enabled
+					// config.enabled is deprecated (see above); not persisted. (#2021)
 					fetchedNode[0].cannedMessageConfig?.sendBell = config.sendBell
 					fetchedNode[0].cannedMessageConfig?.rotary1Enabled = config.rotary1Enabled
 					fetchedNode[0].cannedMessageConfig?.updown1Enabled = config.updown1Enabled

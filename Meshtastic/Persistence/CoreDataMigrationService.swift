@@ -477,7 +477,7 @@ private extension CoreDataMigrationService {
 			nodeMap: nodeMap
 		) { obj -> CannedMessageConfigEntity in
 			let sd = CannedMessageConfigEntity()
-			sd.enabled                = (obj.value(forKey: "enabled") as? Bool) ?? false
+			// enabled is deprecated (no successor) and no longer persisted — not migrated. (#2021)
 			sd.inputbrokerEventCcw    = (obj.value(forKey: "inputbrokerEventCcw") as? Int32) ?? 0
 			sd.inputbrokerEventCw     = (obj.value(forKey: "inputbrokerEventCw") as? Int32) ?? 0
 			sd.inputbrokerEventPress  = (obj.value(forKey: "inputbrokerEventPress") as? Int32) ?? 0

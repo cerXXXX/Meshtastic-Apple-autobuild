@@ -17,7 +17,6 @@ struct CannedMessagesConfig: View {
 	@State var hasChanges = false
 	@State var hasMessagesChanges = false
 	@State var configPreset = 0
-	@State var enabled = false
 	/// CannedMessageModule will sends a bell character with the messages.
 	@State var sendBell: Bool = false
 	/// Enable the rotary encoder #1. This is a 'dumb' encoder sending pulses on both A and B pins while rotating.
@@ -42,12 +41,6 @@ struct CannedMessagesConfig: View {
 			ConfigHeader(title: "Canned messages", config: \.cannedMessageConfig, node: node, onAppear: setCannedMessagesValues)
 			
 			Section(header: Text("Options")) {
-				
-				Toggle(isOn: $enabled) {
-					
-					Label("Enabled", systemImage: "list.bullet.rectangle.fill")
-				}
-				.tint(.accentColor)
 				
 				Toggle(isOn: $sendBell) {
 					
@@ -184,7 +177,8 @@ struct CannedMessagesConfig: View {
 						dismiss: goBack
 					) { fromUser, toUser in
 						var cmc = ModuleConfig.CannedMessageConfig()
-						cmc.enabled = enabled
+						// enabled is deprecated with no successor and removed from active
+						// use — intentionally not written. (#2021)
 						cmc.sendBell = sendBell
 						cmc.rotary1Enabled = rotary1Enabled
 						cmc.updown1Enabled = updown1Enabled
@@ -265,9 +259,6 @@ struct CannedMessagesConfig: View {
 			
 			hasChanges = true
 		}
-		.onChange(of: enabled) { _, newEnabled in
-			if newEnabled != node?.cannedMessageConfig?.enabled { hasChanges = true }
-		}
 		.onChange(of: sendBell) { _, newSendBell in
 			if newSendBell != node?.cannedMessageConfig?.sendBell { hasChanges = true }
 		}
@@ -297,7 +288,6 @@ struct CannedMessagesConfig: View {
 		}
 	}
 	func setCannedMessagesValues() {
-		self.enabled = node?.cannedMessageConfig?.enabled ?? false
 		self.sendBell = node?.cannedMessageConfig?.sendBell ?? false
 		self.rotary1Enabled = node?.cannedMessageConfig?.rotary1Enabled ?? false
 		self.updown1Enabled = node?.cannedMessageConfig?.updown1Enabled ?? false

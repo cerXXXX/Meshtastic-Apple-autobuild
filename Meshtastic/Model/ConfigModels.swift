@@ -47,6 +47,8 @@ final class BluetoothConfigEntity {
 
 @Model
 final class CannedMessageConfigEntity {
+	/// Deprecated (no successor, removed from active use — #2021). Retained to
+	/// preserve the SwiftData schema; no longer surfaced, written, or persisted.
 	var enabled: Bool = false
 	var inputbrokerEventCcw: Int32 = 0
 	var inputbrokerEventCw: Int32 = 0
