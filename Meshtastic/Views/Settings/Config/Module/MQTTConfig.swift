@@ -229,7 +229,7 @@ struct MQTTConfig: View {
 									.foregroundColor(.secondary)
 							}
 							.buttonStyle(.plain)
-							.accessibilityLabel(showPassword ? "Hide password" : "Show password")
+							.accessibilityLabel(showPassword ? String(localized: "Hide password", comment: "VoiceOver label for the hide password button") : String(localized: "Show password", comment: "VoiceOver label for the show password button"))
 						}
 						.keyboardType(.default)
 						.listRowSeparator(/*@START_MENU_TOKEN@*/.visible/*@END_MENU_TOKEN@*/)

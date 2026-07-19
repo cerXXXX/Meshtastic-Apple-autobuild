@@ -56,8 +56,8 @@ struct UserList: View {
 						.tint(Color(UIColor.secondarySystemBackground))
 						.foregroundColor(.accentColor)
 						.buttonStyle(.borderedProminent)
-						.accessibilityLabel("Reset contact filters")
-						.accessibilityHint("Clears all active contact filters.")
+						.accessibilityLabel(String(localized: "Reset contact filters", comment: "VoiceOver label for the reset contact filters button"))
+						.accessibilityHint(String(localized: "Clears all active contact filters.", comment: "VoiceOver hint for the reset contact filters button"))
 					}
 					Button(action: {
 						withAnimation {
