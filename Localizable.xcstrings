@@ -3459,6 +3459,29 @@
         }
       }
     },
+    "%lld days" : {
+      "comment" : "VoiceOver value announcing the number of days before purging stale nodes",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "new",
+                  "value" : "%lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "new",
+                  "value" : "%lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld downloaded · %@" : {
       "localizations" : {
         "en" : {
@@ -12580,6 +12603,9 @@
           }
         }
       }
+    },
+    "Approximate location precision" : {
+      "comment" : "VoiceOver label for the approximate location precision slider"
     },
     "Architecture" : {
       "comment" : "A label displayed under the architecture of a device.",
@@ -26271,6 +26297,9 @@
         }
       }
     },
+    "Days before purging stale nodes" : {
+      "comment" : "VoiceOver label for the purge stale nodes days slider"
+    },
     "Debug" : {
       "localizations" : {
         "da" : {
@@ -27860,6 +27889,9 @@
         }
       }
     },
+    "Delete key backup" : {
+      "comment" : "VoiceOver label for the delete key backup button"
+    },
     "Description" : {
       "localizations" : {
         "da" : {
@@ -28742,6 +28774,9 @@
           }
         }
       }
+    },
+    "Detection sensor" : {
+      "comment" : "VoiceOver label for the detection sensor message badge"
     },
     "Detection sensor events reported by the node, such as motion or door open/close alerts." : {
       "localizations" : {
@@ -35671,6 +35706,9 @@
           }
         }
       }
+    },
+    "Encrypted message" : {
+      "comment" : "VoiceOver label for the PKI-encrypted direct message badge"
     },
     "Encryption" : {
       "comment" : "A heading for the encryption information.",
@@ -74981,6 +75019,9 @@
         }
       }
     },
+    "Regenerate private key" : {
+      "comment" : "VoiceOver label for the regenerate private key button"
+    },
     "Region" : {
       "localizations" : {
         "da" : {
@@ -89198,6 +89239,9 @@
         }
       }
     },
+    "Showing translated text" : {
+      "comment" : "VoiceOver label for the translated message badge"
+    },
     "Shows a saved offline map over the covered area, so it still works without an internet connection." : {
       "localizations" : {
         "uk" : {
@@ -92190,6 +92234,9 @@
           }
         }
       }
+    },
+    "Store and forward message" : {
+      "comment" : "VoiceOver label for the store-and-forward badge"
     },
     "Store and forward servers require an ESP32 device with PSRAM or Linux Native." : {
       "localizations" : {
@@ -106231,6 +106278,9 @@
           }
         }
       }
+    },
+    "Verified sender" : {
+      "comment" : "VoiceOver label for the signed and verified broadcast badge"
     },
     "Verified with the sender's key." : {
       "localizations" : {

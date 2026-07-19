@@ -122,9 +122,13 @@ struct MQTTConfig: View {
 							Slider(value: $mapPositionPrecision, in: 12...15, step: 1) {
 							} minimumValueLabel: {
 								Image(systemName: "plus")
+									.accessibilityHidden(true)
 							} maximumValueLabel: {
 								Image(systemName: "minus")
+									.accessibilityHidden(true)
 							}
+							.accessibilityLabel(String(localized: "Approximate location precision", comment: "VoiceOver label for the approximate location precision slider"))
+							.accessibilityValue(PositionPrecision(rawValue: Int(mapPositionPrecision))?.description ?? "")
 							Text(PositionPrecision(rawValue: Int(mapPositionPrecision))?.description ?? "")
 								.foregroundColor(.gray)
 								.font(.callout)
