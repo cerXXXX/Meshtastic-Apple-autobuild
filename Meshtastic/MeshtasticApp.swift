@@ -217,7 +217,7 @@ struct MeshtasticAppleApp: App {
 						self.saveChannelLink = nil
 
 						if let url = userActivity.webpageURL {
-							if url.absoluteString.lowercased().contains("meshtastic.org/v/#") == true {
+							if ContactURLHandler.canHandle(url) {
 								ContactURLHandler.handleContactUrl(url: url, accessoryManager: accessoryManager)
 							} else if MeshtasticChannelURL.canHandle(url) {
 								// **Consolidated Call for User Activity**
@@ -237,7 +237,7 @@ struct MeshtasticAppleApp: App {
 							// "Open in Meshtastic" from the Share Sheet / Files app / drag-and-drop —
 							// distinct from the meshtastic:// scheme handled below.
 							appState.router.importMapFile(url: url)
-						} else if url.absoluteString.lowercased().contains("meshtastic.org/v/#") {
+						} else if ContactURLHandler.canHandle(url) {
 							ContactURLHandler.handleContactUrl(url: url, accessoryManager: accessoryManager)
 						} else if MeshtasticChannelURL.canHandle(url) {
 							// **Consolidated Call for Open URL**

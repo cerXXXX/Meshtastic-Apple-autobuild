@@ -18,6 +18,26 @@ struct MeshtasticChannelURLTests {
 		#expect(parsed.channelSet.loraConfig.hopLimit == 5)
 	}
 
+	@Test func acceptsAndroidCompatibleWWWChannelURL() throws {
+		let payload = try MeshtasticChannelURL.payloadString(for: makeChannelSet())
+		let parsed = try MeshtasticChannelURL.parse("https://www.meshtastic.org/e/?add=true#\(payload)")
+
+		#expect(parsed.addChannels)
+		#expect(parsed.channelSet.settings.first?.name == "Alpha")
+		#expect(!parsed.channelSet.hasLoraConfig)
+	}
+
+	@Test func decodesAndroidChannelReplaceAndAddVectors() throws {
+		let replace = try MeshtasticChannelURL.parse("https://meshtastic.org/e/#CgMSAQESBggBQANIAQ")
+		let add = try MeshtasticChannelURL.parse("https://meshtastic.org/e/?add=true#CgMSAQESBggBQANIAQ")
+
+		#expect(replace.channelSet.settings.count == 1)
+		#expect(replace.channelSet.hasLoraConfig)
+		#expect(add.channelSet.settings.count == 1)
+		#expect(add.addChannels)
+		#expect(!add.channelSet.hasLoraConfig)
+	}
+
 	@Test(arguments: [
 		"HTTPS://MESHTASTIC.ORG/E/#",
 		"https://meshtastic.org/e#",
