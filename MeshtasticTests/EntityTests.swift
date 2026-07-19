@@ -303,6 +303,12 @@ struct ShareContactQRTests {
 		#expect(ContactURLHandler.canHandle(www))
 	}
 
+	@Test func leavesMeshtasticDocumentationURLsForTheSystemBrowser() throws {
+		let documentation = try #require(URL(string: "https://meshtastic.org/docs/configuration"))
+
+		#expect(!ContactURLHandler.canHandle(documentation))
+	}
+
 	@Test func decodesAndroidSharedContactPayload() throws {
 		let payload = "CAE="
 		let data = try #require(Data(base64Encoded: payload.base64urlToBase64()))
