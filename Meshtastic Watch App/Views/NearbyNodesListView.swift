@@ -54,9 +54,11 @@ struct NearbyNodesListView: View {
 					.resizable()
 					.scaledToFit()
 					.frame(height: 16)
+					.accessibilityHidden(true)
 				Image("custom.foxhunt")
 					.font(.system(size: 14))
 					.foregroundStyle(.orange)
+					.accessibilityHidden(true)
 				Text("Foxhunt")
 					.font(.headline)
 					.foregroundStyle(.green)
@@ -75,6 +77,7 @@ struct NearbyNodesListView: View {
 			Image(systemName: "antenna.radiowaves.left.and.right")
 				.font(.title2)
 				.foregroundStyle(.secondary)
+				.accessibilityHidden(true)
 			Text("No nearby nodes")
 				.font(.headline)
 			Text("Nodes within ½ mile with a known position will appear here.")
@@ -100,6 +103,9 @@ struct NearbyNodesListView: View {
 			} label: {
 				nodeRow(node)
 			}
+			.accessibilityElement(children: .ignore)
+			.accessibilityLabel(accessibilityLabel(for: node))
+			.accessibilityHint(String(localized: "Opens the foxhunt compass for this node.", comment: "VoiceOver hint: tapping a nearby node row opens the foxhunt compass"))
 		}
 	}
 
@@ -111,7 +117,8 @@ struct NearbyNodesListView: View {
 			WatchCircleText(
 				text: node.shortName,
 				color: WatchCircleText.color(for: node.num),
-				circleSize: 28
+				circleSize: 28,
+				nodeName: node.longName
 			)
 			VStack(alignment: .leading, spacing: 2) {
 				Text(node.longName)
@@ -132,6 +139,37 @@ struct NearbyNodesListView: View {
 					.rotationEffect(.degrees(bearing - locationManager.heading))
 			}
 		}
+	}
+
+	// MARK: - Accessibility
+
+	/// Composes a single spoken description for a node row: name, foxhunt
+	/// status, distance, bearing, signal and last-heard time.
+	private func accessibilityLabel(for node: MeshNode) -> String {
+		var parts: [String] = [node.longName]
+
+		if phoneManager.foxhuntTargets.contains(node.num) {
+			parts.append(String(localized: "Foxhunt target", comment: "VoiceOver: this node is a pinned foxhunt target"))
+		}
+
+		if let userLoc = locationManager.currentLocation, let dist = node.distance(from: userLoc) {
+			parts.append(String(localized: "Distance \(formatDistance(dist))", comment: "VoiceOver: distance to the node"))
+		}
+
+		if let bearing = bearing(to: node) {
+			parts.append(String(localized: "Bearing \(Int(bearing.rounded())) degrees", comment: "VoiceOver: compass bearing to the node in degrees"))
+		}
+
+		if let snr = node.snr {
+			parts.append(String(localized: "Signal \(Int(snr.rounded())) decibels", comment: "VoiceOver: last packet signal-to-noise ratio in decibels"))
+		}
+
+		if let lastHeard = node.lastHeard {
+			let relative = lastHeard.formatted(.relative(presentation: .named))
+			parts.append(String(localized: "Last heard \(relative)", comment: "VoiceOver: when the node was last heard"))
+		}
+
+		return parts.joined(separator: ", ")
 	}
 
 	// MARK: - Helpers
