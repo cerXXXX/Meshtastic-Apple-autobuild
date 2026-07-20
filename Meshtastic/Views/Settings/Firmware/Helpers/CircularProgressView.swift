@@ -23,6 +23,7 @@ struct CircularProgressView: View {
 	var subtitleText: String?
 	
 	@State private var rotation: Double = 0
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	
 	private var isComplete: Bool {
 		// Complete only if 100%, not indeterminate, and NOT an error
@@ -71,11 +72,13 @@ struct CircularProgressView: View {
 		// Monitor both Indeterminate and Error to stop/start animations
 		.onChange(of: isIndeterminate) { _, _ in updateAnimationStatus() }
 		.onChange(of: isError) { _, _ in updateAnimationStatus() }
+		.onChange(of: reduceMotion) { _, _ in updateAnimationStatus() }
 	}
 	
 	private func updateAnimationStatus() {
-		// Only spin if Indeterminate AND we are not in an Error state
-		if isIndeterminate && !isError {
+		// Only spin if Indeterminate AND we are not in an Error state. Respect Reduce Motion by
+		// leaving the indeterminate segment static instead of spinning it forever.
+		if isIndeterminate && !isError && !reduceMotion {
 			rotation = 0
 			withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
 				rotation = 360

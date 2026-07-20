@@ -32,13 +32,13 @@ struct MessageSearchBar: View {
 				Image(systemName: "chevron.up")
 			}
 			.disabled(matchCount == 0)
-			.accessibilityLabel("Previous match")
+			.accessibilityLabel(String(localized: "Previous match", comment: "VoiceOver label for the previous search match button"))
 
 			Button(action: onNext) {
 				Image(systemName: "chevron.down")
 			}
 			.disabled(matchCount == 0)
-			.accessibilityLabel("Next match")
+			.accessibilityLabel(String(localized: "Next match", comment: "VoiceOver label for the next search match button"))
 		}
 		.buttonStyle(.borderless)
 		.padding(.horizontal)

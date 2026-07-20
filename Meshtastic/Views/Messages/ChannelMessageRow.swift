@@ -25,7 +25,30 @@ struct ChannelMessageRow: View {
 	private var isCurrentUser: Bool {
 		Int64(preferredPeripheralNum) == message.fromUser?.num
 	}
-	
+
+	/// A single, natural-language description of the message bubble so VoiceOver reads one element
+	/// (sender + text + timestamp + security state) instead of separate fragments. Delivery/read
+	/// status stays its own labeled element (MessageDeliveryStatusLabel) directly after.
+	private var messageAccessibilityLabel: String {
+		let text = message.displayedPayload
+		let time = message.timestamp.formatted(date: .abbreviated, time: .shortened)
+		var parts: [String]
+		if isCurrentUser {
+			parts = [String(localized: "You sent: \(text)", comment: "VoiceOver: label for a message you sent. %@ is the message text")]
+		} else {
+			let sender = message.fromUser?.longName ?? "Unknown".localized
+			parts = [String(localized: "Message from \(sender): \(text)", comment: "VoiceOver: label for a received message. First value is the sender, second is the message text")]
+		}
+		parts.append(time)
+		if (message.pkiEncrypted && message.realACK) || (!isCurrentUser && message.pkiEncrypted) {
+			parts.append(String(localized: "Encrypted", comment: "VoiceOver: message is end-to-end encrypted"))
+		}
+		if message.xeddsaSigned {
+			parts.append(String(localized: "Verified", comment: "VoiceOver: message signature was cryptographically verified"))
+		}
+		return parts.joined(separator: ", ")
+	}
+
 	init(message: MessageEntity,
 	     replyMessage: MessageEntity?,
 	     tapbacks: [MessageEntity],
@@ -110,6 +133,7 @@ struct ChannelMessageRow: View {
 							.symbolRenderingMode(.hierarchical).imageScale(.large)
 							.foregroundColor(.accentColor).padding(.trailing)
 					}
+					.accessibilityLabel(String(localized: "Replying to: \(replyMessage?.displayedPayload ?? "EMPTY MESSAGE")", comment: "VoiceOver: button that jumps to the quoted message being replied to. %@ is the quoted text"))
 					if !isCurrentUser { Spacer(minLength: 50) }
 				}
 			}
@@ -133,6 +157,7 @@ struct ChannelMessageRow: View {
 					if !isCurrentUser && message.fromUser != nil {
 						Text("\(message.fromUser?.longName ?? "Unknown".localized ) (\(message.fromUser?.userId ?? "?"))")
 							.font(.caption).foregroundColor(.gray).offset(y: 8)
+							.accessibilityHidden(true) // Folded into the message bubble's combined label
 					}
 					
 					// Message Bubble
@@ -147,6 +172,8 @@ struct ChannelMessageRow: View {
 						} onTapback: {
 							onTapback(message)
 						}
+						.accessibilityElement(children: .combine)
+						.accessibilityLabel(messageAccessibilityLabel)
 						
 						if let deliveryStatus, deliveryStatus.canRetry {
 							RetryButton(

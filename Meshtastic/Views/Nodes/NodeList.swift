@@ -118,8 +118,8 @@ struct NodeList: View {
 					.tint(Color(UIColor.secondarySystemBackground))
 					.foregroundColor(.accentColor)
 					.buttonStyle(.borderedProminent)
-					.accessibilityLabel("Reset node filters")
-					.accessibilityHint("Clears all active node filters.")
+					.accessibilityLabel(String(localized: "Reset node filters", comment: "VoiceOver label for the reset node filters button"))
+					.accessibilityHint(String(localized: "Clears all active node filters.", comment: "VoiceOver hint for the reset node filters button"))
 				}
 				Button(action: {
 					withAnimation {
