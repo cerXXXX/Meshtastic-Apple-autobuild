@@ -139,8 +139,8 @@ struct DocPageView: View {
 		.navigationTitle(translatedTitle ?? page.title)
 		.navigationBarTitleDisplayMode(.inline)
 		.askChirpyToolbar()
-		.accessibilityLabel(String(localized: "\(page.title) documentation page", comment: "VoiceOver label for a documentation page"))
-		.accessibilityHint(String(localized: "Web view showing the \(page.title) documentation", comment: "VoiceOver hint for the documentation web view"))
+		.accessibilityLabel(String(localized: "\(translatedTitle ?? page.title) documentation page", comment: "VoiceOver label for a documentation page"))
+		.accessibilityHint(String(localized: "Web view showing the \(translatedTitle ?? page.title) documentation", comment: "VoiceOver hint for the documentation web view"))
 		.onAppear {
 			startTranslation()
 		}
