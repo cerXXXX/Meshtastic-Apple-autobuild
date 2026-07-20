@@ -58674,6 +58674,9 @@
     "Muted" : {
       "comment" : "VoiceOver: channel notifications are muted"
     },
+    "My Location" : {
+      "comment" : "Map settings toggle: show the device's own location (blue dot) and the follow control"
+    },
     "NTP Server" : {
       "localizations" : {
         "uk" : {

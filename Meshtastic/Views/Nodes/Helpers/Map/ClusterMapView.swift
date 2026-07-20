@@ -393,6 +393,8 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 		private weak var hostMapView: MKMapView?
 		private var controlsStack: UIStackView?
 		private var controlsBottomConstraint: NSLayoutConstraint?
+		/// Native follow/center control; hidden when `showsUserLocation` is off so it isn't a dead button.
+		private weak var userTrackingButton: MKUserTrackingButton?
 		/// id → standalone decoration annotation (route markers, waypoints) currently on the map.
 		private var decorationsByID: [AnyHashable: DecorationAnnotation] = [:]
 
@@ -461,6 +463,8 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 			}
 
 			mapView.showsUserLocation = config.showsUserLocation
+			// The tracking button is only meaningful when the user-location dot is shown.
+			userTrackingButton?.isHidden = !config.showsUserLocation
 			mapView.showsScale = config.showsScale
 			// A custom compass + pitch toggle are installed in `installControls` (bottom-trailing, above
 			// the caller's button bar); the built-in top-right compass is disabled there.
@@ -497,7 +501,25 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 				pitch.heightAnchor.constraint(equalToConstant: 44)
 			])
 
-			let stack = UIStackView(arrangedSubviews: [pitch, compass])
+			// Native follow/center control — MapKit owns the user-location camera behavior. Styled to
+			// match the pitch button; hidden while the user-location dot is off (see applyConfiguration).
+			let tracking = MKUserTrackingButton(mapView: mapView)
+			tracking.tintColor = .label
+			tracking.backgroundColor = UIColor.tertiarySystemBackground.withAlphaComponent(0.92)
+			tracking.layer.cornerRadius = 8
+			tracking.layer.shadowColor = UIColor.black.cgColor
+			tracking.layer.shadowOpacity = 0.2
+			tracking.layer.shadowRadius = 2
+			tracking.layer.shadowOffset = CGSize(width: 0, height: 1)
+			tracking.translatesAutoresizingMaskIntoConstraints = false
+			tracking.isHidden = !(appliedConfiguration?.showsUserLocation ?? true)
+			NSLayoutConstraint.activate([
+				tracking.widthAnchor.constraint(equalToConstant: 44),
+				tracking.heightAnchor.constraint(equalToConstant: 44)
+			])
+			userTrackingButton = tracking
+
+			let stack = UIStackView(arrangedSubviews: [tracking, pitch, compass])
 			stack.axis = .vertical
 			stack.spacing = 10
 			stack.alignment = .center
@@ -749,7 +771,16 @@ struct ClusterMapView<Item: Identifiable, Pin: View, Cluster: View>: UIViewRepre
 					acc.union(MKMapRect(origin: MKMapPoint(member.coordinate), size: MKMapSize(width: 0, height: 0)))
 				}
 				if !rect.isNull {
-					let padded = rect.insetBy(dx: -rect.size.width * 0.3 - 1, dy: -rect.size.height * 0.3 - 1)
+					// Pad generously so members land well inside the viewport.
+					var padded = rect.insetBy(dx: -max(rect.size.width * 0.8, 1), dy: -max(rect.size.height * 0.8, 1))
+					// Floor the span (~140 m) so a TIGHT cluster still zooms in to a readable street
+					// level instead of an imperceptible nudge — otherwise a stubborn "2" never breaks.
+					let pointsPerMeter = MKMapPointsPerMeterAtLatitude(cluster.coordinate.latitude)
+					let minSpan = 140.0 * pointsPerMeter
+					if padded.size.width < minSpan || padded.size.height < minSpan {
+						let span = max(minSpan, max(padded.size.width, padded.size.height))
+						padded = MKMapRect(x: padded.midX - span / 2, y: padded.midY - span / 2, width: span, height: span)
+					}
 					mapView.setVisibleMapRect(padded, animated: true)
 				}
 				mapView.deselectAnnotation(cluster, animated: false)
