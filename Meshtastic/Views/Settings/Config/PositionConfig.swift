@@ -321,7 +321,9 @@ struct PositionConfig: View {
 			) { fromUser, toUser in
 				var pc = Config.PositionConfig()
 				pc.positionBroadcastSmartEnabled = smartPositionEnabled
-				pc.gpsEnabled = gpsMode == 1
+				// gpsMode is the source of truth; the deprecated gpsEnabled field is
+				// intentionally not written (removed upstream, see issue #2024). Older
+				// firmware sending gpsEnabled is still tolerated on read (setPositionValues).
 				pc.gpsMode = Config.PositionConfig.GpsMode(rawValue: gpsMode) ?? Config.PositionConfig.GpsMode.notPresent
 				pc.fixedPosition = fixedPosition
 				pc.gpsUpdateInterval = UInt32(gpsUpdateInterval)
