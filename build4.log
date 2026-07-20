@@ -1,0 +1,93 @@
+objc[69754]: Class XROS1_0SimRuntime is implemented in both /Library/Developer/CoreSimulator/Volumes/xrOS_21N5207f/Library/Developer/CoreSimulator/Profiles/Runtimes/xrOS 1.0.simruntime/Contents/MacOS/xrOS 1.0 (0x114eb80e0) and /Library/Developer/CoreSimulator/Volumes/xrOS_21N5165g/Library/Developer/CoreSimulator/Profiles/Runtimes/xrOS 1.0.simruntime/Contents/MacOS/xrOS 1.0 (0x1152840e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+/Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic Watch App/Views/FoxhuntCompassView.swift:10:8: error: unable to resolve module dependency: 'WatchKit'
+import WatchKit
+       ^
+/Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic Watch App/Views/FoxhuntCompassView.swift:10:8: note: a dependency of main module 'Meshtastic_Watch_App'
+import WatchKit
+       ^
+/Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic Watch App/Views/FoxhuntCompassView.swift:10:8: error: unable to resolve module dependency: 'WatchKit'
+import WatchKit
+       ^
+/Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic Watch App/Views/FoxhuntCompassView.swift:10:8: note: a dependency of main module 'Meshtastic_Watch_App'
+import WatchKit
+       ^
+/Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic Watch App/Views/FoxhuntCompassView.swift:10:8: error: Unable to resolve module dependency: 'WatchKit'
+import WatchKit
+       ^ (in target 'Meshtastic Watch App' from project 'Meshtastic')
+/Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic Watch App/Views/FoxhuntCompassView.swift:10:8: note: A dependency of main module 'Meshtastic_Watch_App'
+import WatchKit
+       ^ (in target 'Meshtastic Watch App' from project 'Meshtastic')
+/Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic Watch App/Views/FoxhuntCompassView.swift:10:8: error: Unable to resolve module dependency: 'WatchKit'
+import WatchKit
+       ^ (in target 'Meshtastic Watch App' from project 'Meshtastic')
+/Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic Watch App/Views/FoxhuntCompassView.swift:10:8: note: A dependency of main module 'Meshtastic_Watch_App'
+import WatchKit
+       ^ (in target 'Meshtastic Watch App' from project 'Meshtastic')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'WidgetsExtension' from project 'Meshtastic')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'cmark-gfm-extensions' from project 'cmark-gfm')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'cmark-gfm' from project 'cmark-gfm')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'SwiftProtobuf_SwiftProtobuf' from project 'SwiftProtobuf')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'SwiftProtobuf' from project 'SwiftProtobuf')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MqttCocoaAsyncSocket' from project 'MqttCocoaAsyncSocket')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MeshtasticProtobufs' from project 'MeshtasticProtobufs')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Meshtastic' from project 'Meshtastic')
+note: Run script build phase 'Download Node SVG Images' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Meshtastic' from project 'Meshtastic')
+note: Run script build phase 'Run Script' will be run during every build because the option to run the script phase "Based on dependency analysis" is unchecked. (in target 'Meshtastic' from project 'Meshtastic')
+warning: Skipping duplicate build file in Compile Sources build phase: /Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic/Enums/FirmwareEditionEnum.swift (in target 'Meshtastic' from project 'Meshtastic')
+warning: Skipping duplicate build file in Compile Sources build phase: /Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic/Tips/PersistentTipStyle.swift (in target 'Meshtastic' from project 'Meshtastic')
+warning: Skipping duplicate build file in Compile Sources build phase: /Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic/Enums/FirmwareEditionEnum.swift (in target 'Meshtastic' from project 'Meshtastic')
+warning: Skipping duplicate build file in Compile Sources build phase: /Users/garthvanderhouwen/Source/mesh-wt-remove-importgeojson/Meshtastic/Tips/PersistentTipStyle.swift (in target 'Meshtastic' from project 'Meshtastic')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Meshtastic Watch App' from project 'Meshtastic')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Markdown' from project 'swift-markdown')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Logging' from project 'swift-log')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'CAtomic' from project 'swift-markdown')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'PLCrashReporter_CrashReporter' from project 'PLCrashReporter')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'OpenTelemetryApi' from project 'opentelemetry-swift')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MVTTools' from project 'mvt-tools')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'CrashReporter' from project 'PLCrashReporter')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'GISTools' from project 'gis-tools')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Datadog_DatadogRUM' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Datadog_DatadogCrashReporting' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Datadog_DatadogCore' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogTrace' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogRUM' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogPrivate' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogLogs' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogInternal' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogCrashReporting' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogCore' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'ZIPFoundation_ZIPFoundation' from project 'ZIPFoundation')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'ZIPFoundation' from project 'ZIPFoundation')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MeshtasticTAK_MeshtasticTAK' from project 'MeshtasticTAK')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MeshtasticTAK' from project 'MeshtasticTAK')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'CZstd' from project 'MeshtasticTAK')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'SwiftDrawDOM' from project 'SwiftDraw')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'SwiftDraw' from project 'SwiftDraw')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'NordicDFU_NordicDFU' from project 'NordicDFU')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'NordicDFU' from project 'NordicDFU')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Gzip' from project 'GzipSwift')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'CocoaMQTT' from project 'CocoaMQTT')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Logging' from project 'swift-log')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MVTTools' from project 'mvt-tools')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MeshtasticTAK' from project 'MeshtasticTAK')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'cmark-gfm' from project 'cmark-gfm')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogLogs' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'NordicDFU' from project 'NordicDFU')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogTrace' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MeshtasticProtobufs' from project 'MeshtasticProtobufs')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'SwiftProtobuf' from project 'SwiftProtobuf')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogCore' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Gzip' from project 'GzipSwift')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogRUM' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'MqttCocoaAsyncSocket' from project 'MqttCocoaAsyncSocket')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'cmark-gfm-extensions' from project 'cmark-gfm')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'ZIPFoundation' from project 'ZIPFoundation')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'CocoaMQTT' from project 'CocoaMQTT')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'CrashReporter' from project 'PLCrashReporter')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'SwiftDraw' from project 'SwiftDraw')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'Markdown' from project 'swift-markdown')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'DatadogCrashReporting' from project 'Datadog')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'OpenTelemetryApi' from project 'opentelemetry-swift')
+warning: ONLY_ACTIVE_ARCH=YES requested with multiple ARCHS and no active architecture could be computed; building for all applicable architectures (in target 'GISTools' from project 'gis-tools')
+** BUILD FAILED **
+
