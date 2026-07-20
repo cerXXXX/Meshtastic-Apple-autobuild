@@ -67,7 +67,7 @@ struct WaypointForm: View {
 								Image(systemName: "location")
 							}
 						}
-						.accessibilityLabel("Set to current location")
+						.accessibilityLabel(String(localized: "Set to current location", comment: "VoiceOver label for the use-my-location button"))
 						HStack {
 							if waypoint.mapCoordinate.latitude != 0 && waypoint.mapCoordinate.longitude != 0 {
 								DistanceText(meters: distance)
