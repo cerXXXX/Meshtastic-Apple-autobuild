@@ -102,10 +102,12 @@ struct NearbyNodesListView: View {
 				selectedNode = node
 			} label: {
 				nodeRow(node)
+					// Apply the combined a11y element to the label content, not the Button itself, so the
+					// Button keeps its activation action and `.isButton` trait (mirrors NodeListItem on iOS).
+					.accessibilityElement(children: .ignore)
+					.accessibilityLabel(accessibilityLabel(for: node))
+					.accessibilityHint(String(localized: "Opens the foxhunt compass for this node.", comment: "VoiceOver hint: tapping a nearby node row opens the foxhunt compass"))
 			}
-			.accessibilityElement(children: .ignore)
-			.accessibilityLabel(accessibilityLabel(for: node))
-			.accessibilityHint(String(localized: "Opens the foxhunt compass for this node.", comment: "VoiceOver hint: tapping a nearby node row opens the foxhunt compass"))
 		}
 	}
 
