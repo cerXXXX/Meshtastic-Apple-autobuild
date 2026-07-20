@@ -108,6 +108,9 @@ struct LoRaConfig: View {
 					HStack(alignment: .top, spacing: 8) {
 						Image(systemName: licensed ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
 							.foregroundColor(licensed ? .green : .orange)
+							// Decorative status glyph; the adjacent "Licensed band" title and
+							// description already convey licensed/unlicensed state to VoiceOver.
+							.accessibilityHidden(true)
 						VStack(alignment: .leading, spacing: 2) {
 							Text("Licensed band")
 								.font(.callout).bold()
@@ -226,6 +229,8 @@ struct LoRaConfig: View {
 				HStack {
 					Image(systemName: "antenna.radiowaves.left.and.right")
 						.foregroundColor(.accentColor)
+						// Decorative icon; the Stepper carries the label for VoiceOver.
+						.accessibilityHidden(true)
 					Stepper(txPower == 0 ? "Max Transmit Power" : "\(txPower)dBm Transmit Power", value: $txPower, in: 0...30, step: 1)
 						.padding(5)
 				}

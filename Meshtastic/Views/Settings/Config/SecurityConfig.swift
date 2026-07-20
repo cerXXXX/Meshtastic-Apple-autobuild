@@ -155,6 +155,7 @@ struct SecurityConfig: View {
 							.buttonStyle(.bordered)
 							.buttonBorderShape(.capsule)
 							.controlSize(.small)
+							.accessibilityLabel(String(localized: "Delete key backup", comment: "VoiceOver label for the delete key backup button"))
 						}
 						if let status = backupStatus {
 							let state = status.success
@@ -182,6 +183,7 @@ struct SecurityConfig: View {
 						.buttonStyle(.bordered)
 						.buttonBorderShape(.capsule)
 						.controlSize(.small)
+						.accessibilityLabel(String(localized: "Regenerate private key", comment: "VoiceOver label for the regenerate private key button"))
 					}
 					Text("Generate a new private key to replace the one currently in use. The public key will automatically be regenerated from your private key.")
 						.foregroundStyle(.secondary)

@@ -15,8 +15,16 @@ struct Settings: View {
 	@Environment(\.modelContext) private var context
 	@Environment(\.colorScheme) private var colorScheme
 	@EnvironmentObject var accessoryManager: AccessoryManager
-	@Query(sort: \NodeInfoEntity.lastHeard, order: .reverse)
-	private var nodes: [NodeInfoEntity]
+	/// Node list for the admin picker / config gating, refreshed on a throttled cadence (see the
+	/// `.task` in `body`) instead of a live `@Query`. A live query re-evaluated this whole view's
+	/// `body` on every node write — and TabView keeps Settings alive on other tabs, so under heavy
+	/// ingestion (large mesh, TCP replay) it burned main-thread CPU while completely off-screen.
+	@State private var nodes: [NodeInfoEntity] = []
+
+	private func refreshNodes() {
+		let descriptor = FetchDescriptor<NodeInfoEntity>(sortBy: [SortDescriptor(\NodeInfoEntity.lastHeard, order: .reverse)])
+		nodes = (try? context.fetch(descriptor)) ?? []
+	}
 
 	/// Nodes for the admin / configuration picker, ordered favorites-first while
 	/// preserving the `@Query`'s `lastHeard`-descending order within each group. The
@@ -63,7 +71,13 @@ struct Settings: View {
 		], excludedModules: excludedModules)
 			|| isTAKModuleSupported(node)
 			|| isTrafficManagementModuleSupported(node)
+			|| isMeshBeaconModuleSupported(node)
 			|| accessoryManager.supportsStatusMessage
+	}
+
+	private func isMeshBeaconModuleSupported(_ node: NodeInfoEntity?) -> Bool {
+		guard node != nil else { return false }
+		return accessoryManager.checkIsVersionSupported(forVersion: "2.8.0")
 	}
 
 	private func isModuleSupported(_ module: ExcludedModules, excludedModules: Int) -> Bool {
@@ -263,6 +277,16 @@ struct Settings: View {
 						Text("Detection Sensor")
 					} icon: {
 						Image(systemName: "sensor")
+					}
+				}
+			}
+
+			if isMeshBeaconModuleSupported(node) {
+				NavigationLink(value: SettingsNavigationState.meshBeacon) {
+					Label {
+						Text("Mesh Beacon")
+					} icon: {
+						Image(systemName: "dot.radiowaves.left.and.right")
 					}
 				}
 			}
@@ -657,6 +681,8 @@ struct Settings: View {
 					CannedMessagesConfig(node: configNode)
 				case .detectionSensor:
 					DetectionSensorConfig(node: configNode)
+				case .meshBeacon:
+					MeshBeaconConfig(node: configNode)
 				case .externalNotification:
 					ExternalNotificationConfig(node: configNode)
 				case .mqtt:
@@ -737,9 +763,22 @@ struct Settings: View {
 				// If the selection hasn't be initialized yet, try to initalize it.
 				// If we are not fully connected yet, then setSelectedNode will
 				// not select the node and it will remain 0
+				refreshNodes()
 				if self.preferredNodeNum <= 0 {
 					self.preferredNodeNum = UserDefaults.preferredPeripheralNum
 					setSelectedNode(to: UserDefaults.preferredPeripheralNum)
+				}
+			}
+			.task(id: router.selectedTab) {
+				// Refresh the node snapshot on a gentle cadence, and only while Settings is
+				// the frontmost tab — the stale snapshot is invisible from other tabs, this
+				// task re-fires on every tab switch (so the guard comes first), and switching
+				// here restarts it for an immediate refresh.
+				guard router.selectedTab == .settings else { return }
+				refreshNodes()
+				while !Task.isCancelled {
+					try? await Task.sleep(for: .seconds(2))
+					refreshNodes()
 				}
 			}
 			.navigationTitle("Settings")

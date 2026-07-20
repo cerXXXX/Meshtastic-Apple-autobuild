@@ -413,8 +413,8 @@ extension MeshPackets {
 						let hwDescriptor1 = FetchDescriptor<DeviceHardwareEntity>(
 							predicate: #Predicate { $0.hwModel == fetchHwModel1 }
 						)
-						if let hardwareEntity = try? modelContext.fetch(hwDescriptor1).first {
-							newUser.hwDisplayName = hardwareEntity.displayName
+						if let hardware = try? modelContext.fetch(hwDescriptor1) {
+							newUser.hwDisplayName = HardwareCatalogResolver.presentation(for: fetchHwModel1, in: hardware)?.displayName
 						}
 						newNode.user = newUser
 						
@@ -520,8 +520,8 @@ extension MeshPackets {
 							let hwDescriptor2 = FetchDescriptor<DeviceHardwareEntity>(
 								predicate: #Predicate { $0.hwModel == fetchHwModel2 }
 							)
-							if let hardwareEntity = try? modelContext.fetch(hwDescriptor2).first {
-								user.hwDisplayName = hardwareEntity.displayName
+							if let hardware = try? modelContext.fetch(hwDescriptor2) {
+								user.hwDisplayName = HardwareCatalogResolver.presentation(for: fetchHwModel2, in: hardware)?.displayName
 							}
 						}
 					}
@@ -1337,6 +1337,70 @@ extension MeshPackets {
 		} catch {
 			let nsError = error as NSError
 			Logger.data.error("💥 [DetectionSensorConfigEntity] Fetching node for core data failed: \(nsError, privacy: .public)")
+		}
+	}
+
+	func upsertMeshBeaconModuleConfigPacket(config: ModuleConfig.MeshBeaconConfig, nodeNum: Int64, sessionPasskey: Data? = Data()) {
+
+		let logString = String.localizedStringWithFormat("Mesh Beacon module config received: %@".localized, String(nodeNum))
+		Logger.data.info("📡 \(logString, privacy: .public)")
+
+		let fetchNum = Int64(nodeNum)
+		var fetchNodeInfoRequest = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate<NodeInfoEntity> { $0.num == fetchNum })
+		fetchNodeInfoRequest.fetchLimit = 1
+		do {
+			let fetchedNode = try modelContext.fetch(fetchNodeInfoRequest)
+			// Found a node, save Mesh Beacon Config
+			if !fetchedNode.isEmpty {
+				let entity: MeshBeaconConfigEntity
+				if let existing = fetchedNode[0].meshBeaconConfig {
+					entity = existing
+				} else {
+					entity = MeshBeaconConfigEntity()
+					modelContext.insert(entity)
+					fetchedNode[0].meshBeaconConfig = entity
+				}
+				entity.flags = Int32(truncatingIfNeeded: config.flags)
+				entity.broadcastMessage = config.broadcastMessage
+				entity.broadcastOfferChannelName = config.hasBroadcastOfferChannel ? config.broadcastOfferChannel.name : ""
+				entity.broadcastOfferChannelPSK = config.hasBroadcastOfferChannel ? config.broadcastOfferChannel.psk : Data()
+				entity.broadcastOfferRegion = Int32(config.broadcastOfferRegion.rawValue)
+				entity.broadcastOfferPreset = config.hasBroadcastOfferPreset ? Int32(config.broadcastOfferPreset.rawValue) : -1
+				entity.broadcastOnChannelName = config.hasBroadcastOnChannel ? config.broadcastOnChannel.name : ""
+				entity.broadcastOnChannelPSK = config.hasBroadcastOnChannel ? config.broadcastOnChannel.psk : Data()
+				entity.broadcastOnRegion = Int32(config.broadcastOnRegion.rawValue)
+				entity.broadcastOnPreset = config.hasBroadcastOnPreset ? Int32(config.broadcastOnPreset.rawValue) : -1
+				entity.broadcastIntervalSecs = config.broadcastIntervalSecs > 0 ? Int32(truncatingIfNeeded: config.broadcastIntervalSecs) : 3600
+				entity.broadcastSendAsNode = Int64(config.broadcastSendAsNode)
+
+				// Rebuild the multi-target list from the incoming config (cascade replaces the old rows).
+				for old in entity.broadcastTargets {
+					modelContext.delete(old)
+				}
+				entity.broadcastTargets = config.broadcastTargets.map { target in
+					let newTarget = BroadcastTargetEntity(
+						preset: target.hasPreset ? Int32(target.preset.rawValue) : -1,
+						region: Int32(target.region.rawValue),
+						channelIndex: target.hasChannelIndex ? Int32(truncatingIfNeeded: target.channelIndex) : -1
+					)
+					modelContext.insert(newTarget)
+					return newTarget
+				}
+
+				if sessionPasskey != nil {
+					fetchedNode[0].sessionPasskey = sessionPasskey
+					fetchedNode[0].sessionExpiration = Date().addingTimeInterval(300)
+				}
+				savePendingChanges()
+				Logger.data.info("💾 [MeshBeaconConfigEntity] Updated for node: \(nodeNum.toHex(), privacy: .public)")
+
+			} else {
+				Logger.data.error("💥 [MeshBeaconConfigEntity] No Nodes found in local database matching node \(nodeNum.toHex(), privacy: .public) unable to save Mesh Beacon Module Config")
+			}
+
+		} catch {
+			let nsError = error as NSError
+			Logger.data.error("💥 [MeshBeaconConfigEntity] Fetching node for core data failed: \(nsError, privacy: .public)")
 		}
 	}
 

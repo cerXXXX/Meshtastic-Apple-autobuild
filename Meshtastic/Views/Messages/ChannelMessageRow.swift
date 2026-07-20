@@ -20,11 +20,35 @@ struct ChannelMessageRow: View {
 	@Binding var messageToHighlight: Int64
 	let scrollView: ScrollViewProxy
 	let onTapback: (MessageEntity) -> Void
+	let onMessageRetried: () -> Void
 
 	private var isCurrentUser: Bool {
 		Int64(preferredPeripheralNum) == message.fromUser?.num
 	}
-	
+
+	/// A single, natural-language description of the message bubble so VoiceOver reads one element
+	/// (sender + text + timestamp + security state) instead of separate fragments. Delivery/read
+	/// status stays its own labeled element (MessageDeliveryStatusLabel) directly after.
+	private var messageAccessibilityLabel: String {
+		let text = message.displayedPayload
+		let time = message.timestamp.formatted(date: .abbreviated, time: .shortened)
+		var parts: [String]
+		if isCurrentUser {
+			parts = [String(localized: "You sent: \(text)", comment: "VoiceOver: label for a message you sent. %@ is the message text")]
+		} else {
+			let sender = message.fromUser?.longName ?? "Unknown".localized
+			parts = [String(localized: "Message from \(sender): \(text)", comment: "VoiceOver: label for a received message. First value is the sender, second is the message text")]
+		}
+		parts.append(time)
+		if (message.pkiEncrypted && message.realACK) || (!isCurrentUser && message.pkiEncrypted) {
+			parts.append(String(localized: "Encrypted", comment: "VoiceOver: message is end-to-end encrypted"))
+		}
+		if message.xeddsaSigned {
+			parts.append(String(localized: "Verified", comment: "VoiceOver: message signature was cryptographically verified"))
+		}
+		return parts.joined(separator: ", ")
+	}
+
 	init(message: MessageEntity,
 	     replyMessage: MessageEntity?,
 	     tapbacks: [MessageEntity],
@@ -35,7 +59,8 @@ struct ChannelMessageRow: View {
 	     messageFieldFocused: FocusState<Bool>.Binding,
 	     messageToHighlight: Binding<Int64>,
 	     scrollView: ScrollViewProxy,
-	     onTapback: @escaping (MessageEntity) -> Void) {
+	     onTapback: @escaping (MessageEntity) -> Void,
+	     onMessageRetried: @escaping () -> Void = {}) {
 		// Initialize ObservedObject with the concrete instance
 		self.message = message
 		self.replyMessage = replyMessage
@@ -48,6 +73,7 @@ struct ChannelMessageRow: View {
 		self._messageToHighlight = messageToHighlight
 		self.scrollView = scrollView
 		self.onTapback = onTapback
+		self.onMessageRetried = onMessageRetried
 	}
 
 	var body: some View {
@@ -89,8 +115,12 @@ struct ChannelMessageRow: View {
 							scrollView.scrollTo(messageNum, anchor: .center)
 							Task {
 								DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-									withAnimation(.easeInOut(duration: 0.5)) {
-										messageToHighlight = -1
+									// Only clear if this jump's highlight is still the active one — a search
+									// (or later jump) may have moved the highlight elsewhere in the meantime.
+									if messageToHighlight == messageNum {
+										withAnimation(.easeInOut(duration: 0.5)) {
+											messageToHighlight = -1
+										}
 									}
 								}
 							}
@@ -103,6 +133,7 @@ struct ChannelMessageRow: View {
 							.symbolRenderingMode(.hierarchical).imageScale(.large)
 							.foregroundColor(.accentColor).padding(.trailing)
 					}
+					.accessibilityLabel(String(localized: "Replying to: \(replyMessage?.displayedPayload ?? "EMPTY MESSAGE")", comment: "VoiceOver: button that jumps to the quoted message being replied to. %@ is the quoted text"))
 					if !isCurrentUser { Spacer(minLength: 50) }
 				}
 			}
@@ -119,12 +150,14 @@ struct ChannelMessageRow: View {
 				}
 				
 				VStack(alignment: isCurrentUser ? .trailing : .leading) {
+					let deliveryStatus = isCurrentUser ? message.deliveryStatus(isDirectMessage: false) : nil
 					let isDetectionSensorMessage = message.portNum == Int32(PortNum.detectionSensorApp.rawValue)
 					
 					// Sender Name Header
 					if !isCurrentUser && message.fromUser != nil {
 						Text("\(message.fromUser?.longName ?? "Unknown".localized ) (\(message.fromUser?.userId ?? "?"))")
 							.font(.caption).foregroundColor(.gray).offset(y: 8)
+							.accessibilityHidden(true) // Folded into the message bubble's combined label
 					}
 					
 					// Message Bubble
@@ -139,9 +172,16 @@ struct ChannelMessageRow: View {
 						} onTapback: {
 							onTapback(message)
 						}
+						.accessibilityElement(children: .combine)
+						.accessibilityLabel(messageAccessibilityLabel)
 						
-						if isCurrentUser && message.canRetry {
-							RetryButton(message: message, destination: .channel(channel))
+						if let deliveryStatus, deliveryStatus.canRetry {
+							RetryButton(
+								message: message,
+								destination: .channel(channel),
+								status: deliveryStatus,
+								onMessageSent: onMessageRetried
+							)
 						}
 					}
 					
@@ -149,15 +189,8 @@ struct ChannelMessageRow: View {
 					
 					// ACK Status / Error
 					HStack {
-						let ackErrorVal = RoutingError(rawValue: Int(message.ackError))
-						if isCurrentUser && message.receivedACK {
-							Text("\(ackErrorVal?.display ?? "Empty Ack Error")").fixedSize(horizontal: false, vertical: true)
-								.foregroundStyle(ackErrorVal?.color ?? Color.red).font(.caption2)
-						} else if isCurrentUser && message.ackError == 0 {
-							Text("Waiting to be acknowledged. . .").font(.caption2).foregroundColor(.orange)
-						} else if isCurrentUser && !isDetectionSensorMessage {
-							Text("\(ackErrorVal?.display ?? "Empty Ack Error")").fixedSize(horizontal: false, vertical: true)
-								.foregroundStyle(ackErrorVal?.color ?? Color.red).font(.caption2)
+						if let deliveryStatus, !isDetectionSensorMessage {
+							MessageDeliveryStatusLabel(status: deliveryStatus)
 						}
 					}
 				}
@@ -170,5 +203,11 @@ struct ChannelMessageRow: View {
 			
 		}
 		.id(message.messageId) // ID for scrolling/highlighting
+		.background(
+			RoundedRectangle(cornerRadius: 8)
+				.fill(Color.yellow.opacity(messageToHighlight == message.messageId ? 0.18 : 0))
+				.padding(.horizontal, 4)
+		)
+		.animation(.easeInOut(duration: 0.3), value: messageToHighlight)
 	}
 }
