@@ -134,22 +134,35 @@ struct MessageText: View {
 			}
 	}
 	
+	/// A bottom-trailing status badge (encryption lock, signing shield, store-forward envelope) with
+	/// its symbol, tint, and localized VoiceOver label.
+	private struct CornerBadge: Identifiable {
+		/// Symbols are distinct within a single message's badge set, so this is a stable identity.
+		var id: String { symbol }
+		let symbol: String
+		let tint: Color
+		let label: String
+	}
+
 	/// Bottom-trailing status badges (encryption lock, signing shield, store-forward envelope), laid out
 	/// in a single row so they sit side by side instead of stacking on the same corner pixel when a
 	/// message qualifies for more than one (e.g. a signed store-and-forward broadcast).
-	private var cornerBadges: [(symbol: String, tint: Color)] {
-		var badges: [(symbol: String, tint: Color)] = []
+	private var cornerBadges: [CornerBadge] {
+		var badges: [CornerBadge] = []
 		// Lock = private: a PKI-encrypted DM.
 		if message.pkiEncrypted && message.realACK || !isCurrentUser && message.pkiEncrypted {
-			badges.append((symbol: "lock.circle.fill", tint: .green))
+			badges.append(CornerBadge(symbol: "lock.circle.fill", tint: .green,
+									  label: String(localized: "Encrypted message", comment: "VoiceOver label for the PKI-encrypted direct message badge")))
 		}
 		// Shield = authentic: a radio-verified, XEdDSA-signed broadcast. Affirmative only — unsigned
 		// traffic shows nothing, and the ingest path only sets the flag on broadcasts, never DMs.
 		if message.xeddsaSigned {
-			badges.append((symbol: "checkmark.shield.fill", tint: .green))
+			badges.append(CornerBadge(symbol: "checkmark.shield.fill", tint: .green,
+									  label: String(localized: "Verified sender", comment: "VoiceOver label for the signed and verified broadcast badge")))
 		}
 		if message.portNum == Int32(PortNum.storeForwardApp.rawValue) {
-			badges.append((symbol: "envelope.circle.fill", tint: .gray))
+			badges.append(CornerBadge(symbol: "envelope.circle.fill", tint: .gray,
+									  label: String(localized: "Store and forward message", comment: "VoiceOver label for the store-and-forward badge")))
 		}
 		return badges
 	}
@@ -162,11 +175,12 @@ struct MessageText: View {
 				Spacer()
 				HStack(spacing: 2) {
 					Spacer()
-					ForEach(Array(badges.enumerated()), id: \.offset) { _, badge in
+					ForEach(badges) { badge in
 						Image(systemName: badge.symbol)
 							.symbolRenderingMode(.palette)
 							.foregroundStyle(.white, badge.tint)
 							.font(.system(size: 20))
+							.accessibilityLabel(badge.label)
 					}
 				}
 				.offset(x: 8, y: 8)
@@ -180,6 +194,7 @@ struct MessageText: View {
 				.symbolRenderingMode(.multicolor)
 				.symbolEffect(.variableColor.reversing.cumulative, options: .repeat(20).speed(3))
 				.offset(x: 20, y: -20)
+				.accessibilityLabel(String(localized: "Detection sensor", comment: "VoiceOver label for the detection sensor message badge"))
 		}
 		if isShowingTranslatedText {
 			Image(systemName: "translate")
@@ -188,6 +203,7 @@ struct MessageText: View {
 				.foregroundStyle(Color.blue)
 				.symbolRenderingMode(.hierarchical)
 				.offset(x: 38, y: 8)
+				.accessibilityLabel(String(localized: "Showing translated text", comment: "VoiceOver label for the translated message badge"))
 		}
 	}
 

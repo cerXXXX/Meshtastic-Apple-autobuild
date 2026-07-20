@@ -473,8 +473,8 @@ struct MeshMapMK: View {
 						}) {
 							Image("custom.radio.tower")
 						}
-						.accessibilityLabel("Estimate coverage")
-						.accessibilityHint("Runs a Site Planner coverage estimate and adds it to the map.")
+						.accessibilityLabel(String(localized: "Estimate coverage", comment: "VoiceOver label for the coverage estimate button"))
+						.accessibilityHint(String(localized: "Runs a Site Planner coverage estimate and adds it to the map.", comment: "VoiceOver hint for the coverage estimate button"))
 						.glassButtonStyle()
 						Button(action: {
 							withAnimation {
@@ -483,8 +483,8 @@ struct MeshMapMK: View {
 						}) {
 							Image(systemName: filters.isFiltering ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
 						}
-						.accessibilityLabel(editingFilters ? "Hide node filters" : "Show node filters")
-						.accessibilityHint(editingFilters ? "Hides the node filter options." : "Shows the node filter options.")
+						.accessibilityLabel(editingFilters ? String(localized: "Hide node filters", comment: "VoiceOver label to hide map node filters") : String(localized: "Show node filters", comment: "VoiceOver label to show map node filters"))
+						.accessibilityHint(editingFilters ? String(localized: "Hides the node filter options.", comment: "VoiceOver hint to hide map node filters") : String(localized: "Shows the node filter options.", comment: "VoiceOver hint to show map node filters"))
 						.glassButtonStyle()
 						Button(action: {
 							withAnimation {
@@ -493,8 +493,8 @@ struct MeshMapMK: View {
 						}) {
 							Image(systemName: showLegend ? "map.fill" : "map")
 						}
-						.accessibilityLabel(showLegend ? "Hide map legend" : "Show map legend")
-						.accessibilityHint(showLegend ? "Hides the map legend." : "Shows the map legend.")
+						.accessibilityLabel(showLegend ? String(localized: "Hide map legend", comment: "VoiceOver label to hide the map legend") : String(localized: "Show map legend", comment: "VoiceOver label to show the map legend"))
+						.accessibilityHint(showLegend ? String(localized: "Hides the map legend.", comment: "VoiceOver hint to hide the map legend") : String(localized: "Shows the map legend.", comment: "VoiceOver hint to show the map legend"))
 						.glassButtonStyle()
 						Button(action: {
 							withAnimation {
