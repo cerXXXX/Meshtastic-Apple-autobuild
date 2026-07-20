@@ -198,7 +198,7 @@ struct LocalStatsLog: View {
 			.buttonStyle(.bordered)
 			.buttonBorderShape(.capsule)
 			.controlSize(.small)
-			.accessibilityHint("Scrolls the chart to the newest reading")
+			.accessibilityHint(String(localized: "Scrolls the chart to the newest reading", comment: "VoiceOver hint for the scroll-to-latest chart button"))
 		}
 	}
 
