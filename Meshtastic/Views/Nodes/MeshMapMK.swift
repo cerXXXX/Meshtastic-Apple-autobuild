@@ -30,7 +30,10 @@ struct MeshMapMK: View {
 	var showOpenWindowButton: Bool = true
 
 	/// Parameters
-	@State var showUserLocation: Bool = true
+	/// Whether to draw the device's own location (blue dot) + show the user-tracking control.
+	/// Persisted so the choice survives relaunch; gated on `isMapVisible` at the call site so the
+	/// dot/tracking turns off while the tab is off-screen or the app is backgrounded.
+	@AppStorage("enableMapUserLocation") private var showUserLocation: Bool = true
 	/// Map State User Defaults
 	@AppStorage("enableMapTraffic") private var showTraffic: Bool = false
 	@AppStorage("enableMapPointsOfInterest") private var showPointsOfInterest: Bool = false
@@ -263,7 +266,7 @@ struct MeshMapMK: View {
 			layer: selectedMapLayer == .offline ? .standard : selectedMapLayer,
 			showsTraffic: showTraffic,
 			showsPointsOfInterest: showPointsOfInterest,
-			showsUserLocation: showUserLocation,
+			showsUserLocation: showUserLocation && isMapVisible,
 			controlsBottomInset: 72   // lift compass + pitch toggle above the bottom button bar
 		)
 	}
@@ -794,30 +797,65 @@ struct MeshMapMK: View {
 			rebuildOverlays()
 		}
 
-	/// Fan out nodes that sit on (nearly) the same coordinate into a small ring so a stacked cluster
-	/// always breaks into individual, tappable node circles instead of an un-splittable pin. The
-	/// accuracy circle stays at the true location; only the pin's display coordinate is offset.
+	/// Fan out nodes that sit on (nearly) the same spot into a small ring so a stacked cluster always
+	/// breaks into individual, tappable node circles instead of an un-splittable pin. The accuracy
+	/// circle stays at the true location; only the pin's display coordinate is offset.
+	///
+	/// Grouping is DISTANCE-based (not cell-quantized): any nodes within `mergeMeters` of each other
+	/// are fanned out together. A fixed grid missed two real cases that produced un-splittable "2"
+	/// clusters — pairs straddling a cell boundary, and same-site radios whose GPS fixes jitter a few
+	/// meters apart — because they're far too close to ever separate by zooming. Union-find over a
+	/// coarse neighbor grid keeps this ~O(n) on the density-limited snapshot set.
 	private func computeSpreadOverrides(_ snaps: [MeshMapPositionSnapshot]) -> [Int64: CLLocationCoordinate2D] {
-		var groups: [Int64: [MeshMapPositionSnapshot]] = [:]
-		for snap in snaps {
-			// Quantize to ~1 m so only (near-)coincident nodes are grouped together.
-			let latKey = Int64((snap.coordinate.latitude * 1e5).rounded())
-			let lonKey = Int64((snap.coordinate.longitude * 1e5).rounded())
-			groups[latKey &* 100_000_000 &+ lonKey, default: []].append(snap)
-		}
-		var overrides: [Int64: CLLocationCoordinate2D] = [:]
+		guard snaps.count > 1 else { return [:] }
 		let metersPerDegLat = 111_320.0
+		/// Pins within this distance are treated as "stacked" and fanned out. Comfortably above GPS
+		/// jitter and the old ~1 m cell so boundary/jitter pairs are reliably caught.
+		let mergeMeters = 16.0
+
+		// Project to a local meter plane (accurate enough at city scale) for distance + bucketing.
+		let pts = snaps.map { snap -> (x: Double, y: Double) in
+			let metersPerDegLon = metersPerDegLat * cos(snap.coordinate.latitude * .pi / 180)
+			return (snap.coordinate.longitude * metersPerDegLon, snap.coordinate.latitude * metersPerDegLat)
+		}
+		// Coarse grid (cell == mergeMeters) so each node only compares against neighboring cells.
+		func cellKey(_ gx: Int, _ gy: Int) -> Int64 { Int64(gx) &* 4_000_000 &+ Int64(gy) }
+		let grid = pts.map { (Int(($0.x / mergeMeters).rounded(.down)), Int(($0.y / mergeMeters).rounded(.down))) }
+		var buckets: [Int64: [Int]] = [:]
+		for (i, cell) in grid.enumerated() { buckets[cellKey(cell.0, cell.1), default: []].append(i) }
+
+		// Union-find: merge any pair within mergeMeters (checking the node's cell + its 8 neighbors).
+		var parent = Array(0..<snaps.count)
+		func find(_ a: Int) -> Int { var r = a; while parent[r] != r { parent[r] = parent[parent[r]]; r = parent[r] }; return r }
+		func union(_ a: Int, _ b: Int) { let ra = find(a), rb = find(b); if ra != rb { parent[ra] = rb } }
+		let mergeSq = mergeMeters * mergeMeters
+		for i in 0..<snaps.count {
+			let (gx, gy) = grid[i]
+			for dx in -1...1 { for dy in -1...1 {
+				guard let neighbors = buckets[cellKey(gx + dx, gy + dy)] else { continue }
+				for j in neighbors where j > i {
+					let ddx = pts[i].x - pts[j].x, ddy = pts[i].y - pts[j].y
+					if ddx * ddx + ddy * ddy <= mergeSq { union(i, j) }
+				}
+			}}
+		}
+
+		// Collect groups by root, fan each group with >1 member around its centroid.
+		var groups: [Int: [Int]] = [:]
+		for i in 0..<snaps.count { groups[find(i), default: []].append(i) }
+		var overrides: [Int64: CLLocationCoordinate2D] = [:]
 		for members in groups.values where members.count > 1 {
-			let sorted = members.sorted { $0.nodeNum < $1.nodeNum }
-			let base = sorted[0].coordinate
-			let metersPerDegLon = max(1.0, metersPerDegLat * cos(base.latitude * .pi / 180))
+			let sorted = members.sorted { snaps[$0].nodeNum < snaps[$1].nodeNum }
+			let centerLat = sorted.reduce(0.0) { $0 + snaps[$1].coordinate.latitude } / Double(sorted.count)
+			let centerLon = sorted.reduce(0.0) { $0 + snaps[$1].coordinate.longitude } / Double(sorted.count)
+			let metersPerDegLon = max(1.0, metersPerDegLat * cos(centerLat * .pi / 180))
 			// Grow the ring with crowd size so even a big pile stays individually tappable.
 			let radius = 14.0 + Double(sorted.count) * 1.5
 			for (index, member) in sorted.enumerated() {
 				let angle = 2 * Double.pi * Double(index) / Double(sorted.count)
-				overrides[member.nodeNum] = CLLocationCoordinate2D(
-					latitude: base.latitude + (radius * sin(angle)) / metersPerDegLat,
-					longitude: base.longitude + (radius * cos(angle)) / metersPerDegLon
+				overrides[snaps[member].nodeNum] = CLLocationCoordinate2D(
+					latitude: centerLat + (radius * sin(angle)) / metersPerDegLat,
+					longitude: centerLon + (radius * cos(angle)) / metersPerDegLon
 				)
 			}
 		}

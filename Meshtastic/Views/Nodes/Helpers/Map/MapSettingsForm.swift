@@ -16,6 +16,7 @@ struct MapSettingsForm: View {
 	@AppStorage("meshMapShowRouteLines") private var enableMapRouteLines = false
 	@AppStorage("enableMapConvexHull") private var convexHull = false
 	@AppStorage("enableMapWaypoints") private var enableMapWaypoints = true
+	@AppStorage("enableMapUserLocation") private var enableMapUserLocation = true
 	@AppStorage("mapOverlaysEnabled") private var mapOverlaysEnabled = false
 	@AppStorage("enableOfflineTiles") private var enableOfflineTiles = false
 	@AppStorage("enableMapClustering") private var enableMapClustering = true
@@ -83,6 +84,15 @@ struct MapSettingsForm: View {
 								}
 							} icon: {
 								Image(systemName: "scope")
+							}
+						}
+						.tint(.accentColor)
+						Toggle(isOn: $enableMapUserLocation) {
+							Label {
+								Text("My Location")
+							} icon: {
+								Image(systemName: "location.fill")
+									.symbolRenderingMode(.multicolor)
 							}
 						}
 						.tint(.accentColor)
