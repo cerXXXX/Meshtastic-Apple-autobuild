@@ -49,6 +49,15 @@ struct MeshMapMK: View {
 	// Map Configuration
 	@Namespace var mapScope
 	@AppStorage("meshMapDistance") private var meshMapDistance: Double = 800000
+	// Persisted last-viewed camera region, so the map reopens where the user left it -- independent of
+	// GPS / connected device / node availability at launch. This is what fixes the cold-open default
+	// (0,0) "South Atlantic" view for a location-denied user with no positioned nodes. Stored as four
+	// primitives because `MKCoordinateRegion` isn't `Codable`; a non-positive saved span means
+	// "nothing saved yet".
+	@AppStorage("meshMapRegionCenterLatitude") private var savedRegionCenterLatitude: Double = 0
+	@AppStorage("meshMapRegionCenterLongitude") private var savedRegionCenterLongitude: Double = 0
+	@AppStorage("meshMapRegionSpanLatitude") private var savedRegionSpanLatitude: Double = 0
+	@AppStorage("meshMapRegionSpanLongitude") private var savedRegionSpanLongitude: Double = 0
 	@State var mapStyle: MapStyle = MapStyle.standard(elevation: .flat, emphasis: MapStyle.StandardEmphasis.muted, pointsOfInterest: .excludingAll, showsTraffic: false)
 	@State var position = MapCameraPosition.automatic
 	@State private var distance = 10000.0
@@ -565,6 +574,8 @@ struct MeshMapMK: View {
 				// Pan/zoom settled: re-filter to the new region now; the state key dedupes
 				// the rebuild when the visible set is unchanged.
 				refreshPositionState()
+				// Remember where the user is looking so the map reopens here next launch.
+				persistVisibleRegion()
 			}
 			.onChange(of: accessoryManager.activeDeviceNum) {
 				syncFallbackLocation()
@@ -868,6 +879,17 @@ struct MeshMapMK: View {
 	/// as positions pour in.
 	private func frameInitialRegionIfNeeded() {
 		guard !didInitialFrame else { return }
+		// Restore the user's last-viewed region first: anyone who has ever moved the map reopens
+		// exactly where they left it, with no dependence on GPS / connected device / node data at
+		// launch. This is the only branch that resolves the reported cold-open (0,0) default for a
+		// location-denied user with no positioned nodes -- and it consumes the one-shot, so the user
+		// still owns the camera immediately afterward.
+		if let saved = savedMapRegion {
+			didInitialFrame = true
+			visibleRegion = saved
+			cameraCommand = ClusterMapCameraCommand(id: UUID(), region: saved)
+			return
+		}
 		// Frame from the same set the map actually shows, so "Precise Locations Only" doesn't start
 		// the camera centered on hidden reduced-precision nodes.
 		let nodeCoords = mapEligiblePositions.compactMap { $0.nodeCoordinate ?? $0.fuzzedNodeCoordinate }
@@ -892,6 +914,43 @@ struct MeshMapMK: View {
 		// one-shot command that actually moves the map (the only programmatic camera move we make).
 		visibleRegion = region
 		cameraCommand = ClusterMapCameraCommand(id: UUID(), region: region)
+	}
+
+	/// The persisted last-viewed camera region, or `nil` when nothing valid has been saved yet
+	/// (fresh install, or a degenerate/near-global region we deliberately never store).
+	private var savedMapRegion: MKCoordinateRegion? {
+		let latDelta = savedRegionSpanLatitude, lonDelta = savedRegionSpanLongitude
+		guard latDelta > 0, lonDelta > 0 else { return nil }
+		let lat = savedRegionCenterLatitude, lon = savedRegionCenterLongitude
+		guard lat.isFinite, lon.isFinite, (-90...90).contains(lat), (-180...180).contains(lon) else {
+			return nil
+		}
+		return MKCoordinateRegion(
+			center: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+			span: MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
+		)
+	}
+
+	/// Persist the current camera region so the next launch reopens here. Deliberately skips the
+	/// uninitialized/near-global region MapKit reports before the first real frame (its whole-world
+	/// default approaches a 180-degree latitude span) so we never save the (0,0) cold-open we're
+	/// fixing; genuine local pans/zooms always fall well under the guard.
+	private func persistVisibleRegion() {
+		guard let region = visibleRegion else { return }
+		let latDelta = region.span.latitudeDelta, lonDelta = region.span.longitudeDelta
+		guard latDelta > 0, latDelta < 90, lonDelta > 0, lonDelta < 180 else { return }
+		let center = region.center
+		guard center.latitude.isFinite, center.longitude.isFinite else { return }
+		// Also reject MapKit's *intermediate* pre-interaction default, which parks a broad span on
+		// (0,0). A wide region still centered at Null Island is the cold-open we're fixing -- never a
+		// real data-driven frame (those are small-span) nor a user pan (whose center has moved off the
+		// equator/prime meridian). A genuine local view near (0,0) is small-span and still saves.
+		let nearNullIsland = abs(center.latitude) < 1 && abs(center.longitude) < 1
+		guard !(nearNullIsland && (latDelta > 10 || lonDelta > 10)) else { return }
+		savedRegionCenterLatitude = center.latitude
+		savedRegionCenterLongitude = center.longitude
+		savedRegionSpanLatitude = latDelta
+		savedRegionSpanLongitude = lonDelta
 	}
 
 	/// Average of a coordinate list (nil when empty).
