@@ -38,6 +38,7 @@ extension AccessoryManager {
 		self.activeDeviceNum = nil
 		packetsSent = 0
 		packetsReceived = 0
+		packetsAtLastIngestRecycle = 0
 		expectedNodeDBSize = nil
 	
 		self.allowDisconnect = true
