@@ -592,11 +592,9 @@ actor MeshPackets {
 							modelContext.insert(newUserEntity)
 							fetchedNode[0].user = newUserEntity
 						}
-						// Set the public key for a user if it is empty, don't update
-						if fetchedNode[0].user?.publicKey == nil && !nodeInfo.user.publicKey.isEmpty {
-							fetchedNode[0].user?.pkiEncrypted = true
-							fetchedNode[0].user?.publicKey = nodeInfo.user.publicKey
-						}
+						// First-wins on the public key, consistent with the NodeInfo/User paths in UpdateSwiftData
+						// (previously a `== nil` guard here silently ignored mismatches). See `applyInboundPublicKey`.
+						fetchedNode[0].user?.applyInboundPublicKey(nodeInfo.user.publicKey, nodeNum: Int64(nodeInfo.num))
 						fetchedNode[0].user?.userId = nodeInfo.num.toHex()
 						fetchedNode[0].user?.num = Int64(nodeInfo.num)
 						fetchedNode[0].user?.numString = String(nodeInfo.num)
