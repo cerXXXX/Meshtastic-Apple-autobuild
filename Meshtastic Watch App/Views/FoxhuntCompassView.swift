@@ -105,12 +105,23 @@ struct FoxhuntCompassView: View {
 				WatchCircleText(
 					text: node.shortName.isEmpty ? "?" : node.shortName,
 					color: WatchCircleText.color(for: node.num),
-					circleSize: 34
+					circleSize: 34,
+					nodeName: node.longName
 				)
 				.offset(y: -(dialRadius + 64))
 			}
 			.offset(y: 31)
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
+			// The compass is composed of purely decorative rotating shapes
+			// (ring, ticks, needle, cone). Ignore all of them and expose a
+			// single element whose value updates live as heading/bearing/
+			// distance change.
+			.accessibilityElement(children: .ignore)
+			.accessibilityLabel(String(localized: "Foxhunt compass for \(node.longName)", comment: "VoiceOver: label for the foxhunt compass pointing at a node"))
+			.accessibilityValue(accessibilityReadout)
+			// The reading changes as the wearer rotates in place; tell VoiceOver to
+			// re-poll the value while the element stays focused.
+			.accessibilityAddTraits(.updatesFrequently)
 		}
 		.onAppear {
 			locationManager.startUpdates()
@@ -154,6 +165,26 @@ struct FoxhuntCompassView: View {
 			}
 		}
 		.rotationEffect(.degrees(locationManager.heading))
+	}
+
+	// MARK: - Accessibility
+
+	/// A spoken, live-updating reading of the compass: current heading,
+	/// bearing to the target node, and remaining distance.
+	private var accessibilityReadout: String {
+		var parts: [String] = []
+
+		parts.append(String(localized: "Heading \(Int(locationManager.heading.rounded()) % 360) degrees", comment: "VoiceOver: current compass heading in degrees"))
+
+		if let bearing = bearingToNode() {
+			parts.append(String(localized: "Target bearing \(Int(bearing.rounded())) degrees", comment: "VoiceOver: bearing to the target node in degrees"))
+		}
+
+		if let dist = distanceToNode() {
+			parts.append(String(localized: "Distance \(formatDistance(dist))", comment: "VoiceOver: distance to the target node"))
+		}
+
+		return parts.joined(separator: ", ")
 	}
 
 	// MARK: - Calculations

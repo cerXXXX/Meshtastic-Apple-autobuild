@@ -26,6 +26,8 @@ struct TapbackResponses: View {
 									.foregroundColor(.gray)
 									.fixedSize()
 							}
+							.accessibilityElement(children: .combine)
+							.accessibilityLabel(String(localized: "Reaction \(tapback.messagePayload ?? "") from \(tapback.fromUser?.shortName ?? "?")", comment: "VoiceOver: a single emoji reaction and who sent it. First value is the emoji, second is the sender"))
 						}
 					}
 					.padding(10)

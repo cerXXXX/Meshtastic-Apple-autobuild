@@ -132,13 +132,13 @@
             "hardware",
             "connected",
             "connect",
+            "ble",
             "version",
             "transfer",
             "tap",
             "stable",
             "shows",
             "progress",
-            "ble",
             "standard",
             "settings",
             "screen",
@@ -151,9 +151,9 @@
             "node",
             "keep",
             "from",
-            "channel"
+            "failed"
         ],
-        "charCount": 3896
+        "charCount": 4163
     },
     {
         "id": "getting-started",

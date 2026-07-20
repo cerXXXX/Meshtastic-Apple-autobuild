@@ -69,6 +69,23 @@ struct GenerateMessageMarkdownTests {
 	}
 }
 
+// MARK: - Local Message Notification Cleanup
+
+@Suite("Local message notification cleanup")
+@MainActor
+struct LocalMessageNotificationCleanupTests {
+	@Test func readingMessages_removesTheirDeliveredNotifications() {
+		var removedIdentifiers = [String]()
+		let manager = LocalNotificationManager { identifiers in
+			removedIdentifiers = identifiers
+		}
+
+		manager.cancelNotificationsForMessageIds([123, 456])
+
+		#expect(removedIdentifiers == ["notification.id.123", "notification.id.456"])
+	}
+}
+
 // MARK: - TelemetryEnums Aqi
 
 @Suite("Local stats telemetry export")

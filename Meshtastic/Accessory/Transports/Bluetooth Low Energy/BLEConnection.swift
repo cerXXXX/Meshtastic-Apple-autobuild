@@ -194,7 +194,10 @@ actor BLEConnection: Connection {
 	}
 	
 	func getPacketStream() -> AsyncStream<ConnectionEvent> {
-		AsyncStream<ConnectionEvent> { continuation in
+		// Bounded like TCPConnection's stream: drop the oldest events under sustained overload
+		// instead of queueing them without limit. BLE can't reach rates that fill this in
+		// practice; the bound is a backstop so no transport can balloon memory.
+		AsyncStream<ConnectionEvent>(bufferingPolicy: .bufferingNewest(4096)) { continuation in
 			// Finish any previous stream so its consumer's `for await` loop terminates cleanly
 			// instead of hanging indefinitely on the abandoned continuation.
 			self.connectionStreamContinuation?.finish()
