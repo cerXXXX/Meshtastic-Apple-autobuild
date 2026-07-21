@@ -37,11 +37,14 @@ jobs:
 
       - name: Fail on drift
         run: |
-          if ! git diff --quiet -- Meshtastic.xcodeproj; then
+          # Stage first: plain `git diff` would miss newly generated files
+          # (a new .xcscheme, for example), which are untracked.
+          git add -A Meshtastic.xcodeproj
+          if ! git diff --staged --quiet -- Meshtastic.xcodeproj; then
             echo "::error::Meshtastic.xcodeproj is out of date." \
                  "Run 'xcodegen generate' and commit the result."
-            git diff --stat -- Meshtastic.xcodeproj
-            git diff -- Meshtastic.xcodeproj | head -200
+            git diff --staged --stat -- Meshtastic.xcodeproj
+            git diff --staged -- Meshtastic.xcodeproj | head -200
             exit 1
           fi
           echo "Committed project matches project.yml."

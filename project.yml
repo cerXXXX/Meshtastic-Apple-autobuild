@@ -685,6 +685,12 @@ schemes:
         Meshtastic: all
     run:
       config: Debug
+      # NOTE: the committed scheme uses launchStyle = 1 ("Wait for
+      # the executable to be launched"), which XcodeGen cannot
+      # express — its Run action has no launchStyle field, and
+      # askForAppToLaunch maps to a different attribute. Generating
+      # this scheme therefore resets it to launch automatically.
+      # See the PR discussion before adopting.
     test:
       config: Debug
     profile:
