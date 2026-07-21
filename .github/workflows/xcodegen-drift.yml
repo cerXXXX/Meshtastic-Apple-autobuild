@@ -1,0 +1,47 @@
+# Draft: fails a PR if the committed project no longer matches project.yml.
+# Keeps the hybrid model honest — the generated project stays in git, and this
+# is what stops it drifting from its source of truth.
+name: XcodeGen drift
+
+on:
+  pull_request:
+    paths:
+      - "project.yml"
+      - "Meshtastic.xcodeproj/**"
+      - "**/*.swift"          # a new file can legitimately change nothing;
+                              # this proves it, and catches the cases where a
+                              # file was added outside a synchronized folder
+
+jobs:
+  check:
+    name: Committed project matches project.yml
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Assert XcodeGen >= 2.45
+        run: |
+          have=$(xcodegen --version | sed 's/Version: //')
+          need=2.45.0
+          if [ "$(printf '%s\n%s\n' "$need" "$have" | sort -V | head -1)" != "$need" ]; then
+            echo "::error::XcodeGen $have is too old; >= $need is required." \
+                 "Older versions silently drop synced-folder excludes."
+            exit 1
+          fi
+
+      - name: Regenerate
+        run: xcodegen generate
+
+      - name: Fail on drift
+        run: |
+          if ! git diff --quiet -- Meshtastic.xcodeproj; then
+            echo "::error::Meshtastic.xcodeproj is out of date." \
+                 "Run 'xcodegen generate' and commit the result."
+            git diff --stat -- Meshtastic.xcodeproj
+            git diff -- Meshtastic.xcodeproj | head -200
+            exit 1
+          fi
+          echo "Committed project matches project.yml."

@@ -73,6 +73,13 @@ SwiftUI client applications for iOS, iPadOS, macOS, visionOS and watchOS that co
     ```
 5. Build and run the `Meshtastic` target.
 
+> `Meshtastic.xcodeproj` is generated from [`project.yml`](project.yml) by
+> [XcodeGen](https://github.com/yonaskolb/XcodeGen), but it is committed to the
+> repository — the steps above need no extra tooling. You only need XcodeGen
+> (`brew install xcodegen`, 2.45.0 or newer) if you change targets, build
+> settings or dependencies; then edit `project.yml`, run `xcodegen generate`,
+> and commit the result. Adding, moving or deleting source files needs neither.
+
 See [docs/developer/contributing.md](docs/developer/contributing.md) for code style, branch naming, PR checklist, and all other contribution guidelines.
 
 ## Documentation
