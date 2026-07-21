@@ -196,6 +196,17 @@ actor MeshPackets {
 		return true
 	}
 
+	/// Last time the direct-message unread badge was recomputed. Same O(unread) scan and same
+	/// burst hazard as the channel badge, so it gets the same ~1/sec rate limit — under a DM
+	/// flood the badge tolerates a brief lag and resyncs on app-active and on read.
+	private var lastDirectUnreadRecompute: ContinuousClock.Instant?
+	func shouldRecomputeDirectUnread() -> Bool {
+		let now = ContinuousClock.now
+		if let last = lastDirectUnreadRecompute, now - last < .seconds(1) { return false }
+		lastDirectUnreadRecompute = now
+		return true
+	}
+
 	func shouldPrunePositionHistory(for nodeNum: Int64) -> Bool {
 		let nextCount = (positionInsertsSincePrune[nodeNum] ?? 0) + 1
 		if nextCount >= Self.positionPruneInterval {
@@ -581,11 +592,9 @@ actor MeshPackets {
 							modelContext.insert(newUserEntity)
 							fetchedNode[0].user = newUserEntity
 						}
-						// Set the public key for a user if it is empty, don't update
-						if fetchedNode[0].user?.publicKey == nil && !nodeInfo.user.publicKey.isEmpty {
-							fetchedNode[0].user?.pkiEncrypted = true
-							fetchedNode[0].user?.publicKey = nodeInfo.user.publicKey
-						}
+						// First-wins on the public key, consistent with the NodeInfo/User paths in UpdateSwiftData
+						// (previously a `== nil` guard here silently ignored mismatches). See `applyInboundPublicKey`.
+						fetchedNode[0].user?.applyInboundPublicKey(nodeInfo.user.publicKey, nodeNum: Int64(nodeInfo.num))
 						fetchedNode[0].user?.userId = nodeInfo.num.toHex()
 						fetchedNode[0].user?.num = Int64(nodeInfo.num)
 						fetchedNode[0].user?.numString = String(nodeInfo.num)
@@ -1412,8 +1421,10 @@ actor MeshPackets {
 							return
 						}
 						if newMessage.fromUser != nil && newMessage.toUser != nil {
-							// Set Unread Message Indicators
-							if packet.to == connectedNode {
+							// Set Unread Message Indicators. unreadMessages is O(unread); like the
+							// channel badge, recomputing it for every incoming DM turns a burst into
+							// quadratic work, so it gets the same ~1/sec rate limit.
+							if packet.to == connectedNode, shouldRecomputeDirectUnread() {
 								let unreadCount = await newMessage.toUser?.unreadMessages(context: modelContext, skipLastMessageCheck: true) ?? 0 // skipLastMessageCheck=true because we don't update lastMessage on our own connected node
 								Task { @MainActor in
 									appState?.unreadDirectMessages = unreadCount

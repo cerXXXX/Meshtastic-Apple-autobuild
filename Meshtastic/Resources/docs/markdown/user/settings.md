@@ -84,6 +84,8 @@ Wi-Fi SSID/password for TCP connection, NTP server, and Ethernet (supported hard
 
 GPS update interval, position precision, and smart position broadcasting. Enable **Broadcast Position** to share your location with the mesh.
 
+The **GPS Mode** selector (Enabled / Disabled / Not Present) is the single source of truth for the GPS state that the app writes to the radio. The older on/off `gpsEnabled` field it replaced is deprecated: the app no longer writes it, but still reads it from older firmware so existing devices keep working. No action is needed when upgrading — your GPS setting is preserved.
+
 ### Power
 
 Battery saving profiles, sleep modes, and minimum wake time. Critical for solar-powered router nodes.

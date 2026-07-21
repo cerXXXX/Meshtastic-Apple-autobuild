@@ -132,13 +132,13 @@
             "hardware",
             "connected",
             "connect",
+            "ble",
             "version",
             "transfer",
             "tap",
             "stable",
             "shows",
             "progress",
-            "ble",
             "standard",
             "settings",
             "screen",
@@ -151,9 +151,9 @@
             "node",
             "keep",
             "from",
-            "channel"
+            "failed"
         ],
-        "charCount": 3896
+        "charCount": 4163
     },
     {
         "id": "getting-started",
@@ -240,8 +240,8 @@
         "navOrder": 6,
         "keywords": [
             "map",
-            "tap",
             "nodes",
+            "tap",
             "node",
             "from",
             "waypoint",
@@ -249,12 +249,12 @@
             "only",
             "coverage",
             "position",
-            "mesh",
-            "site",
             "radio",
+            "mesh",
+            "location",
+            "site",
             "open",
             "lora",
-            "location",
             "estimate",
             "planner",
             "path",
@@ -268,9 +268,9 @@
             "bounding",
             "waypoints",
             "via",
-            "route"
+            "then"
         ],
-        "charCount": 8086
+        "charCount": 8385
     },
     {
         "id": "messages",
@@ -398,8 +398,8 @@
             "app",
             "radio",
             "node",
-            "device",
             "firmware",
+            "device",
             "from",
             "region",
             "position",
@@ -421,12 +421,12 @@
             "connected",
             "configure",
             "unknown",
+            "setting",
             "preset",
             "pages",
-            "packets",
-            "module"
+            "packets"
         ],
-        "charCount": 8930
+        "charCount": 9302
     },
     {
         "id": "signal-meter",

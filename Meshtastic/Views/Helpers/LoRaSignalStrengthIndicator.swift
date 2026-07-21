@@ -20,6 +20,9 @@ struct LoRaSignalStrengthIndicator: View {
 					.frame(width: 8, height: 40)
 			}
 		}
+		.accessibilityElement(children: .ignore)
+		.accessibilityLabel(String(localized: "Signal strength", comment: "VoiceOver label for the signal strength indicator"))
+		.accessibilityValue(signalStrength.description)
 	}
 }
 

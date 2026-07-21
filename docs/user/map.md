@@ -8,6 +8,8 @@ nav_order: 6
 
 The Map tab shows all nodes that have shared a position, overlaid on an Apple Maps base layer.
 
+The map **reopens where you last left it** — your last-viewed area and zoom are remembered between launches, so you don't have to pan back after every relaunch. On a fresh install (before you've moved the map) it frames your current location, then your connected radio, then the center of your nodes.
+
 ## Node Pins
 
 Each node that has reported a GPS position appears as a colored circle pin on the map. The **green solid line** shows a directly connected node; **orange dashed lines** show nodes reached via the mesh. A purple star marks a waypoint. Tap a pin to see the node name, last heard time, signal info, and a shortcut to send a direct message.
