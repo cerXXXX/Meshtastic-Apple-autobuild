@@ -131,15 +131,24 @@ extension MeshPackets {
 		}
 	}
 	
-	public func deleteUserMessages(user: UserEntity) {
-		let messages = (user.sentMessages ?? []) + (user.receivedMessages ?? [])
-		let filtered = messages.filter { msg in
-			msg.toUser != nil && msg.fromUser != nil && !msg.isEmoji && !msg.admin && msg.portNum != 10
-		}
-		for object in filtered {
-			modelContext.delete(object)
-		}
+	public func deleteUserMessages(userNum: Int64) {
+		// Fetch in this actor's OWN ModelContext (mirrors deleteChannelMessages and the DM message
+		// list's own query), keyed on the scalar `num`. The previous version read
+		// `user.sentMessages`/`receivedMessages` off a UserEntity handed in from the view's context:
+		// across the actor/context boundary those relationships resolved empty, and deleting
+		// foreign-context objects through this context was a no-op — so deleting a DM did nothing.
+		let descriptor = FetchDescriptor<MessageEntity>(
+			predicate: #Predicate<MessageEntity> { msg in
+				msg.toUser != nil &&
+				(msg.fromUser?.num == userNum || msg.toUser?.num == userNum) &&
+				msg.isEmoji == false && msg.admin == false && msg.portNum != 10
+			}
+		)
 		do {
+			let objects = try modelContext.fetch(descriptor)
+			for object in objects {
+				modelContext.delete(object)
+			}
 			try modelContext.save()
 		} catch {
 			Logger.data.error("💥 [MessageEntity] Error deleting user messages: \(error.localizedDescription, privacy: .public)")
