@@ -25,7 +25,6 @@ enum RegionCodes: Int, CaseIterable, Identifiable {
 	case nz865 = 11
 	case th = 12
 	case ua433 = 14
-	case ua868 = 15
 	case my433 = 16
 	case my919 = 17
 	case sg923 = 18
@@ -122,8 +121,6 @@ enum RegionCodes: Int, CaseIterable, Identifiable {
 			"TH"
 		case .ua433:
 			"UA_433"
-		case .ua868:
-			"UA_868"
 		case .my433:
 			"MY_433"
 		case .my919:
@@ -202,8 +199,6 @@ enum RegionCodes: Int, CaseIterable, Identifiable {
 			return "Thailand".localized
 		case .ua433:
 			return "Ukraine 433MHz".localized
-		case .ua868:
-			return "Ukraine 868MHz".localized
 		case .my433:
 			return "Malaysia 433MHz".localized
 		case .my919:
