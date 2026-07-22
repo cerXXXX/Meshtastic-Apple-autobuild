@@ -64,6 +64,10 @@ struct MyView: View {
 
 Use `@Query` for data that drives the view. Use `context.insert(_:)` / `context.delete(_:)` for mutations. Mutations on the main context are safe on the main actor.
 
+### Snapshot liveness
+
+Views that intentionally keep a throttled `@State` snapshot instead of a live `@Query` must treat the snapshot as invalid after a node-database reset or a context teardown. Before reading persisted properties from a `NodeInfoEntity` held in such a snapshot, require both `modelContext != nil` and `!isDeleted`. `NodeInfoEntity.adminPickerOrder(_:)` applies this rule for the Settings node picker, so deleted or detached nodes cannot be selected or rendered from a stale snapshot.
+
 ## Background Writes
 
 For writes triggered by incoming radio packets (off the main thread), use the `MeshPackets` `@ModelActor`:

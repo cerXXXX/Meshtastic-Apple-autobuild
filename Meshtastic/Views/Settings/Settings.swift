@@ -797,6 +797,11 @@ struct Settings: View {
 	}
 
 	func setSelectedNode(to nodeNum: Int) {
+		guard sortedNodes.contains(where: { $0.num == nodeNum }) else {
+			selectedNode = 0
+			return
+		}
+
 		if sortedNodes.count > 1 {
 			if selectedNode == 0 {
 				self.selectedNode = Int(accessoryManager.isConnected ? nodeNum : 0)
