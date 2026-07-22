@@ -297,19 +297,19 @@
             "tap",
             "recipient",
             "node",
+            "meshtastic",
             "conversation",
             "after",
             "selection",
             "bold",
             "radio",
             "public",
+            "links",
             "field",
             "button",
-            "symbol",
-            "preview",
-            "press"
+            "symbol"
         ],
-        "charCount": 11637
+        "charCount": 11883
     },
     {
         "id": "mqtt",
