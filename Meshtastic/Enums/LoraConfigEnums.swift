@@ -275,8 +275,6 @@ enum RegionCodes: Int, CaseIterable, Identifiable {
 			return 100
 		case .ua433:
 			return 10
-		case .ua868:
-			return 10
 		case .lora24:
 			return 100
 		case .my433:
@@ -354,8 +352,6 @@ enum RegionCodes: Int, CaseIterable, Identifiable {
 		case .th:
 			return true
 		case .ua433:
-			return true
-		case .ua868:
 			return true
 		case .lora24:
 			return false
@@ -436,8 +432,6 @@ enum RegionCodes: Int, CaseIterable, Identifiable {
 			return Config.LoRaConfig.RegionCode.th
 		case .ua433:
 			return Config.LoRaConfig.RegionCode.ua433
-		case .ua868:
-			return Config.LoRaConfig.RegionCode.ua868
 		case .lora24:
 			return Config.LoRaConfig.RegionCode.lora24
 		case .my433:

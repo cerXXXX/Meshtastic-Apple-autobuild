@@ -138,15 +138,19 @@ extension MeshPackets {
 		// `user.sentMessages`/`receivedMessages` off a UserEntity handed in from the view's context:
 		// across the actor/context boundary those relationships resolved empty, and deleting
 		// foreign-context objects through this context was a no-op — so deleting a DM did nothing.
+		// Keep only the selective OR in the #Predicate: the full five-term compound (two
+		// optional-chained comparisons + three scalar tests) blows the #Predicate macro's
+		// type-check budget — the same limit documented in UserMessageList's ACK counts.
+		// The scalar screens run in-memory over the (small) single-conversation result.
 		let descriptor = FetchDescriptor<MessageEntity>(
 			predicate: #Predicate<MessageEntity> { msg in
-				msg.toUser != nil &&
-				(msg.fromUser?.num == userNum || msg.toUser?.num == userNum) &&
-				msg.isEmoji == false && msg.admin == false && msg.portNum != 10
+				msg.fromUser?.num == userNum || msg.toUser?.num == userNum
 			}
 		)
 		do {
-			let objects = try modelContext.fetch(descriptor)
+			let objects = try modelContext.fetch(descriptor).filter { msg in
+				msg.toUser != nil && msg.isEmoji == false && msg.admin == false && msg.portNum != 10
+			}
 			for object in objects {
 				modelContext.delete(object)
 			}

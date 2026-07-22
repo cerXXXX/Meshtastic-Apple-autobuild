@@ -677,7 +677,7 @@ struct LoRaRegionPresetMapTests {
 			group([.tinyFast, .tinySlow], .tinyFast, true),
 			group([.narrowFast, .narrowSlow], .narrowSlow, true)
 		]
-		let group0Regions: [Region] = [.us, .eu433, .cn, .jp, .anz, .anz433, .ru, .kr, .tw, .in, .nz865, .th, .ua433, .ua868, .my433, .my919, .sg923, .ph433, .ph868, .ph915, .kz433, .kz863, .np865, .br902, .lora24]
+		let group0Regions: [Region] = [.us, .eu433, .cn, .jp, .anz, .anz433, .ru, .kr, .tw, .in, .nz865, .th, .ua433, .my433, .my919, .sg923, .ph433, .ph868, .ph915, .kz433, .kz863, .np865, .br902, .lora24]
 		map.regionGroups = group0Regions.map { entry($0, 0) }
 		map.regionGroups.append(entry(.eu868, 1))
 		map.regionGroups.append(entry(.eu866, 2))
