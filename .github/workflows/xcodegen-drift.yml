@@ -1,16 +1,22 @@
-# Draft: fails a PR if the committed project no longer matches project.yml.
+# Fails a PR if the committed project no longer matches project.yml.
 # Keeps the hybrid model honest — the generated project stays in git, and this
 # is what stops it drifting from its source of truth.
+#
+# The XcodeGen version is pinned exactly (.xcodegen-version), not merely
+# floored: generator output is version-dependent (2.46.0 changed target
+# ordering, for example), so a byte comparison is only meaningful against a
+# fixed version. The prebuilt release binary is used rather than Homebrew,
+# whose available version varies by runner image and over time.
 name: XcodeGen drift
 
 on:
   pull_request:
     paths:
       - "project.yml"
+      - ".xcodegen-version"
       - "Meshtastic.xcodeproj/**"
-      - "**/*.swift"          # a new file can legitimately change nothing;
-                              # this proves it, and catches the cases where a
-                              # file was added outside a synchronized folder
+      - "**/*.swift"          # a new file should change nothing; prove it,
+                              # and catch files added outside a synced folder
 
 jobs:
   check:
@@ -19,18 +25,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Assert XcodeGen >= 2.45
+      - name: Install the pinned XcodeGen
         run: |
-          have=$(xcodegen --version | sed 's/Version: //')
-          need=2.45.0
-          if [ "$(printf '%s\n%s\n' "$need" "$have" | sort -V | head -1)" != "$need" ]; then
-            echo "::error::XcodeGen $have is too old; >= $need is required." \
-                 "Older versions silently drop synced-folder excludes."
+          version=$(tr -d '[:space:]' < .xcodegen-version)
+          echo "Pinned XcodeGen: $version"
+          curl -fsSL -o /tmp/xcodegen.zip \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/${version}/xcodegen.zip"
+          unzip -q /tmp/xcodegen.zip -d /tmp/xcodegen-dist
+          echo "/tmp/xcodegen-dist/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Assert the exact pinned version
+        run: |
+          want=$(tr -d '[:space:]' < .xcodegen-version)
+          have=$(xcodegen --version | sed 's/Version: //' | tr -d '[:space:]')
+          if [ "$have" != "$want" ]; then
+            echo "::error::XcodeGen $have found, but $want is pinned in" \
+                 ".xcodegen-version. Generator output is version-dependent," \
+                 "so the committed project is only reproducible with $want."
             exit 1
           fi
+          echo "XcodeGen $have matches the pin."
 
       - name: Regenerate
         run: xcodegen generate
@@ -42,7 +56,8 @@ jobs:
           git add -A Meshtastic.xcodeproj
           if ! git diff --staged --quiet -- Meshtastic.xcodeproj; then
             echo "::error::Meshtastic.xcodeproj is out of date." \
-                 "Run 'xcodegen generate' and commit the result."
+                 "Regenerate with XcodeGen $(tr -d '[:space:]' < .xcodegen-version)" \
+                 "and commit the result."
             git diff --staged --stat -- Meshtastic.xcodeproj
             git diff --staged -- Meshtastic.xcodeproj | head -200
             exit 1
