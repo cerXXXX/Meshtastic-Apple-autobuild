@@ -20,6 +20,10 @@ Transports live in `Meshtastic/Accessory/Transports/`:
 
 Each transport conforms to a `MeshTransport` protocol that exposes `connect()`, `disconnect()`, `send(data:)`, and a `received` publisher.
 
+### BLETransport Status on Bluetooth State Changes
+
+`BLETransport.status` mirrors `CBManagerState` via `handleCentralState(_:central:)`. Only `.poweredOn` settles on `.ready`; every other state — including `.poweredOff` — settles on `.error(...)`. Concretely, when Bluetooth powers off, `status` becomes `.error("Bluetooth is powered off")` and stays there; it does not become `.ready`. This matches `.unauthorized`, `.unsupported`, `.resetting`, and `.unknown`, which all settle on `.error(...)` too.
+
 ## AccessoryManager Extension Map
 
 | Extension | Key Methods |
