@@ -739,7 +739,10 @@ struct NodeDetail: View {
 							node: node
 						)
 					}
-					if let latestPosition {
+					// Liveness screen: `latestPosition` is a @State handle refreshed on a cadence;
+					// if ingestion deleted the row since the last refresh, reading a persisted
+					// property on it traps in SwiftData. Skip rendering until the next refresh.
+					if let latestPosition, latestPosition.modelContext != nil, !latestPosition.isDeleted {
 					#if !targetEnvironment(macCatalyst)
 						if latestPosition.isPreciseLocation {
 							Button {

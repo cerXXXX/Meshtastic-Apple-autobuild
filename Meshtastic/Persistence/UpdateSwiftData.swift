@@ -5,6 +5,7 @@
 //  Copyright(c) Garth Vander Houwen 10/3/22.
 
 @preconcurrency import SwiftData
+import CoreLocation
 import MeshtasticProtobufs
 import OSLog
 
@@ -612,10 +613,31 @@ extension MeshPackets {
 						let posNum = Int64(packet.from)
 						// Previous latest is tracked directly on the node — no PositionEntity table scan.
 						let previousLatest = fetchedNode[0].latestPosition
-						previousLatest?.latest = false
 
-						let position = PositionEntity()
-						modelContext.insert(position)
+						// Near-duplicate fixes REUSE the previous-latest row instead of insert-new +
+						// delete-old. The old per-packet delete left every main-thread holder of the
+						// node's latestPositionCache (node list rows, node detail, the Watch update
+						// walk) one merge window away from a SwiftData invalid-entity SIGTRAP — and
+						// for a stationary node that window reopened on every position packet.
+						// Updating the same row keeps every outstanding handle valid; rows are now
+						// only deleted when a node actually moves beyond the 9m near-duplicate radius.
+						let newCoordinate = CLLocationCoordinate2D(
+							latitude: Double(positionMessage.latitudeI) / 1e7,
+							longitude: Double(positionMessage.longitudeI) / 1e7
+						)
+						let reusePreviousLatest: Bool = {
+							guard let previousLatest, let prevCoord = previousLatest.nodeCoordinate else { return false }
+							return prevCoord.distance(from: newCoordinate) < 9.0
+						}()
+
+						let position: PositionEntity
+						if reusePreviousLatest, let previousLatest {
+							position = previousLatest
+						} else {
+							previousLatest?.latest = false
+							position = PositionEntity()
+							modelContext.insert(position)
+						}
 						position.latest = true
 						position.snr = packet.rxSnr
 						position.rssi = packet.rxRssi
@@ -644,17 +666,11 @@ extension MeshPackets {
 						let geofenceNodeName = fetchedNode[0].user?.longName ?? fetchedNode[0].user?.shortName ?? "\(packet.from)"
 						evaluateGeofences(nodeNum: posNum, latitudeI: positionMessage.latitudeI, longitudeI: positionMessage.longitudeI, nodeName: geofenceNodeName)
 
-						if position.precisionBits == 32 || position.precisionBits == 0 {
-							// Full precision: drop a near-duplicate of the previous latest (within 9m).
-							if let previousLatest,
-								let prevCoord = previousLatest.nodeCoordinate,
-								let positionCoord = position.nodeCoordinate,
-								prevCoord.distance(from: positionCoord) < 9.0 {
-								modelContext.delete(previousLatest)
-							}
-						} else {
-							// Reduced accuracy: keep no history. Delete this node's older positions via its own
-							// relationship (small for reduced-accuracy nodes) instead of a global table scan.
+						if !reusePreviousLatest && position.precisionBits != 32 && position.precisionBits != 0 {
+							// Reduced accuracy and the fuzzed coordinate actually moved: keep no history.
+							// Delete this node's older positions via its own relationship (small for
+							// reduced-accuracy nodes) instead of a global table scan. When the row was
+							// reused (the common, stationary case) there is nothing to delete.
 							for old in fetchedNode[0].positions where !old.latest {
 								modelContext.delete(old)
 							}
