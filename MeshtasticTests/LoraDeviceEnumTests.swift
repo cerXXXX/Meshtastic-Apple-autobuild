@@ -48,7 +48,7 @@ struct RegionCodesTests {
 	}
 
 	@Test func totalCaseCount() {
-		#expect(RegionCodes.allCases.count == 38)
+		#expect(RegionCodes.allCases.count == 37)
 	}
 
 	@Test func eu433_hasDutyCycle10() {
@@ -749,7 +749,7 @@ struct LoRaRegionPresetMapTests {
 	}
 
 	@Test func decode_allRegionsPresent() {
-		#expect(referenceMap().decoded().count == 32)
+		#expect(referenceMap().decoded().count == 31)
 	}
 
 	@Test func absentRegion_hasNoConstraint() {
@@ -767,7 +767,7 @@ struct LoRaRegionPresetMapTests {
 		map.regionGroups.append(bad)
 		let decoded = map.decoded()
 		#expect(decoded[.eu874] == nil)   // skipped defensively (spec §4)
-		#expect(decoded.count == 32)      // unchanged
+		#expect(decoded.count == 31)      // unchanged
 	}
 
 	@Test func emptyMap_decodesEmpty() {
