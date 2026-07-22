@@ -642,6 +642,20 @@ struct LoRaFirmwareGatingTests {
 		#expect(selectable.contains(.tinyFast))
 		#expect(selectable.contains(.liteSlow))
 	}
+
+	@Test func deprecatedPreset_excludedFromSelectable() {
+		#expect(ModemPresets.longSlow.isDeprecated)
+		#expect(!ModemPresets.selectable(supports2_8: false).contains(.longSlow))
+		#expect(!ModemPresets.selectable(supports2_8: true).contains(.longSlow))
+		#expect(!ModemPresets.userSelectable.contains(.longSlow))
+	}
+
+	@Test func deprecatedPreset_stillExistsForDisplay() {
+		// longSlow remains a case so an existing radio's value round-trips and renders its label.
+		let preset = ModemPresets(rawValue: 1)
+		#expect(preset == .longSlow)
+		#expect(preset?.name == "LongSlow")
+	}
 }
 
 // MARK: - LoRaRegionPresetMap decoding (2.8 region→preset compatibility)
