@@ -368,7 +368,10 @@ private struct DirectMessageUserRow: View {
 			Button(role: .destructive) {
 				Task {
 					if let userToDelete = userToDeleteMessages {
-						await MeshPackets.shared.deleteUserMessages(user: userToDelete)
+						await MeshPackets.shared.deleteUserMessages(userNum: userToDelete.num)
+						await MainActor.run {
+							userToDeleteMessages = nil
+						}
 					}
 				}
 			} label: {
