@@ -1025,20 +1025,20 @@
             "node",
             "stats",
             "simctl",
+            "model",
             "local",
             "nodes",
+            "app",
             "store",
-            "model",
+            "schema",
             "context",
             "packet",
             "history",
             "data",
             "child",
-            "app",
             "swift",
-            "schema",
-            "launch",
             "device",
+            "launch",
             "var",
             "true",
             "telemetry",
@@ -1050,7 +1050,7 @@
             "type",
             "set"
         ],
-        "charCount": 11360
+        "charCount": 12115
     },
     {
         "id": "tak-protocol",

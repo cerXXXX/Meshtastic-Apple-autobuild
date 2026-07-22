@@ -157,6 +157,19 @@ static let migrateV1toV2 = MigrationStage.custom(
 
 > **Warning — Never delete a `VersionedSchema`.** Migration history must be preserved or the migration plan will fail on devices that skipped intermediate versions.
 
+### Deprecated Properties
+
+When a proto field is deprecated upstream and the app stops using it, **do not remove the corresponding `@Model` property** — deleting a stored property is a schema change that would require a migration, and while V1 is unreleased there is nowhere to migrate from. Instead, retain the property as-is so:
+
+- the SwiftData schema is unchanged, and
+- any values already persisted on-device remain readable.
+
+The field simply stops being surfaced in the UI, read, or actively written by app code. Mark it with a doc comment noting the deprecation and the tracking issue. Current examples:
+
+| Model | Property | Notes |
+|-------|----------|-------|
+| `CannedMessageConfigEntity` | `enabled` | #2021 — no successor; retained for schema/value compatibility, no longer read or written |
+
 ## Query Helpers
 
 `QuerySwiftData.swift` contains helper functions for common fetches:
