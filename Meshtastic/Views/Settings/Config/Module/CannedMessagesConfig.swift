@@ -182,13 +182,10 @@ struct CannedMessagesConfig: View {
 						cmc.sendBell = sendBell
 						cmc.rotary1Enabled = rotary1Enabled
 						cmc.updown1Enabled = updown1Enabled
-						if rotary1Enabled {
-							cmc.allowInputSource = "rotEnc1"
-						} else if updown1Enabled {
-							cmc.allowInputSource = "upDown1"
-						} else {
-							cmc.allowInputSource = "_any"
-						}
+						// allow_input_source is deprecated with no successor — the input
+						// source is governed by the rotary1Enabled / updown1Enabled flags
+						// above. Intentionally not written; inbound values from older
+						// firmware are ignored (never persisted). (#2022)
 						cmc.inputbrokerPinA = UInt32(inputbrokerPinA)
 						cmc.inputbrokerPinB = UInt32(inputbrokerPinB)
 						cmc.inputbrokerPinPress = UInt32(inputbrokerPinPress)
