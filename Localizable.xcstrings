@@ -3868,6 +3868,9 @@
         }
       }
     },
+    "%lld hops away" : {
+      "comment" : "VoiceOver: hops-away filter value"
+    },
     "%lld nodes" : {
       "localizations" : {
         "de" : {
@@ -4031,6 +4034,9 @@
           }
         }
       }
+    },
+    "%lld percent" : {
+      "comment" : "VoiceOver: discovery scan dwell progress percentage"
     },
     "%lld received" : {
       "comment" : "A label that shows the number of packets that were received.",
@@ -7376,6 +7382,9 @@
     "AQI " : {
       "comment" : "Air Quality Index label prefix (acronym) preceding the numeric AQI value."
     },
+    "AQI %1$lld, %2$@" : {
+      "comment" : "VoiceOver value for the air quality index gauge; %1$lld is the AQI number, %2$@ is its category description"
+    },
     "AQI %lld" : {
       "comment" : "Air Quality Index label with the numeric AQI value."
     },
@@ -9938,6 +9947,9 @@
           }
         }
       }
+    },
+    "Air quality index" : {
+      "comment" : "VoiceOver: label for the air quality index gauge"
     },
     "Airtime" : {
       "localizations" : {
@@ -16900,6 +16912,9 @@
           }
         }
       }
+    },
+    "Cancel reply" : {
+      "comment" : "VoiceOver: cancel replying to a message"
     },
     "Canceled" : {
       "localizations" : {
@@ -34301,6 +34316,9 @@
           }
         }
       }
+    },
+    "Emoji picker" : {
+      "comment" : "VoiceOver: open the character/emoji picker"
     },
     "Empty" : {
       "localizations" : {
@@ -84975,6 +84993,9 @@
           }
         }
       }
+    },
+    "Send message" : {
+      "comment" : "VoiceOver: send the composed message"
     },
     "Send question to Chirpy" : {
       "localizations" : {

@@ -284,7 +284,10 @@ struct NodeListItemCompact: View {
 						}
 						if shouldShowSignal && summary.hopsAway == 0 && summary.snr != 0 && !summary.viaMqtt {
 							Divider().frame(height: 15)
-							let signalTier = getLoRaSignalStrength(snr: summary.snr, rssi: summary.rssi, preset: modemPreset)
+							// rssi: 0 forces the SNR-only branch so this tier can never disagree with
+							// getSnrColor below, which is also SNR-only (matches TraceRouteLog.swift /
+							// MeshMapMK.swift, the other two call sites in this file's PR).
+							let signalTier = getLoRaSignalStrength(snr: summary.snr, rssi: 0, preset: modemPreset)
 							DefaultIconCompact(
 								systemName: signalTier == .none ? "antenna.radiowaves.left.and.right.slash" : "antenna.radiowaves.left.and.right",
 								variableValue: signalTier == .none ? nil : Double(signalTier.rawValue) / Double(LoRaSignalStrength.good.rawValue)

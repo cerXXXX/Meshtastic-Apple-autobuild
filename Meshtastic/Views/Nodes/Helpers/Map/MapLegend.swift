@@ -172,7 +172,7 @@ struct MapLegend: View {
 			MapLegendItem(
 				symbol: AnyView(traceRouteSignalSymbol),
 				title: String(localized: "Signal Strength"),
-				subtitle: String(localized: "Each leg is colored by its hop SNR — green (good), yellow (fair), orange (bad), red (none).")
+				subtitle: String(localized: "Each leg is colored by its hop SNR — green (good), yellow (fair), orange (bad), red (none) — and also gets progressively thinner and more dashed as quality drops.")
 			)
 			MapLegendItem(
 				symbol: AnyView(traceRouteOutboundSymbol),
