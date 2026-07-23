@@ -295,6 +295,28 @@ struct ShareContactQRTests {
 		#expect(contact.manuallyVerified)
 	}
 
+	@Test func recognizesAndroidCompatibleContactURLForms() throws {
+		let canonical = try #require(URL(string: "https://meshtastic.org/v/#CAE="))
+		let www = try #require(URL(string: "https://www.meshtastic.org/v/#CAE="))
+
+		#expect(ContactURLHandler.canHandle(canonical))
+		#expect(ContactURLHandler.canHandle(www))
+	}
+
+	@Test func leavesMeshtasticDocumentationURLsForTheSystemBrowser() throws {
+		let documentation = try #require(URL(string: "https://meshtastic.org/docs/configuration"))
+
+		#expect(!ContactURLHandler.canHandle(documentation))
+	}
+
+	@Test func decodesAndroidSharedContactPayload() throws {
+		let payload = "CAE="
+		let data = try #require(Data(base64Encoded: payload.base64urlToBase64()))
+		let contact = try SharedContact(serializedBytes: data)
+
+		#expect(contact.nodeNum == 1)
+	}
+
 	@Test func contactURLUnavailableForUnmessagableNode() {
 		let node = makeNodeInfo(unmessagable: true)
 

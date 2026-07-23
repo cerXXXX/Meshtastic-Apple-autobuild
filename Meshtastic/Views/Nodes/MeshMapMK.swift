@@ -30,7 +30,10 @@ struct MeshMapMK: View {
 	var showOpenWindowButton: Bool = true
 
 	/// Parameters
-	@State var showUserLocation: Bool = true
+	/// Whether to draw the device's own location (blue dot) + show the user-tracking control.
+	/// Persisted so the choice survives relaunch; gated on `isMapVisible` at the call site so the
+	/// dot/tracking turns off while the tab is off-screen or the app is backgrounded.
+	@AppStorage("enableMapUserLocation") private var showUserLocation: Bool = true
 	/// Map State User Defaults
 	@AppStorage("enableMapTraffic") private var showTraffic: Bool = false
 	@AppStorage("enableMapPointsOfInterest") private var showPointsOfInterest: Bool = false
@@ -46,6 +49,15 @@ struct MeshMapMK: View {
 	// Map Configuration
 	@Namespace var mapScope
 	@AppStorage("meshMapDistance") private var meshMapDistance: Double = 800000
+	// Persisted last-viewed camera region, so the map reopens where the user left it -- independent of
+	// GPS / connected device / node availability at launch. This is what fixes the cold-open default
+	// (0,0) "South Atlantic" view for a location-denied user with no positioned nodes. Stored as four
+	// primitives because `MKCoordinateRegion` isn't `Codable`; a non-positive saved span means
+	// "nothing saved yet".
+	@AppStorage("meshMapRegionCenterLatitude") private var savedRegionCenterLatitude: Double = 0
+	@AppStorage("meshMapRegionCenterLongitude") private var savedRegionCenterLongitude: Double = 0
+	@AppStorage("meshMapRegionSpanLatitude") private var savedRegionSpanLatitude: Double = 0
+	@AppStorage("meshMapRegionSpanLongitude") private var savedRegionSpanLongitude: Double = 0
 	@State var mapStyle: MapStyle = MapStyle.standard(elevation: .flat, emphasis: MapStyle.StandardEmphasis.muted, pointsOfInterest: .excludingAll, showsTraffic: false)
 	@State var position = MapCameraPosition.automatic
 	@State private var distance = 10000.0
@@ -266,7 +278,7 @@ struct MeshMapMK: View {
 			layer: selectedMapLayer == .offline ? .standard : selectedMapLayer,
 			showsTraffic: showTraffic,
 			showsPointsOfInterest: showPointsOfInterest,
-			showsUserLocation: showUserLocation,
+			showsUserLocation: showUserLocation && isMapVisible,
 			controlsBottomInset: 72   // lift compass + pitch toggle above the bottom button bar
 		)
 	}
@@ -371,6 +383,7 @@ struct MeshMapMK: View {
 						.foregroundStyle(.secondary)
 				}
 				.buttonStyle(.plain)
+				.accessibilityLabel(String(localized: "Clear trace route", comment: "VoiceOver label for the clear trace route button"))
 			}
 			.padding(.horizontal, 14)
 			.padding(.vertical, 8)
@@ -529,8 +542,8 @@ struct MeshMapMK: View {
 						}) {
 							Image("custom.radio.tower")
 						}
-						.accessibilityLabel("Estimate coverage")
-						.accessibilityHint("Runs a Site Planner coverage estimate and adds it to the map.")
+						.accessibilityLabel(String(localized: "Estimate coverage", comment: "VoiceOver label for the coverage estimate button"))
+						.accessibilityHint(String(localized: "Runs a Site Planner coverage estimate and adds it to the map.", comment: "VoiceOver hint for the coverage estimate button"))
 						.glassButtonStyle()
 						Button(action: {
 							withAnimation {
@@ -539,8 +552,8 @@ struct MeshMapMK: View {
 						}) {
 							Image(systemName: filters.isFiltering ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
 						}
-						.accessibilityLabel(editingFilters ? "Hide node filters" : "Show node filters")
-						.accessibilityHint(editingFilters ? "Hides the node filter options." : "Shows the node filter options.")
+						.accessibilityLabel(editingFilters ? String(localized: "Hide node filters", comment: "VoiceOver label to hide map node filters") : String(localized: "Show node filters", comment: "VoiceOver label to show map node filters"))
+						.accessibilityHint(editingFilters ? String(localized: "Hides the node filter options.", comment: "VoiceOver hint to hide map node filters") : String(localized: "Shows the node filter options.", comment: "VoiceOver hint to show map node filters"))
 						.glassButtonStyle()
 						Button(action: {
 							withAnimation {
@@ -549,8 +562,8 @@ struct MeshMapMK: View {
 						}) {
 							Image(systemName: showLegend ? "map.fill" : "map")
 						}
-						.accessibilityLabel(showLegend ? "Hide map legend" : "Show map legend")
-						.accessibilityHint(showLegend ? "Hides the map legend." : "Shows the map legend.")
+						.accessibilityLabel(showLegend ? String(localized: "Hide map legend", comment: "VoiceOver label to hide the map legend") : String(localized: "Show map legend", comment: "VoiceOver label to show the map legend"))
+						.accessibilityHint(showLegend ? String(localized: "Hides the map legend.", comment: "VoiceOver hint to hide the map legend") : String(localized: "Shows the map legend.", comment: "VoiceOver hint to show the map legend"))
 						.glassButtonStyle()
 						Button(action: {
 							withAnimation {
@@ -559,6 +572,8 @@ struct MeshMapMK: View {
 						}) {
 							Image(systemName: editingSettings ? "info.circle.fill" : "info.circle")
 						}
+						.accessibilityLabel(editingSettings ? String(localized: "Hide map settings", comment: "VoiceOver label to hide the map settings panel") : String(localized: "Show map settings", comment: "VoiceOver label to show the map settings panel"))
+						.accessibilityHint(editingSettings ? String(localized: "Hides the map settings panel.", comment: "VoiceOver hint to hide the map settings panel") : String(localized: "Shows the map settings panel.", comment: "VoiceOver hint to show the map settings panel"))
 						.glassButtonStyle()
 					}
 					.controlSize(.regular)
@@ -588,6 +603,7 @@ struct MeshMapMK: View {
 							} label: {
 								Image(systemName: "macwindow.badge.plus")
 							}
+							.accessibilityLabel(String(localized: "Open map in new window", comment: "VoiceOver label for the open map in a new window button"))
 						}
 						ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
 					}
@@ -618,6 +634,8 @@ struct MeshMapMK: View {
 				// Pan/zoom settled: re-filter to the new region now; the state key dedupes
 				// the rebuild when the visible set is unchanged.
 				refreshPositionState()
+				// Remember where the user is looking so the map reopens here next launch.
+				persistVisibleRegion()
 			}
 			.onChange(of: accessoryManager.activeDeviceNum) {
 				syncFallbackLocation()
@@ -896,7 +914,9 @@ struct MeshMapMK: View {
 		guard !didInitialFrame else { return }
 		#if DEBUG
 		// Coincident-node demo: frame tight on the seeded pins so the stack(s) fill the view without the
-		// user having to pinch-zoom for a screenshot. Overrides the usual "start zoomed out" framing.
+		// user having to pinch-zoom for a screenshot. Takes priority over the saved-region restore below
+		// since a developer invoking this explicit QA mode wants the tight demo framing every time, not
+		// whatever region happens to be saved from a previous session.
 		if PerformanceSeedData.configuration?.style == .clusterDemo {
 			let coords = mapEligiblePositions.compactMap { $0.nodeCoordinate ?? $0.fuzzedNodeCoordinate }
 			if let center = coordinateCentroid(of: coords) {
@@ -912,6 +932,17 @@ struct MeshMapMK: View {
 			}
 		}
 		#endif
+		// Restore the user's last-viewed region first: anyone who has ever moved the map reopens
+		// exactly where they left it, with no dependence on GPS / connected device / node data at
+		// launch. This is the only branch that resolves the reported cold-open (0,0) default for a
+		// location-denied user with no positioned nodes -- and it consumes the one-shot, so the user
+		// still owns the camera immediately afterward.
+		if let saved = savedMapRegion {
+			didInitialFrame = true
+			visibleRegion = saved
+			cameraCommand = ClusterMapCameraCommand(id: UUID(), region: saved)
+			return
+		}
 		// Frame from the same set the map actually shows, so "Precise Locations Only" doesn't start
 		// the camera centered on hidden reduced-precision nodes.
 		let nodeCoords = mapEligiblePositions.compactMap { $0.nodeCoordinate ?? $0.fuzzedNodeCoordinate }
@@ -936,6 +967,43 @@ struct MeshMapMK: View {
 		// one-shot command that actually moves the map (the only programmatic camera move we make).
 		visibleRegion = region
 		cameraCommand = ClusterMapCameraCommand(id: UUID(), region: region)
+	}
+
+	/// The persisted last-viewed camera region, or `nil` when nothing valid has been saved yet
+	/// (fresh install, or a degenerate/near-global region we deliberately never store).
+	private var savedMapRegion: MKCoordinateRegion? {
+		let latDelta = savedRegionSpanLatitude, lonDelta = savedRegionSpanLongitude
+		guard latDelta > 0, lonDelta > 0 else { return nil }
+		let lat = savedRegionCenterLatitude, lon = savedRegionCenterLongitude
+		guard lat.isFinite, lon.isFinite, (-90...90).contains(lat), (-180...180).contains(lon) else {
+			return nil
+		}
+		return MKCoordinateRegion(
+			center: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+			span: MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
+		)
+	}
+
+	/// Persist the current camera region so the next launch reopens here. Deliberately skips the
+	/// uninitialized/near-global region MapKit reports before the first real frame (its whole-world
+	/// default approaches a 180-degree latitude span) so we never save the (0,0) cold-open we're
+	/// fixing; genuine local pans/zooms always fall well under the guard.
+	private func persistVisibleRegion() {
+		guard let region = visibleRegion else { return }
+		let latDelta = region.span.latitudeDelta, lonDelta = region.span.longitudeDelta
+		guard latDelta > 0, latDelta < 90, lonDelta > 0, lonDelta < 180 else { return }
+		let center = region.center
+		guard center.latitude.isFinite, center.longitude.isFinite else { return }
+		// Also reject MapKit's *intermediate* pre-interaction default, which parks a broad span on
+		// (0,0). A wide region still centered at Null Island is the cold-open we're fixing -- never a
+		// real data-driven frame (those are small-span) nor a user pan (whose center has moved off the
+		// equator/prime meridian). A genuine local view near (0,0) is small-span and still saves.
+		let nearNullIsland = abs(center.latitude) < 1 && abs(center.longitude) < 1
+		guard !(nearNullIsland && (latDelta > 10 || lonDelta > 10)) else { return }
+		savedRegionCenterLatitude = center.latitude
+		savedRegionCenterLongitude = center.longitude
+		savedRegionSpanLatitude = latDelta
+		savedRegionSpanLongitude = lonDelta
 	}
 
 	/// Average of a coordinate list (nil when empty).
@@ -1197,9 +1265,39 @@ struct MeshMapMK: View {
 		return legs
 	}
 
+	/// Per-leg line width, dash pattern, and dash phase for a trace-route polyline, keyed to signal
+	/// tier so degraded links are legible by shape and not only by the SNR hue. `baseDash` is the
+	/// leg's normal treatment (nil for the solid forward path, a fixed rhythm for the always-dashed
+	/// return path); every tier below good gets its own dash rhythm distinct from `baseDash`, so
+	/// fair/bad/none read differently from a good leg on both the forward and return path.
+	private struct TraceRouteLineStyle {
+		let width: CGFloat
+		let dash: [NSNumber]?
+		let phase: CGFloat
+	}
+
+	private func traceRouteLineStyle(
+		snr: Float,
+		preset: ModemPresets,
+		baseWidth: CGFloat,
+		baseDash: [NSNumber]?
+	) -> TraceRouteLineStyle {
+		switch getLoRaSignalStrength(snr: snr, rssi: 0, preset: preset) {
+		case .good:
+			return TraceRouteLineStyle(width: baseWidth, dash: baseDash, phase: 0)
+		case .fair:
+			return TraceRouteLineStyle(width: baseWidth - 0.5, dash: [10, 4], phase: 0)
+		case .bad:
+			return TraceRouteLineStyle(width: max(baseWidth - 1, 1), dash: [4, 4], phase: 3)
+		case .none:
+			return TraceRouteLineStyle(width: max(baseWidth - 1.5, 1), dash: [1, 5], phase: 6)
+		}
+	}
+
 	/// Build the forward (solid) + return (dashed) polylines and origin/target markers for the
 	/// selected trace route. Each leg is colored by that hop's SNR using the same signal-meter math
-	/// as the LoRa signal indicator (green/yellow/orange/red). Limited to nodes with a snapshot.
+	/// as the LoRa signal indicator (green/yellow/orange/red), and its width/dash rhythm now varies
+	/// with the same tier so signal quality isn't encoded by hue alone. Limited to nodes with a snapshot.
 	private func rebuildTraceRouteContent() {
 		let key = selectedTraceRoute.map { "\($0.id)|\($0.nodePositions.count)" } ?? "none"
 		guard key != lastTraceRouteKey else { return }
@@ -1219,22 +1317,40 @@ struct MeshMapMK: View {
 		if forward.count >= 2 {
 			for i in 1..<forward.count {
 				var seg = [forward[i - 1].coordinate, forward[i].coordinate]
+				let style = traceRouteLineStyle(snr: forward[i].snr, preset: modemPreset, baseWidth: 4, baseDash: nil)
 				overlays.append(ClusterMapOverlay(
 					id: "traceroute-fwd-\(idKey)-\(i)",
 					overlay: MKPolyline(coordinates: &seg, count: 2),
-					style: ClusterMapOverlayStyle(strokeUIColor: UIColor(getSnrColor(snr: forward[i].snr, preset: modemPreset)), fillUIColor: nil, lineWidth: 4, lineCap: .round, directional: true)
+					style: ClusterMapOverlayStyle(
+						strokeUIColor: UIColor(getSnrColor(snr: forward[i].snr, preset: modemPreset)),
+						fillUIColor: nil,
+						lineWidth: style.width,
+						lineDash: style.dash,
+						lineDashPhase: style.phase,
+						lineCap: .round,
+						directional: true
+					)
 				))
 			}
 		}
-		// Return (dashed) — same per-leg signal coloring.
+		// Return (dashed) — same per-leg signal coloring, plus the same tier-driven shape variation.
 		let back = route.backSignalPath
 		if back.count >= 2 {
 			for i in 1..<back.count {
 				var seg = [back[i - 1].coordinate, back[i].coordinate]
+				let style = traceRouteLineStyle(snr: back[i].snr, preset: modemPreset, baseWidth: 3, baseDash: [2, 8])
 				overlays.append(ClusterMapOverlay(
 					id: "traceroute-back-\(idKey)-\(i)",
 					overlay: MKPolyline(coordinates: &seg, count: 2),
-					style: ClusterMapOverlayStyle(strokeUIColor: UIColor(getSnrColor(snr: back[i].snr, preset: modemPreset)), fillUIColor: nil, lineWidth: 3, lineDash: [2, 8], lineCap: .round, directional: true)
+					style: ClusterMapOverlayStyle(
+						strokeUIColor: UIColor(getSnrColor(snr: back[i].snr, preset: modemPreset)),
+						fillUIColor: nil,
+						lineWidth: style.width,
+						lineDash: style.dash,
+						lineDashPhase: style.phase,
+						lineCap: .round,
+						directional: true
+					)
 				))
 			}
 		}

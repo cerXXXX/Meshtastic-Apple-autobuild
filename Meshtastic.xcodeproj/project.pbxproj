@@ -113,6 +113,7 @@
 		259792272C2F114500AD1659 /* TraceRouteEntityExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDE5B4052B227E3200FCDD05 /* TraceRouteEntityExtension.swift */; };
 		25A978BA2C13F8ED0003AAE7 /* MeshtasticProtobufs in Frameworks */ = {isa = PBXBuildFile; productRef = 25A978B92C13F8ED0003AAE7 /* MeshtasticProtobufs */; };
 		25A978BC2C13F90D0003AAE7 /* MeshtasticProtobufs in Frameworks */ = {isa = PBXBuildFile; productRef = 25A978BB2C13F90D0003AAE7 /* MeshtasticProtobufs */; };
+		6215655E4BAA48B39EAD2CA3 /* Meshtastic.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = DD3CC6BA28E366DF00FA9159 /* Meshtastic.xcdatamodeld */; };
 		25AECD4F2C2F723200862C8E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 25AECD4E2C2F723200862C8E /* Localizable.xcstrings */; };
 		25F26B1E2C2F610D00C9CD9D /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDD5BB0C2C285F00007E03CA /* Logger.swift */; };
 		25F26B1F2C2F611300C9CD9D /* AppData.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDD5BB152C28B1E4007E03CA /* AppData.swift */; };
@@ -2458,6 +2459,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6215655E4BAA48B39EAD2CA3 /* Meshtastic.xcdatamodeld in Resources */,
 				DDC2E15F26CE248F0042C5E4 /* Preview Assets.xcassets in Resources */,
 				AA000401SIRI000000000002 /* AppIntentVocabulary.plist in Resources */,
 				AA000402IPLS000000000002 /* InfoPlist.strings in Resources */,
