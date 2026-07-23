@@ -53,6 +53,18 @@ struct AccessoryManagerScanDuringPairingTests {
 		#expect(manager.discoveryTask == nil)
 	}
 
+	@Test func appDidBecomeActiveDoesNotRestartDiscoveryWhileRetrying() {
+		// .retrying is the state Step 0 sets at the top of a retry attempt, before its
+		// unconditional stopDiscovery() call runs — must not be treated as idle either.
+		let manager = AccessoryManager(transports: [])
+		manager.updateState(.retrying(attempt: 2, maxAttempts: 2))
+		#expect(manager.discoveryTask == nil)
+
+		manager.appDidBecomeActive()
+
+		#expect(manager.discoveryTask == nil)
+	}
+
 	@Test func appDidBecomeActiveRestartsDiscoveryWhenIdle() {
 		// Existing behavior preserved: with no in-flight connect and no active connection,
 		// coming back to the foreground still resumes scanning.

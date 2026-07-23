@@ -88,6 +88,17 @@ extension AccessoryManager {
 		}
 	}
 
+	// Only cancels the outer discovery task; it does not wait for CoreBluetooth to actually
+	// stop scanning. Cancellation propagates async: the outer AsyncStream's cancellation
+	// tears down each per-transport Task, which trips BLETransport.discoverDevices()'s
+	// `onTermination`, which spawns a *new* unstructured Task to call BLETransport.stopScanning()
+	// (the thing that finally calls `centralManager.stopScan()`). Callers that need scanning
+	// off before pairing (AccessoryManager+Connect.swift's Step 0) don't await that chain — in
+	// practice this is fine because the encrypted-characteristic subscription that actually
+	// races an active scan happens well after `centralManager.connect()`, past several more
+	// service/characteristic discovery round-trips, giving the cancellation chain ample time to
+	// land first. This gap is pre-existing to this multi-hop cancellation architecture, not
+	// introduced by Step 0's use of it.
 	func stopDiscovery() {
 		devices.removeAll()
 		discoveryTask?.cancel()

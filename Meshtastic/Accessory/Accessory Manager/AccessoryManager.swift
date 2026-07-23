@@ -1158,8 +1158,17 @@ extension AccessoryManager {
 			// it can blip scenePhase to .inactive/.background and back to .active while it's up.
 			// Restarting the scan here would race the bonding handshake and tear the sheet down
 			// (CBATTErrorInsufficientEncryption) exactly like the scan-during-pairing bug this
-			// guard, together with Step 0, closes off. Wait for the connect attempt to resolve —
-			// it re-arms discovery itself, on success (Step 8) or failure (closeConnection()).
+			// guard, together with Step 0, closes off. Wait for the connect attempt to resolve:
+			// on success, discovery is left off (Step 8 calls stopDiscovery(), not startDiscovery() —
+			// there's nothing left for a scenePhase blip to interfere with once activeConnection is
+			// set); on failure, closeConnection() re-arms it. Note there's a narrow, self-correcting
+			// gap during a *retry* triggered by a later-step failure (e.g. Step 5/5a): closeConnection()
+			// nils activeConnection and suspends on its own internal awaits before this step's retry
+			// flips state back to .connecting, so isConnecting can briefly read false with
+			// activeConnection already nil. A scenePhase blip landing in that exact window falls
+			// through to the branch below and restarts the scan — harmless here since bonding already
+			// succeeded before that state is reachable (no PIN sheet at risk), and Step 0 stops the
+			// scan again moments later regardless. Just a brief flicker, not a functional issue.
 			Logger.transport.info("[AccessoryManager] Connect attempt in progress, not restarting discovery")
 		} else {
 			if self.discoveryTask == nil {
