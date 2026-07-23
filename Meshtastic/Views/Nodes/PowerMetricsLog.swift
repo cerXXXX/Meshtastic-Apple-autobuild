@@ -317,10 +317,13 @@ struct PowerMetricsLog: View {
 				.navigationBarTitleDisplayMode(.inline)
 				.toolbar {
 					ToolbarItem(placement: .cancellationAction) {
-						Button("Cancel") {
+						Button {
 							channelLabels = loadChannelLabels()
 							isEditingLabels = false
+						} label: {
+							Image(systemName: "xmark")
 						}
+						.accessibilityLabel(String(localized: "Cancel", comment: "VoiceOver: dismiss the label power channels sheet"))
 					}
 					ToolbarItem(placement: .confirmationAction) {
 						Button("Save") {
