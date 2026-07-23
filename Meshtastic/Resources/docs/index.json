@@ -1148,6 +1148,7 @@
             "pairing",
             "fromradio",
             "from",
+            "bluetooth",
             "tcp",
             "swift",
             "pin",
@@ -1157,17 +1158,16 @@
             "error",
             "disconnect",
             "bond",
-            "bluetooth",
             "bletransport",
             "window",
+            "while",
             "user",
             "transports",
             "toradio",
             "timeout",
-            "sheet",
-            "refresh"
+            "sheet"
         ],
-        "charCount": 8564
+        "charCount": 8649
     },
     {
         "id": "whats-new",

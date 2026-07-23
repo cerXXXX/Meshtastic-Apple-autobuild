@@ -14,7 +14,11 @@ import Testing
 
 @testable import Meshtastic
 
-@Suite("BLETransport.statusUpdates()")
+// A hung `iterator.next()` (e.g. a regression that stops a transition from ever arriving) would
+// otherwise suspend a `@Test` indefinitely instead of failing — bound the whole suite with
+// Swift Testing's own time limit rather than hand-rolling cancellation/racing around individual
+// stream reads, which is easy to get subtly wrong around AsyncStream's single-consumer contract.
+@Suite("BLETransport.statusUpdates()", .timeLimit(.minutes(1)))
 struct BLETransportStatusUpdatesTests {
 
 	/// `handleCentralState` only touches its `central:` parameter in the `.poweredOn` branch

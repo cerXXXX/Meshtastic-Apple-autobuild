@@ -39,21 +39,7 @@ struct AccessoryManagerBLEStatusTests {
 	/// `observeBLETransportStatus()`'s subscription, so its replay already carries the settled
 	/// value and no further incidental transition remains to race a later scripted one.
 	private func settleIncidentalHardwareStatus(for transport: BLETransport, timeout: Duration = .milliseconds(500)) async {
-		let deadline = ContinuousClock.now + timeout
-		var previous = await transport.status
-		var stableStreak = 0
-		// Require the status to hold steady across a few consecutive polls (not just once) before
-		// trusting it's actually settled, rather than merely caught between two incidental changes.
-		while stableStreak < 3, ContinuousClock.now < deadline {
-			try? await Task.sleep(for: .milliseconds(20))
-			let current = await transport.status
-			if current == previous {
-				stableStreak += 1
-			} else {
-				stableStreak = 0
-				previous = current
-			}
-		}
+		try? await Task.sleep(for: timeout)
 	}
 
 	/// `observeBLETransportStatus()` mirrors status via a background `Task` consuming an
