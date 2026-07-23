@@ -847,6 +847,10 @@ private struct BluetoothPoweredOffRow: View {
 						.font(.caption)
 						.foregroundColor(.secondary)
 						.multilineTextAlignment(.leading)
+						// Without this, the subtitle competes for space with the icon + Spacer inside
+						// the HStack and can get compressed/truncated at larger Dynamic Type sizes
+						// instead of wrapping and growing the row — matches FirmwareUpdateConnectNotice.
+						.fixedSize(horizontal: false, vertical: true)
 				}
 				Spacer()
 				Image(systemName: "chevron.right")
