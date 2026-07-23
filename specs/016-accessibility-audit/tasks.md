@@ -5,7 +5,7 @@
 
 **How to use this file**: Check off `[x]` as each item is fixed and verified (VoiceOver on-device or Simulator + Accessibility Inspector). This is the persistent tracker — pick up anywhere by scanning for the first unchecked box. Update the "Progress" line below when a batch is completed.
 
-**Progress**: T001–T023 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
+**Progress**: T001–T031 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
 
 ---
 
@@ -75,17 +75,17 @@
 
 ### Value/hint gaps
 
-- [ ] T024 `Meshtastic/Views/Nodes/Helpers/NodeListFilter.swift:96-107` — Slider's hidden `label:` is `Text("Speed")` (wrong domain) with no `.accessibilityValue`. Fix label text and add `.accessibilityValue("\(Int(filterValue)) dBm")`.
-- [ ] T025 `AppLogFilter.swift:245-261` (`selectionRow`) — checkmark row has no trait/value. Add `.accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)`.
-- [ ] T026 `DiscoveryScanView.swift:234-236` — `ProgressView(value:)` is unlabeled and ungrouped from its "Time Remaining" text. Combine with `.accessibilityElement(children: .combine)` + `.accessibilityValue("\(Int(progress * 100)) percent")`.
-- [ ] T027 [P] `LoRaSignalStrength.swift:31-45` (compact Gauge) — no explicit accessibility. Add `.accessibilityLabel("Signal strength")` + `.accessibilityValue(signalDescription)`.
-- [ ] T028 [P] `AirQualityIndex.swift:49-58` (`.gauge` case) — same gap as T027; apply the same pattern.
+- [x] T024 `Meshtastic/Views/Nodes/Helpers/NodeListFilter.swift:96-107` — Slider's hidden `label:` is `Text("Speed")` (wrong domain) with no `.accessibilityValue`. Fix label text and add `.accessibilityValue("\(Int(filterValue)) dBm")`.
+- [x] T025 `AppLogFilter.swift:245-261` (`selectionRow`) — checkmark row has no trait/value. Add `.accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)`.
+- [x] T026 `DiscoveryScanView.swift:234-236` — `ProgressView(value:)` is unlabeled and ungrouped from its "Time Remaining" text. Combine with `.accessibilityElement(children: .combine)` + `.accessibilityValue("\(Int(progress * 100)) percent")`.
+- [x] T027 [P] `LoRaSignalStrength.swift:31-45` (compact Gauge) — no explicit accessibility. Add `.accessibilityLabel("Signal strength")` + `.accessibilityValue(signalDescription)`.
+- [x] T028 [P] `AirQualityIndex.swift:49-58` (`.gauge` case) — same gap as T027; apply the same pattern.
 
 ### Color-only signaling
 
-- [ ] T029 `Meshtastic/Views/Nodes/TraceRouteLog.swift:296-300` — `arrowshape.right.fill` tinted by `snrColor` only, no text/shape distinction. Add a per-tier `accessibilityLabel`.
-- [ ] T030 `Meshtastic/Views/Nodes/Helpers/NodeListItemCompact.swift:287-288` — identical SF Symbol across all signal tiers, only color changes. Vary the symbol per tier (e.g. `wifi` / `wifi.slash`) and add `.accessibilityLabel(signalTier.description)`.
-- [ ] T031 `Meshtastic/Views/Nodes/MeshMapMK.swift:1240,1252` — trace-route polylines vary by hue only. Add `lineDashPhase`/width variation keyed to SNR tier so shape, not just hue, encodes strength.
+- [x] T029 `Meshtastic/Views/Nodes/TraceRouteLog.swift:296-300` — `arrowshape.right.fill` tinted by `snrColor` only, no text/shape distinction. Add a per-tier `accessibilityLabel`.
+- [x] T030 `Meshtastic/Views/Nodes/Helpers/NodeListItemCompact.swift:287-288` — identical SF Symbol across all signal tiers, only color changes. Vary the symbol per tier (e.g. `wifi` / `wifi.slash`) and add `.accessibilityLabel(signalTier.description)`.
+- [x] T031 `Meshtastic/Views/Nodes/MeshMapMK.swift:1240,1252` — trace-route polylines vary by hue only. Add `lineDashPhase`/width variation keyed to SNR tier so shape, not just hue, encodes strength.
 
 ### Localization of accessibility strings
 

@@ -133,7 +133,7 @@ A trace route can be drawn on the map to show the path a packet took through the
 
 ### Reading the Route
 
-- **Colored legs** — each hop is colored by its signal quality (SNR), using the same scale as the LoRa signal meter: **green** (good), **yellow** (fair), **orange** (bad), **red** (none).
+- **Colored legs** — each hop is colored by its signal quality (SNR), using the same scale as the LoRa signal meter: **green** (good), **yellow** (fair), **orange** (bad), **red** (none). Signal quality is also shown by line weight and dash pattern — legs get progressively thinner and more dashed as quality drops from good to none — so the tier doesn't rely on color alone.
 - **Solid vs. dashed** — the **solid** line is the outbound path toward the target; the **dashed** line is the return path back to the originator.
 - **Arrows** — chevrons along each line point in the direction of travel.
 - **Endpoints** — a **green** marker is the originator; a **red** marker is the target.
