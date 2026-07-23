@@ -5,7 +5,7 @@
 
 **How to use this file**: Check off `[x]` as each item is fixed and verified (VoiceOver on-device or Simulator + Accessibility Inspector). This is the persistent tracker — pick up anywhere by scanning for the first unchecked box. Update the "Progress" line below when a batch is completed.
 
-**Progress**: T001–T004, T015–T016 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
+**Progress**: T001–T009, T015–T016 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
 
 ---
 
@@ -15,11 +15,11 @@
 - [x] T002 `Meshtastic/Views/Messages/TextMessageField/TextMessageField.swift:79,237` — send button (`arrow.up.circle.fill`) has no `.accessibilityLabel`. Add `String(localized: "Send message")`. **Done**: fixed both the legacy (line ~82) and `FormattingComposeArea` (line ~243) send buttons.
 - [x] T003 [P] `Meshtastic/Views/Messages/UserMessageRow.swift:35-51,180-181` and `ChannelMessageRow.swift:175-176` — combined `accessibilityLabel` (`messageAccessibilityLabel`) overwrites per-badge labels set in `MessageText.swift:172,192,206` (Verified sender, Store and forward, Detection sensor, Showing translated text). Rebuild the combined label from the same source-of-truth flags `MessageText.swift` uses instead of hand-listing only Encrypted/Verified. One fix, two call sites. **Done**: added `MessageEntity.activeStatusBadges(destination:isCurrentUser:)` as the shared source of truth for badge flags + labels; `MessageText`'s corner badges/overlays and both row's combined labels now read from it.
 - [x] T004 `Meshtastic/Views/Messages/UserList.swift:253-316` (`DirectMessageUserRow`) — no accessibility at all: unread dot not `.accessibilityHidden`, lock/star icons unlabeled, no combined element/label. Port the working pattern from `ChannelList.swift:59-66`. **Done**: unread dot hidden/labeled like `ChannelList`, lock/key/star icons labeled, row wrapped in `.accessibilityElement(children: .combine)`.
-- [ ] T005 [P] `Meshtastic/Views/Nodes/Helpers/Metrics Columns/MetricsColumnDetail.swift:46-61,65-77` — `.onTapGesture` row with no interactive trait; VoiceOver double-tap doesn't activate it. Add `.contentShape(Rectangle())` + `.accessibilityElement(children: .combine)` + `.accessibilityLabel` + `.accessibilityValue(Visible/Hidden)` + `.accessibilityAddTraits(.isButton)` + `.accessibilityAction`.
-- [ ] T006 [P] `Meshtastic/Views/Connect/Connect.swift:1202-1225` (`NymeaDeviceConnectRow`) — same `.onTapGesture`-with-no-trait issue as T005; apply the same pattern.
-- [ ] T007 [P] `Meshtastic/Views/Helpers/Weather/IndoorAirQuality.swift:76-78` — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
-- [ ] T008 [P] `Meshtastic/Views/Settings/AppLog.swift:324-326` (`streamRow`) — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
-- [ ] T009 [P] `Meshtastic/Views/Nodes/Helpers/NodeDetail.swift:357-374,377-399` (First/Last heard rows) — already has `.accessibilityElement(children: .combine)` but no `.isButton` trait; add the trait + `.accessibilityAction`.
+- [x] T005 [P] `Meshtastic/Views/Nodes/Helpers/Metrics Columns/MetricsColumnDetail.swift:46-61,65-77` — `.onTapGesture` row with no interactive trait; VoiceOver double-tap doesn't activate it. Add `.contentShape(Rectangle())` + `.accessibilityElement(children: .combine)` + `.accessibilityLabel` + `.accessibilityValue(Visible/Hidden)` + `.accessibilityAddTraits(.isButton)` + `.accessibilityAction`.
+- [x] T006 [P] `Meshtastic/Views/Connect/Connect.swift:1202-1225` (`NymeaDeviceConnectRow`) — same `.onTapGesture`-with-no-trait issue as T005; apply the same pattern.
+- [x] T007 [P] `Meshtastic/Views/Helpers/Weather/IndoorAirQuality.swift:76-78` — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
+- [x] T008 [P] `Meshtastic/Views/Settings/AppLog.swift:324-326` (`streamRow`) — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
+- [x] T009 [P] `Meshtastic/Views/Nodes/Helpers/NodeDetail.swift:357-374,377-399` (First/Last heard rows) — already has `.accessibilityElement(children: .combine)` but no `.isButton` trait; add the trait + `.accessibilityAction`.
 - [ ] T010 `Meshtastic/Views/Nodes/Helpers/Map/GeofenceBoundsSelectorView.swift:120-138` and `Meshtastic/Views/Nodes/Helpers/Map/Offline/RegionSelectorView.swift:143-161` — drag handles have zero non-visual equivalent. Add `.accessibilityAdjustableAction` (increment/decrement to nudge the bound) or paired "Move north/south/east/west" custom actions. Two files, same pattern.
 - [ ] T011 `Meshtastic/Views/Settings/Discovery/DiscoveryMapView.swift:84` — `Annotation("", coordinate: coord)` has a genuinely empty title. Change to `Annotation(device.displayName, coordinate: coord)`.
 
