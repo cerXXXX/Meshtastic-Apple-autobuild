@@ -51,6 +51,8 @@ struct MessageSearchBar: View {
 	}
 
 	private var positionText: String {
-		matchCount == 0 ? "No matches" : "\(currentIndex + 1) of \(matchCount)"
+		matchCount == 0
+			? String(localized: "No matches", comment: "Visible search match-count label: no matches found")
+			: String(localized: "\(currentIndex + 1) of \(matchCount)", comment: "Visible search match-count label: current position of total matches")
 	}
 }
