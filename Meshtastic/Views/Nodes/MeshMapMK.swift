@@ -376,6 +376,7 @@ struct MeshMapMK: View {
 						.foregroundStyle(.secondary)
 				}
 				.buttonStyle(.plain)
+				.accessibilityLabel(String(localized: "Clear trace route", comment: "VoiceOver label for the clear trace route button"))
 			}
 			.padding(.horizontal, 14)
 			.padding(.vertical, 8)
@@ -515,6 +516,8 @@ struct MeshMapMK: View {
 						}) {
 							Image(systemName: editingSettings ? "info.circle.fill" : "info.circle")
 						}
+						.accessibilityLabel(editingSettings ? String(localized: "Hide map settings", comment: "VoiceOver label to hide the map settings panel") : String(localized: "Show map settings", comment: "VoiceOver label to show the map settings panel"))
+						.accessibilityHint(editingSettings ? String(localized: "Hides the map settings panel.", comment: "VoiceOver hint to hide the map settings panel") : String(localized: "Shows the map settings panel.", comment: "VoiceOver hint to show the map settings panel"))
 						.glassButtonStyle()
 					}
 					.controlSize(.regular)
@@ -544,6 +547,7 @@ struct MeshMapMK: View {
 							} label: {
 								Image(systemName: "macwindow.badge.plus")
 							}
+							.accessibilityLabel(String(localized: "Open map in new window", comment: "VoiceOver label for the open map in a new window button"))
 						}
 						ConnectedDevice(deviceConnected: accessoryManager.isConnected, name: accessoryManager.activeConnection?.device.shortName ?? "?")
 					}
