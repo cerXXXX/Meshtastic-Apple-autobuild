@@ -8,10 +8,16 @@
 import SwiftUI
 import MapKit
 import OSLog
+import UniformTypeIdentifiers
 
 struct MapSettingsForm: View {
 	@Environment(\.dismiss) private var dismiss
 	@State private var currentDetent = PresentationDetent.medium
+	@State private var isShowingFilePicker = false
+	@State private var isProcessingUpload = false
+	@State private var uploadProgress: Double = 0.0
+	@State private var showUploadError = false
+	@State private var uploadErrorMessage = ""
 	@AppStorage("meshMapShowNodeHistory") private var nodeHistory = false
 	@AppStorage("meshMapShowRouteLines") private var enableMapRouteLines = false
 	@AppStorage("enableMapConvexHull") private var convexHull = false
@@ -84,6 +90,19 @@ struct MapSettingsForm: View {
 								}
 							} icon: {
 								Image(systemName: "scope")
+							}
+						}
+						.tint(.accentColor)
+						Toggle(isOn: $enableMapClustering) {
+							Label {
+								VStack(alignment: .leading) {
+									Text("Cluster Nodes")
+									Text("Groups nearby nodes into one numbered pin; tap it to zoom in. Turn off to always show every node.")
+										.font(.caption)
+										.foregroundColor(.secondary)
+								}
+							} icon: {
+								Image(systemName: "circle.grid.3x3.fill")
 							}
 						}
 						.tint(.accentColor)
@@ -161,11 +180,6 @@ struct MapSettingsForm: View {
 								Image(systemName: "arrow.down.circle")
 							}
 						}
-					}
-				}
-
-				Section(header: Text("Map Overlays")) {
-					if meshMap {
 						Toggle(isOn: $enableOfflineTiles) {
 							Label {
 								VStack(alignment: .leading) {
@@ -179,20 +193,10 @@ struct MapSettingsForm: View {
 							}
 						}
 						.tint(.accentColor)
-						Toggle(isOn: $enableMapClustering) {
-							Label {
-								VStack(alignment: .leading) {
-									Text("Cluster Nodes")
-									Text("Groups nearby nodes into one numbered pin; tap it to zoom in. Turn off to always show every node.")
-										.font(.caption)
-										.foregroundColor(.secondary)
-								}
-							} icon: {
-								Image(systemName: "circle.grid.3x3.fill")
-							}
-						}
-						.tint(.accentColor)
 					}
+				}
+
+				Section(header: Text("Map Overlays")) {
 					let hasUserData = GeoJSONOverlayManager.shared.hasUserData()
 					// Master toggle for map overlays
 					Toggle(isOn: $mapOverlaysEnabled) {
@@ -211,11 +215,11 @@ struct MapSettingsForm: View {
 					.tint(.accentColor)
 					.disabled(!hasUserData && !mapOverlaysEnabled)
 
-					// Show individual file toggles when overlays are enabled
-					if mapOverlaysEnabled && hasUserData {
-						if !mapDataManager.getUploadedFiles().isEmpty {
-							// Individual file toggles
-							ForEach(mapDataManager.getUploadedFiles()) { file in
+					// Show individual file rows when overlays are enabled
+					if mapOverlaysEnabled {
+						let uploadedFiles = mapDataManager.getUploadedFiles()
+						if !uploadedFiles.isEmpty {
+							ForEach(uploadedFiles) { file in
 								Toggle(isOn: Binding(
 									get: {
 										return enabledOverlayConfigs.contains(file.id)
@@ -229,18 +233,41 @@ struct MapSettingsForm: View {
 									}
 								)) {
 									Label {
-										VStack(alignment: .leading) {
+										VStack(alignment: .leading, spacing: 2) {
 											Text(file.originalName)
 												.font(.subheadline)
-											HStack {
-												Text("\(file.overlayCount) features")
-													.font(.caption2)
-													.foregroundColor(.secondary)
-												Spacer()
-												Text(ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .file))
-													.font(.caption2)
-													.foregroundColor(.secondary)
+												.lineLimit(1)
+											// The format pill must never wrap internally (`.fixedSize()` pins it to
+											// its natural single-line width) — at large Dynamic Type sizes there's
+											// not always room for it plus the feature count on one line, so
+											// `ViewThatFits` drops the count to its own line instead.
+											ViewThatFits(in: .horizontal) {
+												HStack(spacing: 6) {
+													overlayFormatPill(file.format)
+													Text("\(file.overlayCount) features")
+														.font(.caption2)
+														.foregroundColor(.secondary)
+													Spacer()
+													Text(ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .file))
+														.font(.caption2)
+														.foregroundColor(.secondary)
+												}
+												VStack(alignment: .leading, spacing: 2) {
+													HStack(spacing: 6) {
+														overlayFormatPill(file.format)
+														Spacer()
+														Text(ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .file))
+															.font(.caption2)
+															.foregroundColor(.secondary)
+													}
+													Text("\(file.overlayCount) features")
+														.font(.caption2)
+														.foregroundColor(.secondary)
+												}
 											}
+											Text(file.uploadDate.formatted(date: .abbreviated, time: .shortened))
+												.font(.caption2)
+												.foregroundColor(.secondary)
 										}
 									} icon: {
 										let isEnabled = enabledOverlayConfigs.contains(file.id)
@@ -249,33 +276,55 @@ struct MapSettingsForm: View {
 									}
 								}
 								.tint(.accentColor)
-							}
-							NavigationLink(destination: MapDataFiles()) {
-								Label {
-									Text("Manage map data")
-								} icon: {
-									Image(systemName: "folder")
-										.symbolRenderingMode(.multicolor)
+								.swipeActions(edge: .trailing) {
+									Button(role: .destructive) {
+										deleteOverlayFile(file)
+									} label: {
+										Label("Delete", systemImage: "trash")
+									}
 								}
 							}
 						} else {
 							ContentUnavailableView("No map data files uploaded", systemImage: "exclamationmark.triangle")
 						}
-					} else if !hasUserData {
-						// Upload prompt when no data available
-						NavigationLink(destination: MapDataFiles()) {
-							Label {
-								Text("Upload map data to enable overlays")
-							} icon: {
-								Image(systemName: "arrow.up.doc")
-									.symbolRenderingMode(.multicolor)
-							}
+					}
+
+					// Upload, inline — replaces the former "Manage map data" / "Upload map data
+					// to enable overlays" links out to a separate screen.
+					Button {
+						isShowingFilePicker = true
+					} label: {
+						Label("Upload Map Data", systemImage: "doc.badge.plus")
+					}
+					.disabled(isProcessingUpload)
+
+					if isProcessingUpload {
+						VStack(alignment: .leading, spacing: 6) {
+							ProgressView(value: uploadProgress)
+							Text("Processing file...")
+								.font(.caption)
+								.foregroundColor(.secondary)
 						}
 					}
 				}
 			}
 			.navigationTitle("Map Options")
 			.navigationBarTitleDisplayMode(.inline)
+			.fileImporter(
+				isPresented: $isShowingFilePicker,
+				allowedContentTypes: [
+					UTType.json,
+					UTType(filenameExtension: "geojson") ?? UTType.json
+				],
+				allowsMultipleSelection: false
+			) { result in
+				handleFileSelection(result)
+			}
+			.alert("Upload Error", isPresented: $showUploadError) {
+				Button("Ok") { }
+			} message: {
+				Text(uploadErrorMessage)
+			}
 		}
 		#if targetEnvironment(macCatalyst)
 		.overlay(alignment: .topLeading) {
@@ -311,6 +360,73 @@ struct MapSettingsForm: View {
 			}
 		}
 
+	}
+
+	// MARK: - Overlay file upload / delete
+
+	private func overlayFormatPill(_ format: String) -> some View {
+		Text(format.uppercased())
+			.font(.caption2)
+			.lineLimit(1)
+			.fixedSize()
+			.padding(.horizontal, 6)
+			.padding(.vertical, 1)
+			.background(Color.secondary.opacity(0.2))
+			.cornerRadius(4)
+	}
+
+	private func handleFileSelection(_ result: Result<[URL], Error>) {
+		do {
+			guard let selectedFile = try result.get().first else { return }
+
+			isProcessingUpload = true
+			uploadProgress = 0.0
+
+			Task {
+				do {
+					await simulateUploadProgress()
+					_ = try await mapDataManager.processUploadedFile(from: selectedFile)
+					await MainActor.run {
+						isProcessingUpload = false
+						uploadProgress = 1.0
+						mapOverlaysEnabled = true
+					}
+				} catch {
+					await MainActor.run {
+						isProcessingUpload = false
+						uploadProgress = 0.0
+						uploadErrorMessage = error.localizedDescription
+						showUploadError = true
+					}
+				}
+			}
+		} catch {
+			uploadErrorMessage = "Failed to access file: \(error.localizedDescription)".localized
+			showUploadError = true
+		}
+	}
+
+	private func simulateUploadProgress() async {
+		for i in 1...10 {
+			await MainActor.run {
+				uploadProgress = Double(i) / 10.0
+			}
+			try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
+		}
+	}
+
+	private func deleteOverlayFile(_ file: MapDataMetadata) {
+		enabledOverlayConfigs.remove(file.id)
+		Task {
+			do {
+				try await mapDataManager.deleteFile(file)
+			} catch {
+				await MainActor.run {
+					uploadErrorMessage = "Failed to delete file: \(error.localizedDescription)".localized
+					showUploadError = true
+				}
+			}
+		}
 	}
 }
 
