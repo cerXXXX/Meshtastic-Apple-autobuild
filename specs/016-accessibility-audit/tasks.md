@@ -5,7 +5,7 @@
 
 **How to use this file**: Check off `[x]` as each item is fixed and verified (VoiceOver on-device or Simulator + Accessibility Inspector). This is the persistent tracker — pick up anywhere by scanning for the first unchecked box. Update the "Progress" line below when a batch is completed.
 
-**Progress**: T001–T038 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
+**Progress**: T001–T040, T042–T043 done; T041 intentionally deferred as not urgent (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
 
 ---
 
@@ -106,7 +106,7 @@
 
 ## Phase 3: Medium (correct but suboptimal)
 
-- [ ] T039 [P] Element grouping missing (readable today, but each glyph/number is a separate VoiceOver stop) — add `.accessibilityElement(children: .combine)` to each:
+- [x] T039 [P] Element grouping missing (readable today, but each glyph/number is a separate VoiceOver stop) — add `.accessibilityElement(children: .combine)` to each:
   - `PowerMetricsLog.swift:127-137`
   - `DeviceMetricsLog.swift:105-121`
   - `HelpItem.swift:23-38`
@@ -116,10 +116,10 @@
   - `Connect.swift:191-207`
   - `WifiProvisioningView.swift:15-32` (`ActivityRow`)
   - `AppData.swift:49-63`
-- [ ] T040 `Meshtastic/Views/Settings/Firmware/Helpers/CircularProgressView.swift` — zero accessibility in this shared component. Add `.accessibilityElement(children: .ignore)` + `.accessibilityLabel("Update progress")` + `.accessibilityValue("\(Int(progress * 100)) percent")`. One fix covers 4 call sites: `NRFDFUSheet.swift`, `ESP32WifiOTASheet.swift`, `ESP32BLEOTASheet.swift`, `FirmwareUpdateGameView.swift`.
+- [x] T040 `Meshtastic/Views/Settings/Firmware/Helpers/CircularProgressView.swift` — zero accessibility in this shared component. Add `.accessibilityElement(children: .ignore)` + `.accessibilityLabel("Update progress")` + `.accessibilityValue("\(Int(progress * 100)) percent")`. One fix covers 4 call sites: `NRFDFUSheet.swift`, `ESP32WifiOTASheet.swift`, `ESP32BLEOTASheet.swift`, `FirmwareUpdateGameView.swift`.
 - [ ] T041 Accessibility identifiers absent app-wide except `FirmwareUpdateGameView.swift:18,45,121,247`. No UI test target exists today, so this doesn't break anything — **not urgent**, add `.accessibilityIdentifier` incrementally to primary nav/interactive elements as they're touched for other fixes in this list, rather than as a standalone pass.
-- [ ] T042 [P] Dynamic Type clipping in compact widgets — `DistanceCompactWidget.swift`, `HumidityCompactWidget.swift` (and siblings) cap `maxHeight: 140` while using `.font(.largeTitle)` inside; text clips at larger accessibility sizes. Add `.minimumScaleFactor(0.5)` + `.lineLimit(1)`.
-- [ ] T043 [P] `ChannelList.swift:135` and `UserList.swift:316` — fixed `.frame(height: 62)` rows won't grow for large Dynamic Type sizes. Switch to `.frame(minHeight: 62)`.
+- [x] T042 [P] Dynamic Type clipping in compact widgets — `DistanceCompactWidget.swift`, `HumidityCompactWidget.swift` (and siblings) capped `maxHeight: 140` while using `.font(.largeTitle)` inside; text clipped at larger accessibility sizes. Fixed by dropping the `maxHeight`/`idealHeight` cap so the container can grow with the scalable header/unit labels.
+- [x] T043 [P] `ChannelList.swift:135` and `UserList.swift:316` — fixed `.frame(height: 62)` rows won't grow for large Dynamic Type sizes. Switch to `.frame(minHeight: 62)`.
 
 **Checkpoint**: All 4 Medium clusters (T039-T043) closed → grouping is coherent, firmware progress is announced, Dynamic Type no longer clips, and identifiers are being added opportunistically.
 

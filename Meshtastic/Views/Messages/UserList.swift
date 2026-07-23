@@ -323,7 +323,7 @@ private struct DirectMessageUserRow: View {
 			}
 		}
 		.accessibilityElement(children: .combine)
-		.frame(height: 62)
+		.frame(minHeight: 62)
 		.alignmentGuide(.listRowSeparatorLeading) {
 			$0[.leading]
 		}

@@ -4045,7 +4045,7 @@
       }
     },
     "%lld percent" : {
-      "comment" : "VoiceOver: discovery scan dwell progress percentage"
+      "comment" : "VoiceOver value spoken as a percentage — used for both firmware update completion and discovery scan dwell progress"
     },
     "%lld received" : {
       "comment" : "A label that shows the number of packets that were received.",
@@ -37012,6 +37012,9 @@
         }
       }
     },
+    "Error" : {
+      "comment" : "VoiceOver value when firmware update failed"
+    },
     "Error: %@" : {
       "localizations" : {
         "da" : {
@@ -48691,6 +48694,9 @@
           }
         }
       }
+    },
+    "In progress" : {
+      "comment" : "VoiceOver value for indeterminate firmware update state"
     },
     "Include" : {
       "localizations" : {
@@ -103459,6 +103465,9 @@
     },
     "Update in" : {
       "comment" : "VoiceOver: label for the Live Activity countdown timer showing time until the next update"
+    },
+    "Update progress" : {
+      "comment" : "VoiceOver label for the firmware update progress ring"
     },
     "Updated Node Stats Data." : {
       "localizations" : {
