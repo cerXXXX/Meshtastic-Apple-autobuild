@@ -15,7 +15,6 @@ struct MapSettingsForm: View {
 	@State private var currentDetent = PresentationDetent.medium
 	@State private var isShowingFilePicker = false
 	@State private var isProcessingUpload = false
-	@State private var uploadProgress: Double = 0.0
 	@State private var showUploadError = false
 	@State private var uploadErrorMessage = ""
 	@AppStorage("meshMapShowNodeHistory") private var nodeHistory = false
@@ -299,8 +298,8 @@ struct MapSettingsForm: View {
 					.disabled(isProcessingUpload)
 
 					if isProcessingUpload {
-						VStack(alignment: .leading, spacing: 6) {
-							ProgressView(value: uploadProgress)
+						HStack(spacing: 8) {
+							ProgressView()
 							Text("Processing file...")
 								.font(.caption)
 								.foregroundColor(.secondary)
@@ -380,49 +379,38 @@ struct MapSettingsForm: View {
 			guard let selectedFile = try result.get().first else { return }
 
 			isProcessingUpload = true
-			uploadProgress = 0.0
 
 			Task {
 				do {
-					await simulateUploadProgress()
 					_ = try await mapDataManager.processUploadedFile(from: selectedFile)
 					await MainActor.run {
 						isProcessingUpload = false
-						uploadProgress = 1.0
 						mapOverlaysEnabled = true
 					}
 				} catch {
 					await MainActor.run {
 						isProcessingUpload = false
-						uploadProgress = 0.0
 						uploadErrorMessage = error.localizedDescription
 						showUploadError = true
 					}
 				}
 			}
 		} catch {
-			uploadErrorMessage = "Failed to access file: \(error.localizedDescription)".localized
+			uploadErrorMessage = String.localizedStringWithFormat("Failed to access file: %@".localized, error.localizedDescription)
 			showUploadError = true
 		}
 	}
 
-	private func simulateUploadProgress() async {
-		for i in 1...10 {
-			await MainActor.run {
-				uploadProgress = Double(i) / 10.0
-			}
-			try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
-		}
-	}
-
 	private func deleteOverlayFile(_ file: MapDataMetadata) {
-		enabledOverlayConfigs.remove(file.id)
 		Task {
 			do {
 				try await mapDataManager.deleteFile(file)
+				await MainActor.run {
+					enabledOverlayConfigs.remove(file.id)
+				}
 			} catch {
 				await MainActor.run {
-					uploadErrorMessage = "Failed to delete file: \(error.localizedDescription)".localized
+					uploadErrorMessage = String.localizedStringWithFormat("Failed to delete file: %@".localized, error.localizedDescription)
 					showUploadError = true
 				}
 			}
