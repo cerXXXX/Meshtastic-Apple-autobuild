@@ -68,7 +68,6 @@ struct MeshMapMK: View {
 	@State private var mapOverlays: [ClusterMapOverlay] = []
 	/// Display-coordinate overrides for nodes that sit on (nearly) the same point, fanned out into
 	/// a small ring so a stacked cluster always breaks into individual, tappable node circles.
-	@State private var spreadOverrides: [Int64: CLLocationCoordinate2D] = [:]
 	/// Guards the one-time initial camera framing (GPS-centered, zoomed out, ~100 miles max).
 	@State private var didInitialFrame = false
 	/// One-shot camera move fed to the map. Set ONCE by the initial framing; after that the user
@@ -109,6 +108,10 @@ struct MeshMapMK: View {
 	@State private var editingSettings = false
 	@State private var editingFilters = false
 	@State var selectedNode: MeshMapSelectedNode?
+	/// A tapped un-splittable coincident stack, shown in a disambiguation picker (nil = hidden).
+	@State private var colocatedStack: ColocatedNodeStack?
+	/// A node chosen in the picker, opened only after that sheet dismisses (so the two don't collide).
+	@State private var pendingColocatedSelection: Int64?
 	@State private var visiblePositionSnapshots: [MeshMapPositionSnapshot] = []
 	@State var editingWaypoint: WaypointEntity?
 	@State var selectedWaypoint: WaypointEntity?
@@ -310,11 +313,15 @@ struct MeshMapMK: View {
 	@ViewBuilder private var meshClusterMapView: some View {
 		ClusterMapView(
 				items: visiblePositionSnapshots,
-				coordinate: { spreadOverrides[$0.nodeNum] ?? $0.coordinate },
+				coordinate: { $0.coordinate },
 				region: $visibleRegion,
 				cameraCommand: cameraCommand,
 				clustering: enableMapClustering,
-				onSelect: { snapshot in selectedWaypoint = nil; editingWaypoint = nil; selectedNode = MeshMapSelectedNode(id: snapshot.nodeNum) },
+				onSelect: { snapshot in presentNodeSelection(for: snapshot) },
+				onColocatedStack: { snapshots in
+					// Coincident stack that zoom-to-fit can't separate -> let the user pick a node by name.
+					presentColocatedStack(snapshots)
+				},
 				configuration: clusterConfiguration,
 				overlays: combinedMapOverlays(),
 				coverageAreas: isMapVisible ? offlineCoverageAreas : [],
@@ -416,6 +423,55 @@ struct MeshMapMK: View {
 						.presentationDragIndicator(.visible)
 						#endif
 					}
+				}
+				.sheet(item: $colocatedStack, onDismiss: {
+					// Open the chosen node's detail only after the picker has fully dismissed, so the two
+					// sheets don't fight over presentation.
+					if let nodeNum = pendingColocatedSelection {
+						pendingColocatedSelection = nil
+						selectNode(nodeNum)
+					}
+				}) { stack in
+					NavigationStack {
+						List(stack.nodes) { snapshot in
+							Button {
+								pendingColocatedSelection = snapshot.nodeNum
+								colocatedStack = nil
+							} label: {
+								// Reuse the standard node-list cell so the disambiguation picker matches
+								// the Nodes tab. Fall back to the snapshot's name if the live node was
+								// pruned between the tap and the sheet appearing.
+								if let node = getNodeInfo(id: snapshot.nodeNum, context: context) {
+									NodeListItem(
+										node: node,
+										isDirectlyConnected: snapshot.nodeNum == accessoryManager.activeDeviceNum,
+										connectedNode: accessoryManager.activeConnection?.device.num ?? -1
+									)
+								} else {
+									Text(snapshot.longName)
+								}
+							}
+							.buttonStyle(.plain)
+						}
+						.navigationTitle(String.localizedStringWithFormat("Select a Node (%@)".localized, String(stack.nodes.count)))
+						#if !targetEnvironment(macCatalyst)
+						.navigationBarTitleDisplayMode(.inline)
+						#endif
+						.toolbar {
+							ToolbarItem(placement: .cancellationAction) {
+								Button {
+									colocatedStack = nil
+								} label: {
+									Image(systemName: "xmark")
+								}
+								.accessibilityLabel(String(localized: "Cancel", comment: "VoiceOver: dismiss the node disambiguation picker"))
+							}
+						}
+					}
+					.presentationDetents([.medium, .large])
+					#if !targetEnvironment(macCatalyst)
+					.presentationDragIndicator(.visible)
+					#endif
 				}
 				.sheet(item: $selectedWaypoint) { selection in
 					WaypointForm(waypoint: selection)
@@ -805,77 +861,50 @@ struct MeshMapMK: View {
 		return key
 	}
 
+	/// Route a tapped pin to node detail, or — when other visible nodes sit on (nearly) the same
+	/// point — to the disambiguation picker. MapKit only forms `MKClusterAnnotation`s (which drive
+	/// `onColocatedStack`) when clustering is enabled, so with clustering OFF a pin tap can land on a
+	/// fully-occluded stack; without this the covered nodes would be permanently untappable. Detecting
+	/// coincident siblings here keeps every stacked node reachable regardless of the clustering setting.
+	private func presentNodeSelection(for snapshot: MeshMapPositionSnapshot) {
+		// De-dupe by nodeNum before deciding: two coincident snapshots that share a num (e.g. positions
+		// whose node is nil, both 0) are one selectable node, not a two-row picker.
+		let coincident = MeshMapPositionSnapshot.dedupedByNodeNumSortedByName(
+			MeshMapPositionSnapshot.colocated(
+				with: snapshot,
+				in: visiblePositionSnapshots,
+				withinMeters: MapColocation.spreadMeters
+			)
+		)
+		if coincident.count > 1 {
+			presentColocatedStack(coincident)
+		} else {
+			selectNode(snapshot.nodeNum)
+		}
+	}
+
+	/// Present the colocated disambiguation picker for a set of coincident nodes. De-dupes by
+	/// `nodeNum` first: the picker's `List` is keyed on `snapshot.id` (== `nodeNum`), so two snapshots
+	/// sharing a num (e.g. positions whose node is nil, both 0) would collide into duplicate List IDs
+	/// and mis-render.
+	private func presentColocatedStack(_ snapshots: [MeshMapPositionSnapshot]) {
+		selectedWaypoint = nil
+		editingWaypoint = nil
+		colocatedStack = ColocatedNodeStack(nodes: MeshMapPositionSnapshot.dedupedByNodeNumSortedByName(snapshots))
+	}
+
+	/// Open a single node's detail sheet, clearing any in-flight waypoint selection first.
+	private func selectNode(_ nodeNum: Int64) {
+		selectedWaypoint = nil
+		editingWaypoint = nil
+		selectedNode = MeshMapSelectedNode(id: nodeNum)
+	}
+
 		private func refreshVisiblePositionSnapshots(from positions: [PositionEntity]) {
 			visiblePositionSnapshots = makePositionSnapshots(from: positions)
-			spreadOverrides = computeSpreadOverrides(visiblePositionSnapshots)
 			frameInitialRegionIfNeeded()
 			rebuildOverlays()
 		}
-
-	/// Fan out nodes that sit on (nearly) the same spot into a small ring so a stacked cluster always
-	/// breaks into individual, tappable node circles instead of an un-splittable pin. The accuracy
-	/// circle stays at the true location; only the pin's display coordinate is offset.
-	///
-	/// Grouping is DISTANCE-based (not cell-quantized): any nodes within `mergeMeters` of each other
-	/// are fanned out together. A fixed grid missed two real cases that produced un-splittable "2"
-	/// clusters — pairs straddling a cell boundary, and same-site radios whose GPS fixes jitter a few
-	/// meters apart — because they're far too close to ever separate by zooming. Union-find over a
-	/// coarse neighbor grid keeps this ~O(n) on the density-limited snapshot set.
-	private func computeSpreadOverrides(_ snaps: [MeshMapPositionSnapshot]) -> [Int64: CLLocationCoordinate2D] {
-		guard snaps.count > 1 else { return [:] }
-		let metersPerDegLat = 111_320.0
-		/// Pins within this distance are treated as "stacked" and fanned out. Comfortably above GPS
-		/// jitter and the old ~1 m cell so boundary/jitter pairs are reliably caught.
-		let mergeMeters = 16.0
-
-		// Project to a local meter plane (accurate enough at city scale) for distance + bucketing.
-		let pts = snaps.map { snap -> (x: Double, y: Double) in
-			let metersPerDegLon = metersPerDegLat * cos(snap.coordinate.latitude * .pi / 180)
-			return (snap.coordinate.longitude * metersPerDegLon, snap.coordinate.latitude * metersPerDegLat)
-		}
-		// Coarse grid (cell == mergeMeters) so each node only compares against neighboring cells.
-		func cellKey(_ gx: Int, _ gy: Int) -> Int64 { Int64(gx) &* 4_000_000 &+ Int64(gy) }
-		let grid = pts.map { (Int(($0.x / mergeMeters).rounded(.down)), Int(($0.y / mergeMeters).rounded(.down))) }
-		var buckets: [Int64: [Int]] = [:]
-		for (i, cell) in grid.enumerated() { buckets[cellKey(cell.0, cell.1), default: []].append(i) }
-
-		// Union-find: merge any pair within mergeMeters (checking the node's cell + its 8 neighbors).
-		var parent = Array(0..<snaps.count)
-		func find(_ a: Int) -> Int { var r = a; while parent[r] != r { parent[r] = parent[parent[r]]; r = parent[r] }; return r }
-		func union(_ a: Int, _ b: Int) { let ra = find(a), rb = find(b); if ra != rb { parent[ra] = rb } }
-		let mergeSq = mergeMeters * mergeMeters
-		for i in 0..<snaps.count {
-			let (gx, gy) = grid[i]
-			for dx in -1...1 { for dy in -1...1 {
-				guard let neighbors = buckets[cellKey(gx + dx, gy + dy)] else { continue }
-				for j in neighbors where j > i {
-					let ddx = pts[i].x - pts[j].x, ddy = pts[i].y - pts[j].y
-					if ddx * ddx + ddy * ddy <= mergeSq { union(i, j) }
-				}
-			}}
-		}
-
-		// Collect groups by root, fan each group with >1 member around its centroid.
-		var groups: [Int: [Int]] = [:]
-		for i in 0..<snaps.count { groups[find(i), default: []].append(i) }
-		var overrides: [Int64: CLLocationCoordinate2D] = [:]
-		for members in groups.values where members.count > 1 {
-			let sorted = members.sorted { snaps[$0].nodeNum < snaps[$1].nodeNum }
-			let centerLat = sorted.reduce(0.0) { $0 + snaps[$1].coordinate.latitude } / Double(sorted.count)
-			let centerLon = sorted.reduce(0.0) { $0 + snaps[$1].coordinate.longitude } / Double(sorted.count)
-			let metersPerDegLon = max(1.0, metersPerDegLat * cos(centerLat * .pi / 180))
-			// Grow the ring with crowd size so even a big pile stays individually tappable.
-			let radius = 14.0 + Double(sorted.count) * 1.5
-			for (index, member) in sorted.enumerated() {
-				let angle = 2 * Double.pi * Double(index) / Double(sorted.count)
-				overrides[snaps[member].nodeNum] = CLLocationCoordinate2D(
-					latitude: centerLat + (radius * sin(angle)) / metersPerDegLat,
-					longitude: centerLon + (radius * cos(angle)) / metersPerDegLon
-				)
-			}
-		}
-		return overrides
-	}
 
 	/// One-time initial camera framing. Centers on the phone's GPS (else the connected device's GPS,
 	/// else the node centroid) and zooms out to fit nearby nodes -- capped at ~100 miles so we "start
@@ -883,6 +912,26 @@ struct MeshMapMK: View {
 	/// as positions pour in.
 	private func frameInitialRegionIfNeeded() {
 		guard !didInitialFrame else { return }
+		#if DEBUG
+		// Coincident-node demo: frame tight on the seeded pins so the stack(s) fill the view without the
+		// user having to pinch-zoom for a screenshot. Takes priority over the saved-region restore below
+		// since a developer invoking this explicit QA mode wants the tight demo framing every time, not
+		// whatever region happens to be saved from a previous session.
+		if PerformanceSeedData.configuration?.style == .clusterDemo {
+			let coords = mapEligiblePositions.compactMap { $0.nodeCoordinate ?? $0.fuzzedNodeCoordinate }
+			if let center = coordinateCentroid(of: coords) {
+				didInitialFrame = true
+				let span = ClusterDemoSeed.frameSpanDegrees
+				let region = MKCoordinateRegion(
+					center: center,
+					span: MKCoordinateSpan(latitudeDelta: span, longitudeDelta: span)
+				)
+				visibleRegion = region
+				cameraCommand = ClusterMapCameraCommand(id: UUID(), region: region)
+				return
+			}
+		}
+		#endif
 		// Restore the user's last-viewed region first: anyone who has ever moved the map reopens
 		// exactly where they left it, with no dependence on GPS / connected device / node data at
 		// launch. This is the only branch that resolves the reported cold-open (0,0) default for a

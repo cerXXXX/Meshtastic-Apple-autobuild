@@ -241,8 +241,8 @@
         "keywords": [
             "map",
             "nodes",
-            "tap",
             "node",
+            "tap",
             "from",
             "show",
             "waypoint",
@@ -251,9 +251,9 @@
             "coverage",
             "location",
             "radio",
+            "open",
             "mesh",
             "site",
-            "open",
             "lora",
             "line",
             "estimate",
@@ -264,13 +264,13 @@
             "layer",
             "geojson",
             "geofence",
+            "each",
             "device",
             "description",
             "box",
-            "bounding",
-            "waypoints"
+            "bounding"
         ],
-        "charCount": 9376
+        "charCount": 9906
     },
     {
         "id": "messages",

@@ -13,6 +13,8 @@
 <h2>Node Pins</h2>
 <p>Each node that has reported a GPS position appears as a colored circle pin on the map. The <strong>green solid line</strong> shows a directly connected node; <strong>orange dashed lines</strong> show nodes reached via the mesh. A purple star marks a waypoint. Tap a pin to see the node name, last heard time, signal info, and a shortcut to send a direct message.</p>
 <p>Pins update automatically when a new position packet is received from the mesh.</p>
+<h3>Overlapping nodes at the same spot</h3>
+<p>When several nodes report the <em>same</em> (or nearly the same) location — for example radios sitting on one desk, or nodes broadcasting a reduced-precision position — their pins stack on top of each other and can't be pulled apart by zooming. Tapping the stack (or the numbered count badge, when node clustering is on) opens a <strong>Select a Node</strong> list of every node at that spot. Pick one to open its detail view. This works whether or not clustering is enabled, so an occluded node is always reachable.</p>
 <h2>Filtering Nodes on the Map</h2>
 <p>Tap the <strong>filter button</strong> (funnel icon, <code>line.3.horizontal.decrease.circle</code>) in the bottom-right toolbar to open the Map Filters sheet. When any filter is active, the icon appears <strong>filled</strong> to indicate filtering is in effect.</p>
 <table>

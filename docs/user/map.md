@@ -16,6 +16,10 @@ Each node that has reported a GPS position appears as a colored circle pin on th
 
 Pins update automatically when a new position packet is received from the mesh.
 
+### Overlapping nodes at the same spot
+
+When several nodes report the *same* (or nearly the same) location — for example radios sitting on one desk, or nodes broadcasting a reduced-precision position — their pins stack on top of each other and can't be pulled apart by zooming. Tapping the stack (or the numbered count badge, when node clustering is on) opens a **Select a Node** list of every node at that spot. Pick one to open its detail view. This works whether or not clustering is enabled, so an occluded node is always reachable.
+
 ## Filtering Nodes on the Map
 
 Tap the **filter button** (funnel icon, `line.3.horizontal.decrease.circle`) in the bottom-right toolbar to open the Map Filters sheet. When any filter is active, the icon appears **filled** to indicate filtering is in effect.
