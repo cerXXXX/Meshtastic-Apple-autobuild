@@ -166,6 +166,12 @@ actor BLETransport: Transport {
 			}
 
 		case .poweredOff:
+			// Leave status settled on .error rather than immediately overwriting it — this used
+			// to be clobbered by a trailing `status = .ready` a few lines below, so BLE-off was
+			// never actually observable via `status` (issue #2161). `.ready` elsewhere in this
+			// file (see `stopScanning()`) means "poweredOn and available", which powered-off is
+			// the opposite of, so `.error` here also matches this file's own convention for
+			// every other non-powered-on state (.unauthorized, .unsupported, .resetting, etc.).
 			status = .error("Bluetooth is powered off")
 			if let connection = activeConnection {
 				Task {
@@ -174,8 +180,7 @@ actor BLETransport: Transport {
 					await self.connectionDidDisconnect(fromPeripheral: connection.peripheral)
 				}
 			}
-			status = .ready
-			
+
 			// Close the gate to make people wait
 			Task { await setupCompleteGate.reset() }
 
