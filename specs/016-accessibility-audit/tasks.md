@@ -5,23 +5,23 @@
 
 **How to use this file**: Check off `[x]` as each item is fixed and verified (VoiceOver on-device or Simulator + Accessibility Inspector). This is the persistent tracker — pick up anywhere by scanning for the first unchecked box. Update the "Progress" line below when a batch is completed.
 
-**Progress**: 17 / 60 individual locations fixed (2 / 20 finding clusters fully closed — Localization of accessibility strings (T032-T036) and Contrast correctness (T037-T038) are now fully closed; T002/T015/T016 also done but their Icon-only-buttons cluster still has other locations open) — last updated 2026-07-21.
+**Progress**: T001–T038 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
 
 ---
 
 ## Phase 1: Blocker (VoiceOver users cannot perceive or operate the feature)
 
-- [ ] T001 `Widgets/WidgetsLiveActivity.swift` — zero accessibility calls in the whole file. Add `.accessibilityElement(children: .ignore)` + `.accessibilityLabel` to `StatRow` (~line 296-311) and to each icon+fraction pair (lines ~64, 117, 136, 216) and the countdown timer (~line 334). Verify in the widget extension target (Lock Screen/Dynamic Island), not just the main app.
+- [x] T001 `Widgets/WidgetsLiveActivity.swift` — zero accessibility calls in the whole file. Add `.accessibilityElement(children: .ignore)` + `.accessibilityLabel` to `StatRow` (~line 296-311) and to each icon+fraction pair (lines ~64, 117, 136, 216) and the countdown timer (~line 334). Verify in the widget extension target (Lock Screen/Dynamic Island), not just the main app.
 - [x] T002 `Meshtastic/Views/Messages/TextMessageField/TextMessageField.swift:79,237` — send button (`arrow.up.circle.fill`) has no `.accessibilityLabel`. Add `String(localized: "Send message")`. **Done**: fixed both the legacy (line ~82) and `FormattingComposeArea` (line ~243) send buttons.
-- [ ] T003 [P] `Meshtastic/Views/Messages/UserMessageRow.swift:35-51,180-181` and `ChannelMessageRow.swift:175-176` — combined `accessibilityLabel` (`messageAccessibilityLabel`) overwrites per-badge labels set in `MessageText.swift:172,192,206` (Verified sender, Store and forward, Detection sensor, Showing translated text). Rebuild the combined label from the same source-of-truth flags `MessageText.swift` uses instead of hand-listing only Encrypted/Verified. One fix, two call sites.
-- [ ] T004 `Meshtastic/Views/Messages/UserList.swift:253-316` (`DirectMessageUserRow`) — no accessibility at all: unread dot not `.accessibilityHidden`, lock/star icons unlabeled, no combined element/label. Port the working pattern from `ChannelList.swift:59-66`.
-- [ ] T005 [P] `Meshtastic/Views/Nodes/Helpers/Metrics Columns/MetricsColumnDetail.swift:46-61,65-77` — `.onTapGesture` row with no interactive trait; VoiceOver double-tap doesn't activate it. Add `.contentShape(Rectangle())` + `.accessibilityElement(children: .combine)` + `.accessibilityLabel` + `.accessibilityValue(Visible/Hidden)` + `.accessibilityAddTraits(.isButton)` + `.accessibilityAction`.
-- [ ] T006 [P] `Meshtastic/Views/Connect/Connect.swift:1202-1225` (`NymeaDeviceConnectRow`) — same `.onTapGesture`-with-no-trait issue as T005; apply the same pattern.
-- [ ] T007 [P] `Meshtastic/Views/Helpers/Weather/IndoorAirQuality.swift:76-78` — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
-- [ ] T008 [P] `Meshtastic/Views/Settings/AppLog.swift:324-326` (`streamRow`) — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
-- [ ] T009 [P] `Meshtastic/Views/Nodes/Helpers/NodeDetail.swift:357-374,377-399` (First/Last heard rows) — already has `.accessibilityElement(children: .combine)` but no `.isButton` trait; add the trait + `.accessibilityAction`.
-- [ ] T010 `Meshtastic/Views/Nodes/Helpers/Map/GeofenceBoundsSelectorView.swift:120-138` and `Meshtastic/Views/Nodes/Helpers/Map/Offline/RegionSelectorView.swift:143-161` — drag handles have zero non-visual equivalent. Add `.accessibilityAdjustableAction` (increment/decrement to nudge the bound) or paired "Move north/south/east/west" custom actions. Two files, same pattern.
-- [ ] T011 `Meshtastic/Views/Settings/Discovery/DiscoveryMapView.swift:84` — `Annotation("", coordinate: coord)` has a genuinely empty title. Change to `Annotation(device.displayName, coordinate: coord)`.
+- [x] T003 [P] `Meshtastic/Views/Messages/UserMessageRow.swift:35-51,180-181` and `ChannelMessageRow.swift:175-176` — combined `accessibilityLabel` (`messageAccessibilityLabel`) overwrites per-badge labels set in `MessageText.swift:172,192,206` (Verified sender, Store and forward, Detection sensor, Showing translated text). Rebuild the combined label from the same source-of-truth flags `MessageText.swift` uses instead of hand-listing only Encrypted/Verified. One fix, two call sites. **Done**: added `MessageEntity.activeStatusBadges(destination:isCurrentUser:)` as the shared source of truth for badge flags + labels; `MessageText`'s corner badges/overlays and both row's combined labels now read from it.
+- [x] T004 `Meshtastic/Views/Messages/UserList.swift:253-316` (`DirectMessageUserRow`) — no accessibility at all: unread dot not `.accessibilityHidden`, lock/star icons unlabeled, no combined element/label. Port the working pattern from `ChannelList.swift:59-66`. **Done**: unread dot hidden/labeled like `ChannelList`, lock/key/star icons labeled, row wrapped in `.accessibilityElement(children: .combine)`.
+- [x] T005 [P] `Meshtastic/Views/Nodes/Helpers/Metrics Columns/MetricsColumnDetail.swift:46-61,65-77` — `.onTapGesture` row with no interactive trait; VoiceOver double-tap doesn't activate it. Add `.contentShape(Rectangle())` + `.accessibilityElement(children: .combine)` + `.accessibilityLabel` + `.accessibilityValue(Visible/Hidden)` + `.accessibilityAddTraits(.isButton)` + `.accessibilityAction`.
+- [x] T006 [P] `Meshtastic/Views/Connect/Connect.swift:1202-1225` (`NymeaDeviceConnectRow`) — same `.onTapGesture`-with-no-trait issue as T005; apply the same pattern.
+- [x] T007 [P] `Meshtastic/Views/Helpers/Weather/IndoorAirQuality.swift:76-78` — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
+- [x] T008 [P] `Meshtastic/Views/Settings/AppLog.swift:324-326` (`streamRow`) — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
+- [x] T009 [P] `Meshtastic/Views/Nodes/Helpers/NodeDetail.swift:357-374,377-399` (First/Last heard rows) — already has `.accessibilityElement(children: .combine)` but no `.isButton` trait; add the trait + `.accessibilityAction`.
+- [x] T010 `Meshtastic/Views/Nodes/Helpers/Map/GeofenceBoundsSelectorView.swift:120-138` and `Meshtastic/Views/Nodes/Helpers/Map/Offline/RegionSelectorView.swift:143-161` — drag handles have zero non-visual equivalent. Add `.accessibilityAdjustableAction` (increment/decrement to nudge the bound) or paired "Move north/south/east/west" custom actions. Two files, same pattern. **Done**: move handle gets "Move north/south/east/west" custom actions, corner handles get `.accessibilityAdjustableAction` (increment/decrement grows/shrinks from that corner), both wired through the same clampedMove/normalizedClamped/recompute functions the drag gestures use.
+- [x] T011 `Meshtastic/Views/Settings/Discovery/DiscoveryMapView.swift:84` — `Annotation("", coordinate: coord)` has a genuinely empty title. Change to `Annotation(device.displayName, coordinate: coord)`. **Done**: the call-site variable is `node` (`DiscoveredNodeEntity`), not `device`; added `DiscoveredNodeEntity.displayName` (long name, then short name, then hex id) and used it as the annotation title.
 
 **Checkpoint**: All 5 Blocker clusters (T001-T011) closed → messaging, metrics/settings tap-rows, geofence editing, and the Live Activity are usable end-to-end with VoiceOver.
 
@@ -31,9 +31,9 @@
 
 ### Icon-only buttons, unlabeled
 
-- [ ] T012 [P] `Meshtastic/Views/Settings/Firmware/NRF DFU/NRFDFUSheet.swift:74` — close button (`xmark.circle.fill`), add `.accessibilityLabel(String(localized: "Close"))`.
-- [ ] T013 [P] `Meshtastic/Views/Settings/Firmware/ESP32 OTA/BLE/ESP32BLEOTASheet.swift:111` — same close-button fix as T012.
-- [ ] T014 [P] macCatalyst-gated close buttons (lower priority than T012/T013 — macOS VoiceOver only), same `.accessibilityLabel(String(localized: "Close"))` fix inside each `#if targetEnvironment(macCatalyst)` block:
+- [x] T012 [P] `Meshtastic/Views/Settings/Firmware/NRF DFU/NRFDFUSheet.swift:74` — close button (`xmark.circle.fill`), add `.accessibilityLabel(String(localized: "Close"))`.
+- [x] T013 [P] `Meshtastic/Views/Settings/Firmware/ESP32 OTA/BLE/ESP32BLEOTASheet.swift:111` — same close-button fix as T012.
+- [x] T014 [P] macCatalyst-gated close buttons (lower priority than T012/T013 — macOS VoiceOver only), same `.accessibilityLabel(String(localized: "Close"))` fix inside each `#if targetEnvironment(macCatalyst)` block:
   - `RouteRecorder.swift:274`
   - `AppLogFilter.swift:199`
   - `LogDetail.swift:154`
@@ -48,16 +48,16 @@
   - `ChannelsHelp.swift:107`
 - [x] T015 [P] `TextMessageField.swift:38,190` — cancel-reply button (`x.circle.fill`), add `.accessibilityLabel(String(localized: "Cancel reply"))`. **Done**: fixed both the legacy (line ~47) and `FormattingComposeArea` (line ~202) cancel-reply buttons.
 - [x] T016 [P] `TextMessageField.swift:111,311` — emoji picker button (`face.smiling`, Catalyst-only), add a localized label. **Done**: fixed both the legacy `legacyToolbarContent` (line ~123) and `FormattingComposeArea` `toolbarContent` (line ~326) emoji picker buttons.
-- [ ] T017 [P] Help-toggle buttons with no on/off-reflecting label — add `.accessibilityLabel(showHelp ? "Hide help" : "Show help")` (localized):
+- [x] T017 [P] Help-toggle buttons with no on/off-reflecting label — add `.accessibilityLabel(showHelp ? "Hide help" : "Show help")` (localized):
   - `Channels.swift:343`
   - `ShareChannels.swift:147`
   - `ChannelList.swift:206`
   - `UserList.swift:35`
   - `NodeList.swift:97`
-- [ ] T018 [P] Filter-toggle buttons (distinct from the already-correct reset buttons nearby) — same on/off-label pattern as T017:
+- [x] T018 [P] Filter-toggle buttons (distinct from the already-correct reset buttons nearby) — same on/off-label pattern as T017:
   - `UserList.swift:62`
   - `NodeList.swift:124`
-- [ ] T019 [P] Refresh/export/action icon buttons, unlabeled — add a specific localized `.accessibilityLabel` to each:
+- [x] T019 [P] Refresh/export/action icon buttons, unlabeled — add a specific localized `.accessibilityLabel` to each:
   - `AppLog.swift:130` (Catalyst-gated)
   - `Firmware.swift:370` — **fix in both** the `#if`/`#else` branches, both currently unlabeled
   - `BackupRowView.swift:45` (restore, `arrow.counterclockwise`)
@@ -68,24 +68,24 @@
   - `MeshMapMK.swift:538` (open map window, macOS-only)
   - `WaypointForm.swift:455` (edit waypoint)
   - `SecureInput.swift:62` (show/hide password)
-- [ ] T020 `WifiProvisioningView.swift:133,348,395` — three separate `doc.on.doc` copy buttons. Give each its own field-specific label: "Copy network name" / "Copy password" / "Copy PSK" — not one shared generic label.
-- [ ] T021 [P] `MeshMapMK.swift:372` — clear-trace-route button (`trash`), unlabeled while neighboring buttons (`:365`) already are. Add `.accessibilityLabel(String(localized: "Clear trace route"))`.
-- [ ] T022 [P] `MeshMapMK.swift:511` — map-settings button (`info.circle`), unlabeled while neighboring buttons (`:507`) already are. Add `.accessibilityLabel(String(localized: "Map settings"))`.
-- [ ] T023 [P] `NodeMapSwiftUI.swift:204-210,214-218,226-230` — unlabeled while neighboring buttons (`:200-202`) already are. Add matching localized labels.
+- [x] T020 `WifiProvisioningView.swift:133,348,395` — three separate `doc.on.doc` copy buttons. Give each its own field-specific label: "Copy network name" / "Copy password" / "Copy PSK" — not one shared generic label.
+- [x] T021 [P] `MeshMapMK.swift:372` — clear-trace-route button (`trash`), unlabeled while neighboring buttons (`:365`) already are. Add `.accessibilityLabel(String(localized: "Clear trace route"))`.
+- [x] T022 [P] `MeshMapMK.swift:511` — map-settings button (`info.circle`), unlabeled while neighboring buttons (`:507`) already are. Add `.accessibilityLabel(String(localized: "Map settings"))`.
+- [x] T023 [P] `NodeMapSwiftUI.swift:204-210,214-218,226-230` — unlabeled while neighboring buttons (`:200-202`) already are. Add matching localized labels.
 
 ### Value/hint gaps
 
-- [ ] T024 `Meshtastic/Views/Nodes/Helpers/NodeListFilter.swift:96-107` — Slider's hidden `label:` is `Text("Speed")` (wrong domain) with no `.accessibilityValue`. Fix label text and add `.accessibilityValue("\(Int(filterValue)) dBm")`.
-- [ ] T025 `AppLogFilter.swift:245-261` (`selectionRow`) — checkmark row has no trait/value. Add `.accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)`.
-- [ ] T026 `DiscoveryScanView.swift:234-236` — `ProgressView(value:)` is unlabeled and ungrouped from its "Time Remaining" text. Combine with `.accessibilityElement(children: .combine)` + `.accessibilityValue("\(Int(progress * 100)) percent")`.
-- [ ] T027 [P] `LoRaSignalStrength.swift:31-45` (compact Gauge) — no explicit accessibility. Add `.accessibilityLabel("Signal strength")` + `.accessibilityValue(signalDescription)`.
-- [ ] T028 [P] `AirQualityIndex.swift:49-58` (`.gauge` case) — same gap as T027; apply the same pattern.
+- [x] T024 `Meshtastic/Views/Nodes/Helpers/NodeListFilter.swift:96-107` — Slider's hidden `label:` is `Text("Speed")` (wrong domain) with no `.accessibilityValue`. Fix label text and add `.accessibilityValue("\(Int(filterValue)) dBm")`.
+- [x] T025 `AppLogFilter.swift:245-261` (`selectionRow`) — checkmark row has no trait/value. Add `.accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)`.
+- [x] T026 `DiscoveryScanView.swift:234-236` — `ProgressView(value:)` is unlabeled and ungrouped from its "Time Remaining" text. Combine with `.accessibilityElement(children: .combine)` + `.accessibilityValue("\(Int(progress * 100)) percent")`.
+- [x] T027 [P] `LoRaSignalStrength.swift:31-45` (compact Gauge) — no explicit accessibility. Add `.accessibilityLabel("Signal strength")` + `.accessibilityValue(signalDescription)`.
+- [x] T028 [P] `AirQualityIndex.swift:49-58` (`.gauge` case) — same gap as T027; apply the same pattern.
 
 ### Color-only signaling
 
-- [ ] T029 `Meshtastic/Views/Nodes/TraceRouteLog.swift:296-300` — `arrowshape.right.fill` tinted by `snrColor` only, no text/shape distinction. Add a per-tier `accessibilityLabel`.
-- [ ] T030 `Meshtastic/Views/Nodes/Helpers/NodeListItemCompact.swift:287-288` — identical SF Symbol across all signal tiers, only color changes. Vary the symbol per tier (e.g. `wifi` / `wifi.slash`) and add `.accessibilityLabel(signalTier.description)`.
-- [ ] T031 `Meshtastic/Views/Nodes/MeshMapMK.swift:1240,1252` — trace-route polylines vary by hue only. Add `lineDashPhase`/width variation keyed to SNR tier so shape, not just hue, encodes strength.
+- [x] T029 `Meshtastic/Views/Nodes/TraceRouteLog.swift:296-300` — `arrowshape.right.fill` tinted by `snrColor` only, no text/shape distinction. Add a per-tier `accessibilityLabel`.
+- [x] T030 `Meshtastic/Views/Nodes/Helpers/NodeListItemCompact.swift:287-288` — identical SF Symbol across all signal tiers, only color changes. Vary the symbol per tier (e.g. `wifi` / `wifi.slash`) and add `.accessibilityLabel(signalTier.description)`.
+- [x] T031 `Meshtastic/Views/Nodes/MeshMapMK.swift:1240,1252` — trace-route polylines vary by hue only. Add `lineDashPhase`/width variation keyed to SNR tier so shape, not just hue, encodes strength.
 
 ### Localization of accessibility strings
 
