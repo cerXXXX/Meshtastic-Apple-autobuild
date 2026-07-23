@@ -79,6 +79,17 @@ extension AccessoryManager {
 				} else {
 					self.updateState(.connecting)
 				}
+				// Stop discovery/scanning before Step 1 attempts to connect. On a first-ever BLE
+				// bond, Step 1 subscribes to an encrypted characteristic, which is what makes iOS
+				// present the pairing PIN sheet — and CoreBluetooth scanning concurrently with that
+				// bonding handshake is a documented source of `CBATTErrorInsufficientEncryption`,
+				// with the pairing sheet appearing and disappearing almost immediately before the
+				// user can respond. `closeConnection()` above re-arms discovery on a retry, so this
+				// must run after it (last discovery-related call in this step) to guarantee
+				// scanning is off for every attempt, not just the first. `stopDiscovery()` also
+				// clears `discoveredDeviceContinuation`, so a `.poweredOn` state change mid-pairing
+				// (see `handleCentralState`) can't restart the scan out from under Step 1 either.
+				self.stopDiscovery()
 				self.updateDevice(deviceId: device.id, key: \.connectionState, value: .connecting)
 				// Lockdown: reset per-connection state. Firmware requires re-auth on every
 				// new BLE connection even if storage is already unlocked.

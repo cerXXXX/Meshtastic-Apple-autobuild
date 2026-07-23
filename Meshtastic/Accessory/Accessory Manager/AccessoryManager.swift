@@ -1151,6 +1151,16 @@ extension AccessoryManager {
 		if let connection = self.activeConnection?.connection {
 			Logger.transport.info("[AccessoryManager] informing previously active connection that we are active again")
 			Task { await connection.appDidBecomeActive() }
+		} else if self.isConnecting {
+			// A connect attempt is in flight (Step 0 in AccessoryManager+Connect.swift already
+			// stopped discovery before Step 1 pairs). On a first-ever BLE bond, iOS's system PIN
+			// pairing sheet is out-of-process UI, same as the Bluetooth-power alert (#2139/#2161):
+			// it can blip scenePhase to .inactive/.background and back to .active while it's up.
+			// Restarting the scan here would race the bonding handshake and tear the sheet down
+			// (CBATTErrorInsufficientEncryption) exactly like the scan-during-pairing bug this
+			// guard, together with Step 0, closes off. Wait for the connect attempt to resolve —
+			// it re-arms discovery itself, on success (Step 8) or failure (closeConnection()).
+			Logger.transport.info("[AccessoryManager] Connect attempt in progress, not restarting discovery")
 		} else {
 			if self.discoveryTask == nil {
 				Logger.transport.info("[AccessoryManager] Previosuly in the background but not scanning, starting scanning again")
