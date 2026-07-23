@@ -46,7 +46,6 @@ extension UserDefaults {
 		case provideLocation
 		case provideLocationInterval
 		case mapLayer
-		case meshMapDistance
 		case enableMapWaypoints
 		case meshMapRecentering
 		case meshMapShowNodeHistory
@@ -85,6 +84,7 @@ extension UserDefaults {
 		case purgeStaleNodeDays
 		case manualConnections
 		case testIntEnum
+		case testDoubleValue
 		case lastDeviceAPIUpdate
 		case lastFirmwareAPIUpdate
 		case firmwareUpdateNotificationKeys
@@ -112,9 +112,6 @@ extension UserDefaults {
 
 	@UserDefault(.mapLayer, defaultValue: .standard)
 	static var mapLayer: MapLayer
-
-	@UserDefault(.meshMapDistance, defaultValue: 800000)
-	static var meshMapDistance: Double
 
 	@UserDefault(.enableMapWaypoints, defaultValue: true)
 	static var enableMapWaypoints: Bool

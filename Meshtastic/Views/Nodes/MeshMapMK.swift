@@ -48,7 +48,6 @@ struct MeshMapMK: View {
 	@State private var enabledOverlayConfigs: Set<UUID> = []
 	// Map Configuration
 	@Namespace var mapScope
-	@AppStorage("meshMapDistance") private var meshMapDistance: Double = 800000
 	// Persisted last-viewed camera region, so the map reopens where the user left it -- independent of
 	// GPS / connected device / node availability at launch. This is what fixes the cold-open default
 	// (0,0) "South Atlantic" view for a location-denied user with no positioned nodes. Stored as four
@@ -1593,7 +1592,11 @@ struct MeshMapMK: View {
 				position.fuzzedNodeCoordinate ?? LocationsHandler.DefaultLocation
 			}
 			let precisionBits = position.precisionBits
-			guard PositionEntity.reducedPrecisionBits ~= precisionBits || precisionBits == 32 else { return nil }
+			// Was `reducedPrecisionBits ~= precisionBits || precisionBits == 32`, which silently
+			// dropped positions with precisionBits == 0 (isPreciseLocation's other "precise" sentinel)
+			// from the map entirely. Use the same two predicates the rest of the file already relies
+			// on so this can't drift from isPreciseLocation / isReducedPrecision again.
+			guard position.isPreciseLocation || position.isReducedPrecision else { return nil }
 			let node = position.nodePosition
 			let nodeNum = node?.num ?? 0
 				return MeshMapPositionSnapshot(
