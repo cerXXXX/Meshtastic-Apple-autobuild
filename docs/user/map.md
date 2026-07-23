@@ -52,9 +52,19 @@ Tap the **info button** (`info.circle`) in the bottom-right toolbar to open the 
 |--------|-------------|
 | Waypoints | Show or hide waypoint markers on the map |
 | Precise Locations Only | Hide nodes that broadcast an approximate (reduced-precision) location. Imprecise nodes are normally drawn with a translucent circle showing how large the possible area is; turn this on to show only nodes reporting an exact position. Both the imprecise pins and their precision circles are hidden. |
+| Cluster Nodes | Group nearby nodes into one numbered pin; tap it to zoom in. Turn off to always show every node individually. |
+| My Location | Show or hide your own position (the blue dot) on the map |
 | Convex Hull | Draw an outline around the outermost LoRa nodes to visualize mesh coverage |
 | Traffic | Show Apple Maps live traffic |
 | Points of Interest | Show Apple Maps points of interest |
+
+### Offline Maps
+
+A dedicated section of the sheet for working without a connection: a link opens the list of downloaded map regions to manage them or download new ones, and the **Offline Tiles** toggle overlays a downloaded region on the base map so it keeps rendering with no internet connection.
+
+### Map Overlays
+
+Custom GeoJSON overlays you've uploaded are listed here, each with its own toggle and file details (format, feature count, size, upload date). Swipe a file left to delete it, or tap **Upload Map Data** to add another. The section's master toggle turns uploaded overlays on the map on or off as a group.
 
 ## Coverage Estimate (Site Planner)
 
