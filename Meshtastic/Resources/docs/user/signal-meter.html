@@ -66,8 +66,8 @@
 </tr>
 </tbody>
 </table>
-<p>RSSI is still shown next to the meter, but it is no longer used to guess the rating with fixed thresholds — on its own, RSSI can't tell you how much of that power is signal versus noise.</p>
-<p><strong>Using the real noise floor.</strong> When your receiving radio has recently reported its own <strong>noise floor</strong> (part of its Local Stats telemetry), the app does one better: it computes your true link margin as <code>RSSI − noise floor</code> and checks that against the same preset limit too, then shows the <strong>more conservative</strong> of the two ratings. This catches the case where the reported SNR looks fine but local interference is quietly eating your margin. When no recent noise floor is available, the app simply uses the SNR-only rating above.</p>
+<p><strong>Using the real noise floor.</strong> When your receiving radio has recently reported its own <strong>noise floor</strong> (part of its Local Stats telemetry), the app computes your true link margin as <code>RSSI − noise floor</code> and checks that against the same preset limit too, then shows the <strong>more conservative</strong> of the two ratings. This catches the case where the reported SNR looks fine but local interference is quietly eating your margin.</p>
+<p><strong>Without a recent noise floor</strong>, the app falls back to RSSI thresholds (better than <code>-115 dBm</code>, <code>-120 dBm</code>, and <code>-126 dBm</code>) alongside the SNR check above, taking the worse of the two — RSSI alone can't tell you how much of that power is signal versus noise, but it's still a useful sanity check when there's no noise floor available to compute a real margin from.</p>
 <hr />
 <h2>4. What This Means for You</h2>
 <p>Because Meshtastic's meter acts as a <strong>&quot;Clarity Meter&quot;</strong>, it behaves differently than what most people expect:</p>

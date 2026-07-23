@@ -5,7 +5,8 @@
 //   - signalQuality() is the single source of truth for the 4 tiers.
 //   - getLoRaSignalStrength() uses the real link margin (rssi - noiseFloor) when a
 //     noise floor is available, taking the more conservative of the SNR and RSSI
-//     tiers; otherwise it falls back to SNR-only (no more guessed RSSI thresholds).
+//     tiers; otherwise it falls back to the legacy guessed-RSSI-threshold rating
+//     (RSSI still factors in when there's no noise floor to compute a real margin).
 //   - getSnrColor() and the bar rating can never disagree (both derive from
 //     signalQuality()).
 //   - NodeInfoEntity.recentNoiseFloor gates on presence/zero/staleness.
@@ -32,15 +33,26 @@ struct LoRaSignalStrengthRatingTests {
 		#expect(signalQuality(snrMargin: -8) == .none)
 	}
 
-	// MARK: SNR-only fallback (no noise floor) — guessed RSSI thresholds are gone
+	// MARK: Legacy RSSI+SNR fallback (no noise floor)
 
-	@Test("Without a noise floor, rating is SNR-only and ignores RSSI")
-	func snrOnlyFallbackIgnoresRssi() {
-		// LongFast floor is -17.5. snr -10 is well above it → Good.
-		// A very weak RSSI (-140) must NOT downgrade it (old code returned .bad here
-		// via the -120/-126 fixed thresholds).
-		#expect(getLoRaSignalStrength(snr: -10, rssi: -140, preset: .longFast) == .good)
+	@Test("Without a noise floor, a weak RSSI still downgrades a good SNR")
+	func legacyFallbackStillConsidersRssi() {
+		// LongFast floor is -17.5. snr -10 is well above it → Good on SNR alone.
+		// But a very weak RSSI (-140) must still downgrade it via the legacy -120/-126
+		// fixed thresholds — RSSI shouldn't be silently ignored just because there's no
+		// noise floor to compute a real margin from.
+		#expect(getLoRaSignalStrength(snr: -10, rssi: -140, preset: .longFast) == .bad)
+	}
+
+	@Test("Without a noise floor and without RSSI, rating is SNR-only")
+	func legacyFallbackIsSnrOnlyWhenRssiAlsoUnavailable() {
+		// rssi == 0 means "not available" (not "0 dBm"), so this stays SNR-only.
 		#expect(getLoRaSignalStrength(snr: -10, rssi: 0, preset: .longFast) == .good)
+	}
+
+	@Test("Without a noise floor, a good RSSI and good SNR still rate Good")
+	func legacyFallbackHappyPathStillGood() {
+		#expect(getLoRaSignalStrength(snr: -10, rssi: -100, preset: .longFast) == .good)
 	}
 
 	// MARK: Real link margin (noise floor available)
@@ -59,9 +71,9 @@ struct LoRaSignalStrengthRatingTests {
 		#expect(getLoRaSignalStrength(snr: -25, rssi: -100, preset: .longFast, noiseFloor: -120) == .bad)
 	}
 
-	@Test("A zero noise floor is treated as unavailable (SNR-only)")
-	func zeroNoiseFloorFallsBackToSnrOnly() {
-		#expect(getLoRaSignalStrength(snr: -10, rssi: -140, preset: .longFast, noiseFloor: 0) == .good)
+	@Test("A zero noise floor is treated as unavailable (legacy fallback, not SNR-only)")
+	func zeroNoiseFloorFallsBackToLegacyRating() {
+		#expect(getLoRaSignalStrength(snr: -10, rssi: -140, preset: .longFast, noiseFloor: 0) == .bad)
 	}
 
 	// MARK: Bar rating and SNR text color agree

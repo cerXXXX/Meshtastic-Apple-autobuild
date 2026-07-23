@@ -102,20 +102,39 @@ func signalQuality(snrMargin: Float) -> LoRaSignalStrength {
 /// Stats telemetry, `DeviceMetrics.noise_floor`), we also derive a second SNR
 /// estimate from the real link margin (`rssi - noiseFloor`) and take the more
 /// conservative of the two tiers — this is more accurate than trusting a single
-/// estimate. When no noise floor is available we fall back to SNR-only (matching
-/// Meshtastic-Android's `determineSignalQuality`), rather than the old guessed
-/// fixed RSSI thresholds (-115/-120/-126), which could not know the noise floor.
+/// estimate. When no noise floor is available, fall back to the original guessed
+/// fixed RSSI thresholds (-115/-120/-126) combined with SNR, rather than trusting
+/// SNR alone: without a noise floor reading there's no way to tell whether a
+/// decent SNR corresponds to a genuinely weak link, so RSSI stays part of the
+/// check as an (imprecise but useful) sanity floor.
 func getLoRaSignalStrength(snr: Float, rssi: Int32, preset: ModemPresets, noiseFloor: Int32? = nil) -> LoRaSignalStrength {
 	let limit = preset.snrLimit()
-	let snrTier = signalQuality(snrMargin: snr - limit)
 
-	// Use the actual link margin only when we have both a real RSSI reading and a
-	// real noise floor for the receiving radio; otherwise stay SNR-only.
 	if let noiseFloor, noiseFloor != 0, rssi != 0 {
+		let snrTier = signalQuality(snrMargin: snr - limit)
 		let rssiTier = signalQuality(snrMargin: Float(rssi - noiseFloor) - limit)
 		return min(snrTier, rssiTier)
 	}
-	return snrTier
+	return legacyRssiSnrRating(snr: snr, rssi: rssi, preset: preset)
+}
+
+/// The pre-noise-floor rating: guessed fixed RSSI thresholds combined with SNR relative to the
+/// preset's demodulation floor. Kept as the fallback for nodes without a recent noise-floor
+/// reading, since some RSSI-based sanity check is more accurate than none.
+private func legacyRssiSnrRating(snr: Float, rssi: Int32, preset: ModemPresets) -> LoRaSignalStrength {
+	// rssi is 0 when not available
+	if rssi == 0 {
+		return signalQuality(snrMargin: snr - preset.snrLimit())
+	}
+	if rssi > -115 && snr > (preset.snrLimit()) {
+		return .good
+	} else if rssi < -126 && snr < (preset.snrLimit() - 7.5) {
+		return .none
+	} else if rssi <= -120 || snr <= (preset.snrLimit() - 5.5) {
+		return .bad
+	} else {
+		return .fair
+	}
 }
 
 func getRssiColor(rssi: Int32) -> Color {

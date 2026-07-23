@@ -52,9 +52,9 @@ Here is exactly how the app decides how many bars (or what color) to show you:
 | Bad | 1 | SNR between `5.5 dB` and `7.5 dB` below the limit | Barely hanging on — at the edge of range or heavy interference. |
 | None | 0 | SNR more than `7.5 dB` below the limit | Transmission completely buried in static. |
 
-RSSI is still shown next to the meter, but it is no longer used to guess the rating with fixed thresholds — on its own, RSSI can't tell you how much of that power is signal versus noise.
+**Using the real noise floor.** When your receiving radio has recently reported its own **noise floor** (part of its Local Stats telemetry), the app computes your true link margin as `RSSI − noise floor` and checks that against the same preset limit too, then shows the **more conservative** of the two ratings. This catches the case where the reported SNR looks fine but local interference is quietly eating your margin.
 
-**Using the real noise floor.** When your receiving radio has recently reported its own **noise floor** (part of its Local Stats telemetry), the app does one better: it computes your true link margin as `RSSI − noise floor` and checks that against the same preset limit too, then shows the **more conservative** of the two ratings. This catches the case where the reported SNR looks fine but local interference is quietly eating your margin. When no recent noise floor is available, the app simply uses the SNR-only rating above.
+**Without a recent noise floor**, the app falls back to RSSI thresholds (better than `-115 dBm`, `-120 dBm`, and `-126 dBm`) alongside the SNR check above, taking the worse of the two — RSSI alone can't tell you how much of that power is signal versus noise, but it's still a useful sanity check when there's no noise floor available to compute a real margin from.
 
 ---
 
