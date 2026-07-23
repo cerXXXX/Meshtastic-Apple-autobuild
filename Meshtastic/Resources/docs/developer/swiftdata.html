@@ -70,6 +70,8 @@ No packets for 2s → save() fires
 }
 </code></pre>
 <p>Use <code>@Query</code> for data that drives the view. Use <code>context.insert(_:)</code> / <code>context.delete(_:)</code> for mutations. Mutations on the main context are safe on the main actor.</p>
+<h3>Snapshot liveness</h3>
+<p>Views that intentionally keep a throttled <code>@State</code> snapshot instead of a live <code>@Query</code> must treat the snapshot as invalid after a node-database reset or a context teardown. Before reading persisted properties from a <code>NodeInfoEntity</code> held in such a snapshot, require both <code>modelContext != nil</code> and <code>!isDeleted</code>. <code>NodeInfoEntity.adminPickerOrder(_:)</code> applies this rule for the Settings node picker, so deleted or detached nodes cannot be selected or rendered from a stale snapshot.</p>
 <h2>Background Writes</h2>
 <p>For writes triggered by incoming radio packets (off the main thread), use the <code>MeshPackets</code> <code>@ModelActor</code>:</p>
 <pre><code class="language-swift">let actor = MeshPackets(modelContainer: PersistenceController.shared.container)

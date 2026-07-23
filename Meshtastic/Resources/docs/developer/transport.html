@@ -38,6 +38,8 @@
 </tbody>
 </table>
 <p>Each transport conforms to a <code>MeshTransport</code> protocol that exposes <code>connect()</code>, <code>disconnect()</code>, <code>send(data:)</code>, and a <code>received</code> publisher.</p>
+<h3>BLETransport Status on Bluetooth State Changes</h3>
+<p><code>BLETransport.status</code> mirrors <code>CBManagerState</code> via <code>handleCentralState(_:central:)</code>. Only <code>.poweredOn</code> settles on <code>.ready</code>; every other state — including <code>.poweredOff</code> — settles on <code>.error(...)</code>. Concretely, when Bluetooth powers off, <code>status</code> becomes <code>.error(&quot;Bluetooth is powered off&quot;)</code> and stays there; it does not become <code>.ready</code>. This matches <code>.unauthorized</code>, <code>.unsupported</code>, <code>.resetting</code>, and <code>.unknown</code>, which all settle on <code>.error(...)</code> too.</p>
 <h2>AccessoryManager Extension Map</h2>
 <table>
 <thead>
