@@ -5,7 +5,7 @@
 
 **How to use this file**: Check off `[x]` as each item is fixed and verified (VoiceOver on-device or Simulator + Accessibility Inspector). This is the persistent tracker — pick up anywhere by scanning for the first unchecked box. Update the "Progress" line below when a batch is completed.
 
-**Progress**: T001–T009, T015–T016 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
+**Progress**: T001–T011, T015–T016 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
 
 ---
 
@@ -20,8 +20,8 @@
 - [x] T007 [P] `Meshtastic/Views/Helpers/Weather/IndoorAirQuality.swift:76-78` — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
 - [x] T008 [P] `Meshtastic/Views/Settings/AppLog.swift:324-326` (`streamRow`) — same `.onTapGesture`-with-no-trait issue; apply the same pattern.
 - [x] T009 [P] `Meshtastic/Views/Nodes/Helpers/NodeDetail.swift:357-374,377-399` (First/Last heard rows) — already has `.accessibilityElement(children: .combine)` but no `.isButton` trait; add the trait + `.accessibilityAction`.
-- [ ] T010 `Meshtastic/Views/Nodes/Helpers/Map/GeofenceBoundsSelectorView.swift:120-138` and `Meshtastic/Views/Nodes/Helpers/Map/Offline/RegionSelectorView.swift:143-161` — drag handles have zero non-visual equivalent. Add `.accessibilityAdjustableAction` (increment/decrement to nudge the bound) or paired "Move north/south/east/west" custom actions. Two files, same pattern.
-- [ ] T011 `Meshtastic/Views/Settings/Discovery/DiscoveryMapView.swift:84` — `Annotation("", coordinate: coord)` has a genuinely empty title. Change to `Annotation(device.displayName, coordinate: coord)`.
+- [x] T010 `Meshtastic/Views/Nodes/Helpers/Map/GeofenceBoundsSelectorView.swift:120-138` and `Meshtastic/Views/Nodes/Helpers/Map/Offline/RegionSelectorView.swift:143-161` — drag handles have zero non-visual equivalent. Add `.accessibilityAdjustableAction` (increment/decrement to nudge the bound) or paired "Move north/south/east/west" custom actions. Two files, same pattern. **Done**: move handle gets "Move north/south/east/west" custom actions, corner handles get `.accessibilityAdjustableAction` (increment/decrement grows/shrinks from that corner), both wired through the same clampedMove/normalizedClamped/recompute functions the drag gestures use.
+- [x] T011 `Meshtastic/Views/Settings/Discovery/DiscoveryMapView.swift:84` — `Annotation("", coordinate: coord)` has a genuinely empty title. Change to `Annotation(device.displayName, coordinate: coord)`. **Done**: the call-site variable is `node` (`DiscoveredNodeEntity`), not `device`; added `DiscoveredNodeEntity.displayName` (long name, then short name, then hex id) and used it as the annotation title.
 
 **Checkpoint**: All 5 Blocker clusters (T001-T011) closed → messaging, metrics/settings tap-rows, geofence editing, and the Live Activity are usable end-to-end with VoiceOver.
 
