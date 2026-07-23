@@ -826,7 +826,8 @@ struct EventFirmwareEndedBanner: View {
 /// `.error(BLETransport.poweredOffStatusMessage)` (see #2161/#2163). The system "Bluetooth is
 /// turned off" alert is intentionally suppressed (#2162), so this row is the only in-app
 /// signal telling a BLE user why no devices are appearing. Tapping it opens Settings (#2175).
-private struct BluetoothPoweredOffRow: View {
+/// Not `private`: `SwiftUIViewSnapshotTests` renders it standalone for `docs/user/bluetooth.md`.
+struct BluetoothPoweredOffRow: View {
 	@Environment(\.openURL) private var openURL
 
 	var body: some View {
