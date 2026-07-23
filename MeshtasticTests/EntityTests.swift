@@ -740,6 +740,35 @@ struct PositionEntityComputedTests {
 		#expect(pos.isPreciseLocation == false)
 	}
 
+	// `reducedPrecisionBits` previously only covered 12...15, so a node configured with any other
+	// valid PositionPrecision level (2...24) was neither precise nor reduced-precision and got
+	// dropped from the map entirely (see makePositionSnapshots' guard). Range is now 2...24 to
+	// match every value PositionPrecision actually defines.
+	@Test @MainActor func isReducedPrecision_16bits_isReduced() throws {
+		let pos = try makePosition(precisionBits: 16)
+		#expect(pos.isReducedPrecision == true)
+	}
+
+	@Test @MainActor func isReducedPrecision_8bits_isReduced() throws {
+		let pos = try makePosition(precisionBits: 8)
+		#expect(pos.isReducedPrecision == true)
+	}
+
+	@Test @MainActor func isReducedPrecision_13bits_isReduced() throws {
+		let pos = try makePosition(precisionBits: 13)
+		#expect(pos.isReducedPrecision == true)
+	}
+
+	@Test @MainActor func isReducedPrecision_32bits_isNotReduced() throws {
+		let pos = try makePosition(precisionBits: 32)
+		#expect(pos.isReducedPrecision == false)
+	}
+
+	@Test @MainActor func isReducedPrecision_0bits_isNotReduced() throws {
+		let pos = try makePosition(precisionBits: 0)
+		#expect(pos.isReducedPrecision == false)
+	}
+
 	@Test @MainActor func annotation_returnsPointAnnotation() throws {
 		let pos = try makePosition(latI: 374_000_000, lonI: -1_220_000_000)
 		let ann = pos.annotaton

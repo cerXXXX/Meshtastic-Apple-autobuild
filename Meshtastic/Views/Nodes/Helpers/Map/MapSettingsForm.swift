@@ -31,7 +31,6 @@ struct MapSettingsForm: View {
 	@Binding var traffic: Bool
 	@Binding var pointsOfInterest: Bool
 	@Binding var mapLayer: MapLayer
-	@AppStorage("meshMapDistance") private var meshMapDistance: Double = 800000
 	@Binding var meshMap: Bool
 	@Binding var enabledOverlayConfigs: Set<UUID>
 
@@ -55,21 +54,6 @@ struct MapSettingsForm: View {
 						UserDefaults.mapLayer = newMapLayer
 					}
 					if meshMap {
-					if LocationsHandler.currentPreciseLocation != nil {
-							HStack {
-								Label("Distance", systemImage: "lines.measurement.horizontal")
-								Picker("", selection: $meshMapDistance) {
-									ForEach(MeshMapDistances.allCases) { di in
-										Text(di.description)
-											.tag(di.id)
-									}
-								}
-								.pickerStyle(DefaultPickerStyle())
-							}
-							.onChange(of: meshMapDistance) { _, newMeshMapDistance in
-								UserDefaults.meshMapDistance = newMeshMapDistance
-							}
-						}
 						Toggle(isOn: $enableMapWaypoints) {
 							Label {
 								Text("Waypoints")
