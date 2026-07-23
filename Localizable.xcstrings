@@ -582,6 +582,12 @@
     "%1$@ reacted %2$@ to \"%3$@\"" : {
       "comment" : "Tapback/reaction notification body. %1$@ is the sender name, %2$@ is the reaction emoji, %3$@ is the original message text that was reacted to."
     },
+    "%1$@: %2$@" : {
+      "comment" : "VoiceOver: combined label:value announcement for a Live Activity stat row"
+    },
+    "%1$lld of %2$lld nodes online" : {
+      "comment" : "VoiceOver: online/total node count in the Dynamic Island expanded trailing region and Live Activity header row"
+    },
     "%@" : {
       "localizations" : {
         "da" : {
@@ -3943,6 +3949,9 @@
           }
         }
       }
+    },
+    "%lld nodes online" : {
+      "comment" : "VoiceOver: online node count in the Dynamic Island compact-leading region and minimal presentation"
     },
     "%lld or less hops away" : {
       "localizations" : {
@@ -8922,6 +8931,12 @@
           }
         }
       }
+    },
+    "Adjustable. Swipe up to expand, swipe down to shrink the geofence area from this corner" : {
+      "comment" : "VoiceOver hint for a geofence rectangle corner handle"
+    },
+    "Adjustable. Swipe up to expand, swipe down to shrink the selected area from this corner" : {
+      "comment" : "VoiceOver hint for a region rectangle corner handle"
     },
     "Admin Keys" : {
       "localizations" : {
@@ -15931,6 +15946,12 @@
           }
         }
       }
+    },
+    "Bottom leading corner handle" : {
+      "comment" : "VoiceOver label for the geofence/region rectangle's bottom leading resize handle"
+    },
+    "Bottom trailing corner handle" : {
+      "comment" : "VoiceOver label for the geofence/region rectangle's bottom trailing resize handle"
     },
     "Bridge Meshtastic positions, nodes, waypoints, and messages to TAK/CoT format" : {
       "comment" : "A description of the Mesh to CoT Converter feature.",
@@ -58507,6 +58528,21 @@
         }
       }
     },
+    "Move east" : {
+      "comment" : "VoiceOver custom action: nudge the geofence/region area right"
+    },
+    "Move north" : {
+      "comment" : "VoiceOver custom action: nudge the geofence/region area up"
+    },
+    "Move selection" : {
+      "comment" : "VoiceOver label for the geofence/region rectangle's move handle"
+    },
+    "Move south" : {
+      "comment" : "VoiceOver custom action: nudge the geofence/region area down"
+    },
+    "Move west" : {
+      "comment" : "VoiceOver custom action: nudge the geofence/region area left"
+    },
     "Multiplier" : {
       "localizations" : {
         "da" : {
@@ -76345,6 +76381,12 @@
     },
     "Replying to: %@" : {
       "comment" : "VoiceOver: button that jumps to the quoted message being replied to. %@ is the quoted text"
+    },
+    "Repositions the geofence area on the map" : {
+      "comment" : "VoiceOver hint for the geofence rectangle's move handle"
+    },
+    "Repositions the selected download area on the map" : {
+      "comment" : "VoiceOver hint for the region rectangle's move handle"
     },
     "Request Legacy Admin: %@" : {
       "localizations" : {
@@ -99657,6 +99699,12 @@
         }
       }
     },
+    "Top leading corner handle" : {
+      "comment" : "VoiceOver label for the geofence/region rectangle's top leading resize handle"
+    },
+    "Top trailing corner handle" : {
+      "comment" : "VoiceOver label for the geofence/region rectangle's top trailing resize handle"
+    },
     "Total" : {
       "localizations" : {
         "da" : {
@@ -103354,6 +103402,9 @@
           }
         }
       }
+    },
+    "Update in" : {
+      "comment" : "VoiceOver: label for the Live Activity countdown timer showing time until the next update"
     },
     "Updated Node Stats Data." : {
       "localizations" : {
