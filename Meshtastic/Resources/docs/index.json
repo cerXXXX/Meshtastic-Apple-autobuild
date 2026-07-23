@@ -255,12 +255,12 @@
             "site",
             "open",
             "lora",
+            "line",
             "estimate",
             "planner",
             "path",
             "overlays",
             "options",
-            "line",
             "layer",
             "geojson",
             "geofence",
@@ -270,7 +270,7 @@
             "bounding",
             "waypoints"
         ],
-        "charCount": 9184
+        "charCount": 9376
     },
     {
         "id": "messages",
