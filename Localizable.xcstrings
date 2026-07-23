@@ -582,6 +582,12 @@
     "%1$@ reacted %2$@ to \"%3$@\"" : {
       "comment" : "Tapback/reaction notification body. %1$@ is the sender name, %2$@ is the reaction emoji, %3$@ is the original message text that was reacted to."
     },
+    "%1$@: %2$@" : {
+      "comment" : "VoiceOver: combined label:value announcement for a Live Activity stat row"
+    },
+    "%1$lld of %2$lld nodes online" : {
+      "comment" : "VoiceOver: online/total node count in the Dynamic Island expanded trailing region and Live Activity header row"
+    },
     "%@" : {
       "localizations" : {
         "da" : {
@@ -3943,6 +3949,9 @@
           }
         }
       }
+    },
+    "%lld nodes online" : {
+      "comment" : "VoiceOver: online node count in the Dynamic Island compact-leading region and minimal presentation"
     },
     "%lld or less hops away" : {
       "localizations" : {
@@ -16900,6 +16909,9 @@
           }
         }
       }
+    },
+    "Cancel reply" : {
+      "comment" : "VoiceOver: cancel replying to a message"
     },
     "Canceled" : {
       "localizations" : {
@@ -34301,6 +34313,9 @@
           }
         }
       }
+    },
+    "Emoji picker" : {
+      "comment" : "VoiceOver: open the character/emoji picker"
     },
     "Empty" : {
       "localizations" : {
@@ -84976,6 +84991,9 @@
         }
       }
     },
+    "Send message" : {
+      "comment" : "VoiceOver: send the composed message"
+    },
     "Send question to Chirpy" : {
       "localizations" : {
         "de" : {
@@ -103273,6 +103291,9 @@
           }
         }
       }
+    },
+    "Update in" : {
+      "comment" : "VoiceOver: label for the Live Activity countdown timer showing time until the next update"
     },
     "Updated Node Stats Data." : {
       "localizations" : {
