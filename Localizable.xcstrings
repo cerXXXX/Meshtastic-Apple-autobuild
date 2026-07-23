@@ -11783,8 +11783,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Um contorno que envolve todas as posições dos nós LoRa no mapeamento."
+            "state" : "needs_review",
+            "value" : "Uma borda que envolve todas as posições dos nós LoRa no mapeamento."
           }
         },
         "uk" : {
@@ -31500,8 +31500,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tela"
+            "state" : "needs_review",
+            "value" : "Exibir"
           }
         },
         "ru" : {
@@ -73398,8 +73398,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teste de alcance"
+            "state" : "needs_review",
+            "value" : "Teste de intervalo"
           }
         },
         "ru" : {
@@ -73592,8 +73592,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "A configuração de teste de alcance não foi recebida pelo rádio. Tente reconectar ao dispositivo."
+            "state" : "needs_review",
+            "value" : "A configuração de teste de intervalo não foi recebida pelo rádio. Tente reconectar ao dispositivo."
           }
         },
         "uk" : {
@@ -73662,8 +73662,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "O teste de alcance requer um canal privado criptografado. O canal principal deste nó está usando uma chave padrão ou vazia."
+            "state" : "needs_review",
+            "value" : "O teste de faixa requer um canal privado criptografado. O canal principal deste nó está usando uma chave padrão ou vazia."
           }
         },
         "uk" : {
@@ -77642,8 +77642,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obtendo nós"
+            "state" : "needs_review",
+            "value" : "Retrievendo nós"
           }
         },
         "ru" : {
@@ -77718,8 +77718,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obtendo nós %lld"
+            "state" : "needs_review",
+            "value" : "Retirando nós %lld"
           }
         },
         "ru" : {
@@ -77800,8 +77800,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tentar novamente"
+            "state" : "needs_review",
+            "value" : "Recarregar"
           }
         },
         "uk" : {
@@ -78110,8 +78110,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avaliar o aplicativo"
+            "state" : "needs_review",
+            "value" : "Revise o aplicativo"
           }
         },
         "ru" : {
@@ -78210,8 +78210,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toque"
+            "state" : "needs_review",
+            "value" : "Som"
           }
         },
         "ru" : {
@@ -78316,8 +78316,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Configuração de toque"
+            "state" : "needs_review",
+            "value" : "Configuração de Som"
           }
         },
         "ru" : {
@@ -78410,8 +78410,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Idioma de transferência de toque"
+            "state" : "needs_review",
+            "value" : "Transferência de Som"
           }
         },
         "ru" : {
@@ -92466,8 +92466,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inscrito"
+            "state" : "needs_review",
+            "value" : "Assinado"
           }
         },
         "ru" : {
@@ -92554,8 +92554,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "'%@' enviado com sucesso com %lld sobreposições"
+            "state" : "needs_review",
+            "value" : "Sucesso na upload '%1$@' com %2$lld sobreposições"
           }
         },
         "ru" : {
@@ -93722,8 +93722,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recebe uma URL de contato Meshtastic e a salva no banco de dados de nós"
+            "state" : "needs_review",
+            "value" : "Toma uma URL de contato Meshtastic e salva-a no banco de dados dos nós"
           }
         },
         "ru" : {
@@ -93804,8 +93804,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toque para inserir emoji"
+            "state" : "needs_review",
+            "value" : "To enter an emoji, tap here"
           }
         },
         "ru" : {
@@ -93901,8 +93901,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reagir"
+            "state" : "needs_review",
+            "value" : "Toque de volta"
           }
         },
         "ru" : {
@@ -94848,8 +94848,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "URL para as configurações do canal"
+            "state" : "needs_review",
+            "value" : "O URL para as configurações do canal"
           }
         },
         "ru" : {
@@ -94930,8 +94930,8 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "URL do nó a adicionar"
+            "state" : "needs_review",
+            "value" : "O URL para o nó de adição"
           }
         },
         "ru" : {
