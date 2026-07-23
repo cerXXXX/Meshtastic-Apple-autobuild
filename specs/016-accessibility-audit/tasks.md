@@ -5,7 +5,7 @@
 
 **How to use this file**: Check off `[x]` as each item is fixed and verified (VoiceOver on-device or Simulator + Accessibility Inspector). This is the persistent tracker — pick up anywhere by scanning for the first unchecked box. Update the "Progress" line below when a batch is completed.
 
-**Progress**: T001–T011, T015–T016 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
+**Progress**: T001–T023 done (see checkboxes below for exact status; parallel branches merged separately, so per-cluster fractions aren't tracked here) — last updated 2026-07-23.
 
 ---
 
@@ -31,9 +31,9 @@
 
 ### Icon-only buttons, unlabeled
 
-- [ ] T012 [P] `Meshtastic/Views/Settings/Firmware/NRF DFU/NRFDFUSheet.swift:74` — close button (`xmark.circle.fill`), add `.accessibilityLabel(String(localized: "Close"))`.
-- [ ] T013 [P] `Meshtastic/Views/Settings/Firmware/ESP32 OTA/BLE/ESP32BLEOTASheet.swift:111` — same close-button fix as T012.
-- [ ] T014 [P] macCatalyst-gated close buttons (lower priority than T012/T013 — macOS VoiceOver only), same `.accessibilityLabel(String(localized: "Close"))` fix inside each `#if targetEnvironment(macCatalyst)` block:
+- [x] T012 [P] `Meshtastic/Views/Settings/Firmware/NRF DFU/NRFDFUSheet.swift:74` — close button (`xmark.circle.fill`), add `.accessibilityLabel(String(localized: "Close"))`.
+- [x] T013 [P] `Meshtastic/Views/Settings/Firmware/ESP32 OTA/BLE/ESP32BLEOTASheet.swift:111` — same close-button fix as T012.
+- [x] T014 [P] macCatalyst-gated close buttons (lower priority than T012/T013 — macOS VoiceOver only), same `.accessibilityLabel(String(localized: "Close"))` fix inside each `#if targetEnvironment(macCatalyst)` block:
   - `RouteRecorder.swift:274`
   - `AppLogFilter.swift:199`
   - `LogDetail.swift:154`
@@ -48,16 +48,16 @@
   - `ChannelsHelp.swift:107`
 - [x] T015 [P] `TextMessageField.swift:38,190` — cancel-reply button (`x.circle.fill`), add `.accessibilityLabel(String(localized: "Cancel reply"))`. **Done**: fixed both the legacy (line ~47) and `FormattingComposeArea` (line ~202) cancel-reply buttons.
 - [x] T016 [P] `TextMessageField.swift:111,311` — emoji picker button (`face.smiling`, Catalyst-only), add a localized label. **Done**: fixed both the legacy `legacyToolbarContent` (line ~123) and `FormattingComposeArea` `toolbarContent` (line ~326) emoji picker buttons.
-- [ ] T017 [P] Help-toggle buttons with no on/off-reflecting label — add `.accessibilityLabel(showHelp ? "Hide help" : "Show help")` (localized):
+- [x] T017 [P] Help-toggle buttons with no on/off-reflecting label — add `.accessibilityLabel(showHelp ? "Hide help" : "Show help")` (localized):
   - `Channels.swift:343`
   - `ShareChannels.swift:147`
   - `ChannelList.swift:206`
   - `UserList.swift:35`
   - `NodeList.swift:97`
-- [ ] T018 [P] Filter-toggle buttons (distinct from the already-correct reset buttons nearby) — same on/off-label pattern as T017:
+- [x] T018 [P] Filter-toggle buttons (distinct from the already-correct reset buttons nearby) — same on/off-label pattern as T017:
   - `UserList.swift:62`
   - `NodeList.swift:124`
-- [ ] T019 [P] Refresh/export/action icon buttons, unlabeled — add a specific localized `.accessibilityLabel` to each:
+- [x] T019 [P] Refresh/export/action icon buttons, unlabeled — add a specific localized `.accessibilityLabel` to each:
   - `AppLog.swift:130` (Catalyst-gated)
   - `Firmware.swift:370` — **fix in both** the `#if`/`#else` branches, both currently unlabeled
   - `BackupRowView.swift:45` (restore, `arrow.counterclockwise`)
@@ -68,10 +68,10 @@
   - `MeshMapMK.swift:538` (open map window, macOS-only)
   - `WaypointForm.swift:455` (edit waypoint)
   - `SecureInput.swift:62` (show/hide password)
-- [ ] T020 `WifiProvisioningView.swift:133,348,395` — three separate `doc.on.doc` copy buttons. Give each its own field-specific label: "Copy network name" / "Copy password" / "Copy PSK" — not one shared generic label.
-- [ ] T021 [P] `MeshMapMK.swift:372` — clear-trace-route button (`trash`), unlabeled while neighboring buttons (`:365`) already are. Add `.accessibilityLabel(String(localized: "Clear trace route"))`.
-- [ ] T022 [P] `MeshMapMK.swift:511` — map-settings button (`info.circle`), unlabeled while neighboring buttons (`:507`) already are. Add `.accessibilityLabel(String(localized: "Map settings"))`.
-- [ ] T023 [P] `NodeMapSwiftUI.swift:204-210,214-218,226-230` — unlabeled while neighboring buttons (`:200-202`) already are. Add matching localized labels.
+- [x] T020 `WifiProvisioningView.swift:133,348,395` — three separate `doc.on.doc` copy buttons. Give each its own field-specific label: "Copy network name" / "Copy password" / "Copy PSK" — not one shared generic label.
+- [x] T021 [P] `MeshMapMK.swift:372` — clear-trace-route button (`trash`), unlabeled while neighboring buttons (`:365`) already are. Add `.accessibilityLabel(String(localized: "Clear trace route"))`.
+- [x] T022 [P] `MeshMapMK.swift:511` — map-settings button (`info.circle`), unlabeled while neighboring buttons (`:507`) already are. Add `.accessibilityLabel(String(localized: "Map settings"))`.
+- [x] T023 [P] `NodeMapSwiftUI.swift:204-210,214-218,226-230` — unlabeled while neighboring buttons (`:200-202`) already are. Add matching localized labels.
 
 ### Value/hint gaps
 
