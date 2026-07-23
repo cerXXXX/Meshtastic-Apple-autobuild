@@ -446,7 +446,12 @@ struct MeshMapMK: View {
 						#endif
 						.toolbar {
 							ToolbarItem(placement: .cancellationAction) {
-								Button("Cancel") { colocatedStack = nil }
+								Button {
+									colocatedStack = nil
+								} label: {
+									Image(systemName: "xmark")
+								}
+								.accessibilityLabel(String(localized: "Cancel", comment: "VoiceOver: dismiss the node disambiguation picker"))
 							}
 						}
 					}
