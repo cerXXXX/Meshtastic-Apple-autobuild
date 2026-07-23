@@ -151,11 +151,11 @@ struct NodeDetail: View {
 				if node.snr != 0 && !node.viaMqtt && node.hopsAway == 0 {
 					Spacer()
 					VStack {
-						let signalStrength = getLoRaSignalStrength(snr: node.snr, rssi: node.rssi, preset: modemPreset)
+						let signalStrength = getLoRaSignalStrength(snr: node.snr, rssi: node.rssi, preset: modemPreset, noiseFloor: connectedNode?.recentNoiseFloor)
 						LoRaSignalStrengthIndicator(signalStrength: signalStrength)
 						Text("Signal \(signalStrength.description)").font(.footnote)
 						Text("SNR \(String(format: "%.2f", node.snr))dB")
-							.foregroundColor(getSnrColor(snr: node.snr, preset: modemPreset))
+							.foregroundColor(signalStrength.color)
 							.font(.caption)
 						Text("RSSI \(node.rssi)dB")
 							.foregroundColor(getRssiColor(rssi: node.rssi))
