@@ -86,7 +86,12 @@ struct GeofenceBoundsSelectorView: View {
 			.navigationBarTitleDisplayMode(.inline)
 			.toolbar {
 				ToolbarItem(placement: .cancellationAction) {
-					Button("Cancel") { dismiss() }
+					Button {
+						dismiss()
+					} label: {
+						Image(systemName: "xmark")
+					}
+					.accessibilityLabel(String(localized: "Cancel", comment: "VoiceOver: dismiss the geofence area selector"))
 				}
 				ToolbarItem(placement: .confirmationAction) {
 					Button("Done") {
