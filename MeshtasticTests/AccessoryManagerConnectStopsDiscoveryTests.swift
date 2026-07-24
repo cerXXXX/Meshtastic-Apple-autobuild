@@ -121,6 +121,26 @@ struct AccessoryManagerConnectStopsDiscoveryTests {
 		Device(id: UUID(), name: "Mock Radio", transportType: .ble, identifier: UUID().uuidString)
 	}
 
+	/// Direct, isolated coverage of `AccessoryManager.stopDiscovery()` itself — asserting the
+	/// mock transport's stop had completed *immediately after* `stopDiscovery()`'s `await`
+	/// returns, rather than only inferring it transitively through the full `connect()`
+	/// pipeline's Step 1 handoff. The pipeline-level tests below remain useful as end-to-end
+	/// coverage, but `SequentialSteps`' own scheduling gaps mean they don't reliably fail if
+	/// `stopDiscovery()` regressed to a fire-and-forget `Task { await transport.stopActiveDiscovery() }`
+	/// instead of a real `for transport in transports { await transport.stopActiveDiscovery() }`
+	/// — this test does.
+	@Test func stopDiscoveryAwaitsTransportStopBeforeReturning() async {
+		let recorder = DiscoveryStateRecorder()
+		let manager = AccessoryManager(transports: [MockBLETransportForConnectTests(recorder: recorder)])
+		manager.startDiscovery()
+		#expect(manager.discoveryTask != nil)
+
+		await manager.stopDiscovery()
+
+		#expect(manager.discoveryTask == nil)
+		#expect(await recorder.transportStopCompletedCount == 1)
+	}
+
 	@Test func stopsDiscoveryBeforeTheFirstConnectAttempt() async throws {
 		let recorder = DiscoveryStateRecorder()
 		let manager = AccessoryManager(transports: [MockBLETransportForConnectTests(recorder: recorder)])
@@ -178,5 +198,37 @@ struct AccessoryManagerConnectStopsDiscoveryTests {
 		// by attempt 2's, exactly 2 — proving Step 0 awaits a *fresh* completed stop on every
 		// attempt, not just the first.
 		#expect(await recorder.transportStopsCompletedAtConnect == [1, 2])
+	}
+
+	/// #2183 review (CodeRabbit): startDiscovery() must not race a fresh scan against a
+	/// still-in-flight stopDiscovery() call. discoveryTask is cleared synchronously near the top
+	/// of stopDiscovery(), before the (awaited) per-transport teardown loop even starts, so
+	/// `discoveryTask == nil` alone was never a safe "fully stopped" signal for a concurrent
+	/// caller to restart on.
+	@Test func startDiscoveryNoOpsWhileAStopIsInFlight() async {
+		let recorder = DiscoveryStateRecorder()
+		let manager = AccessoryManager(transports: [MockBLETransportForConnectTests(recorder: recorder)])
+		manager.startDiscovery()
+		#expect(manager.discoveryTask != nil)
+
+		// Kick off stopDiscovery() without awaiting it yet, then yield once. stopDiscovery()'s
+		// prefix (isStoppingDiscovery = true, discoveryTask cleared) is entirely synchronous —
+		// everything up to its first await (inside the mock's stopActiveDiscovery()) runs before
+		// that first suspension, so by the time this yield's continuation resumes, that prefix has
+		// deterministically already executed.
+		let stopTask = Task { await manager.stopDiscovery() }
+		await Task.yield()
+
+		#expect(manager.discoveryTask == nil)
+		#expect(manager.isStoppingDiscovery)
+
+		// A concurrent caller (e.g. appDidBecomeActive() after a background/foreground toggle)
+		// must not start a fresh scan while the previous stop is still winding down.
+		manager.startDiscovery()
+		#expect(manager.discoveryTask == nil)
+
+		await stopTask.value
+		#expect(manager.isStoppingDiscovery == false)
+		#expect(await recorder.transportStopCompletedCount == 1)
 	}
 }

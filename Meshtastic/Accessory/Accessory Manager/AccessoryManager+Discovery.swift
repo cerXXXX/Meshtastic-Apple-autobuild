@@ -33,6 +33,17 @@ extension AccessoryManager {
 			Logger.transport.debug("🔎 [Discovery] Existing discovery task is active.")
 			return
 		}
+		// A stopDiscovery() call is still awaiting transport teardown (discoveryTask is already
+		// nil at this point, but the transports themselves haven't finished stopping yet) — don't
+		// race a fresh scan against that in-flight shutdown. The caller that triggers this no-op
+		// (e.g. appDidBecomeActive()) isn't the only path back to scanning: stopDiscovery()'s own
+		// completion always leaves discovery either explicitly restarted by its caller or in a
+		// state where the next relevant trigger (scenePhase change, connect flow, etc.) will call
+		// startDiscovery() again (#2183 review).
+		if isStoppingDiscovery {
+			Logger.transport.debug("🔎 [Discovery] A stopDiscovery() call is still in flight; not starting a new scan.")
+			return
+		}
 		if otaInProgress { return }
 		updateState(.discovering)
 
@@ -101,6 +112,8 @@ extension AccessoryManager {
 	// actor with no further suspension, so the `await` only returns once scanning has actually
 	// stopped.
 	func stopDiscovery() async {
+		isStoppingDiscovery = true
+		defer { isStoppingDiscovery = false }
 		devices.removeAll()
 		discoveryTask?.cancel()
 		discoveryTask = nil

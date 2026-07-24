@@ -232,6 +232,15 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 	// Public due to file separation
 	var otaInProgress: Bool = false
 	var discoveryTask: Task<Void, Never>?
+	/// True for the duration of `stopDiscovery()`'s transport-teardown loop, i.e. from just
+	/// after `discoveryTask` is cleared until every transport's `stopActiveDiscovery()` has
+	/// completed. `discoveryTask == nil` alone isn't a safe "discovery is fully stopped" signal
+	/// — it's cleared before that teardown loop even starts — so `startDiscovery()` also checks
+	/// this flag and no-ops while it's set, closing a race where a concurrent caller (e.g.
+	/// `appDidBecomeActive()` after a quick background/foreground toggle) could start a fresh
+	/// scan while the previous `stopDiscovery()` call is still winding down the same transport
+	/// (#2183 review).
+	var isStoppingDiscovery: Bool = false
 	/// Consumes `BLETransport.statusUpdates()` for the lifetime of this manager; see
 	/// `observeBLETransportStatus()`.
 	var bleStatusTask: Task<Void, Never>?
@@ -1176,6 +1185,11 @@ extension AccessoryManager {
 			Logger.transport.info("[AccessoryManager] Connect attempt in progress, not restarting discovery")
 		} else {
 			if self.discoveryTask == nil {
+				// startDiscovery() itself no-ops while isStoppingDiscovery is set (see
+				// AccessoryManager+Discovery.swift), so this doesn't need its own check: even if a
+				// concurrent stopDiscovery() call has already nilled discoveryTask but is still
+				// awaiting transport teardown, this call is safely absorbed rather than racing a
+				// fresh scan against it (#2183 review).
 				Logger.transport.info("[AccessoryManager] Previosuly in the background but not scanning, starting scanning again")
 				self.startDiscovery()
 			}
