@@ -88,22 +88,26 @@ extension AccessoryManager {
 		}
 	}
 
-	// Only cancels the outer discovery task; it does not wait for CoreBluetooth to actually
-	// stop scanning. Cancellation propagates async: the outer AsyncStream's cancellation
-	// tears down each per-transport Task, which trips BLETransport.discoverDevices()'s
-	// `onTermination`, which spawns a *new* unstructured Task to call BLETransport.stopScanning()
-	// (the thing that finally calls `centralManager.stopScan()`). Callers that need scanning
-	// off before pairing (AccessoryManager+Connect.swift's Step 0) don't await that chain — in
-	// practice this is fine because the encrypted-characteristic subscription that actually
-	// races an active scan happens well after `centralManager.connect()`, past several more
-	// service/characteristic discovery round-trips, giving the cancellation chain ample time to
-	// land first. This gap is pre-existing to this multi-hop cancellation architecture, not
-	// introduced by Step 0's use of it.
-	func stopDiscovery() {
+	// Cancelling the outer discovery task only *requests* shutdown; it does not by itself wait
+	// for CoreBluetooth (or TCP/Serial's equivalents) to actually stop. Cancellation propagates
+	// async: the outer AsyncStream's cancellation tears down each per-transport Task, which
+	// trips each transport's `discoverDevices()` `onTermination`. For BLE that spawns a *new*
+	// unstructured Task to reach the actor and call `stopScanning()` (the thing that finally
+	// calls `centralManager.stopScan()`) — a caller relying only on cancellation could resume
+	// before that Task has run. Callers that need discovery verifiably off before a subsequent
+	// step begins (e.g. AccessoryManager+Connect.swift's Step 0, ahead of BLE pairing — see
+	// #2183 review) must await this function: it directly calls each transport's
+	// `stopActiveDiscovery()` and awaits it, which for BLE executes `stopScanning()` inside the
+	// actor with no further suspension, so the `await` only returns once scanning has actually
+	// stopped.
+	func stopDiscovery() async {
 		devices.removeAll()
 		discoveryTask?.cancel()
 		discoveryTask = nil
 		devices.removeAll()
+		for transport in transports {
+			await transport.stopActiveDiscovery()
+		}
 	}
 
 }

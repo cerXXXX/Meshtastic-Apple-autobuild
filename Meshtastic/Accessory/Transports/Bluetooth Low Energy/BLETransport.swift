@@ -190,6 +190,15 @@ actor BLETransport: Transport {
 		}
 	}
 
+	/// Directly stops active scanning and awaits completion — unlike the reactive
+	/// `discoverDevices()` `onTermination` cancellation chain, whose final step spawns a
+	/// detached, unawaited `Task` to reach this actor (see that closure). Because this actor
+	/// method has no internal `await`, a caller's `await` here only returns once
+	/// `centralManager.stopScan()` has actually executed. Idempotent, same as `stopScanning()`.
+	func stopActiveDiscovery() async {
+		stopScanning()
+	}
+
 	private func stopScanning() {
 		Logger.transport.debug("🛜 [BLE] Stop Scanning: BLE Discovery has been stopped.")
 		guard centralManager != nil else {

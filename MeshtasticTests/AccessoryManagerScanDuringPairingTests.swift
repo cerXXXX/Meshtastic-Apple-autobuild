@@ -65,7 +65,7 @@ struct AccessoryManagerScanDuringPairingTests {
 		#expect(manager.discoveryTask == nil)
 	}
 
-	@Test func appDidBecomeActiveRestartsDiscoveryWhenIdle() {
+	@Test func appDidBecomeActiveRestartsDiscoveryWhenIdle() async {
 		// Existing behavior preserved: with no in-flight connect and no active connection,
 		// coming back to the foreground still resumes scanning.
 		let manager = AccessoryManager(transports: [])
@@ -76,6 +76,6 @@ struct AccessoryManagerScanDuringPairingTests {
 
 		#expect(manager.discoveryTask != nil)
 
-		manager.stopDiscovery()
+		await manager.stopDiscovery()
 	}
 }

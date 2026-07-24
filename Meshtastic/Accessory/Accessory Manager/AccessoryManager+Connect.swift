@@ -89,7 +89,10 @@ extension AccessoryManager {
 				// scanning is off for every attempt, not just the first. `stopDiscovery()` also
 				// clears `discoveredDeviceContinuation`, so a `.poweredOn` state change mid-pairing
 				// (see `handleCentralState`) can't restart the scan out from under Step 1 either.
-				self.stopDiscovery()
+				// Awaited: stopDiscovery() awaits the transport's actual scan-stop, not just a
+				// cancellation request, so Step 1 genuinely never starts pairing while still
+				// scanning (#2183 review).
+				await self.stopDiscovery()
 				self.updateDevice(deviceId: device.id, key: \.connectionState, value: .connecting)
 				// Lockdown: reset per-connection state. Firmware requires re-auth on every
 				// new BLE connection even if storage is already unlocked.
@@ -268,7 +271,7 @@ extension AccessoryManager {
 			// Step 8: Update UI and status to connected
 			Step { @MainActor _ in
 				Logger.transport.debug("🔗👟 [Connect] Step 8: Initialize MQTT and Location Provider")
-				self.stopDiscovery()
+				await self.stopDiscovery()
 				// Prune stale nodes now that the dump is in, instead of at the head of
 				// sendWantConfig where the fetch+delete+save serialized ahead of the whole
 				// handshake on the ingestion actor. Post-dump lastHeard values also make the

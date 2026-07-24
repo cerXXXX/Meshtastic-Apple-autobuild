@@ -1142,7 +1142,11 @@ extension AccessoryManager {
 			Task { await connection.appDidEnterBackground() }
 		} else {
 			Logger.transport.info("[AccessoryManager] suspending scanning while in the background")
-			stopDiscovery()
+			// appDidEnterBackground() itself stays synchronous (called directly from a
+			// non-async scenePhase handler); fire-and-forget the now-async stopDiscovery()
+			// the same way this call site always has — nothing here depends on scanning having
+			// fully stopped before this function returns, unlike Step 0 of the connect flow.
+			Task { await self.stopDiscovery() }
 		}
 	}
 	

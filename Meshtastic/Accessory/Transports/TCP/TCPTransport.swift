@@ -59,6 +59,18 @@ class TCPTransport: NSObject, Transport, NetServiceBrowserDelegate, NetServiceDe
 		}
 	}
 
+	/// Directly stops the service browser, mirroring `discoverDevices()`'s `onTermination`.
+	/// TCP's cancellation chain runs synchronously (no detached-Task hop like BLE's), but this
+	/// still gives callers an explicit, awaitable stop rather than depending on `Task.cancel()`
+	/// being noticed at the iterator's next suspension point. Idempotent.
+	func stopActiveDiscovery() async {
+		browser?.stop()
+		services.removeAll()
+		pendingServices.removeAll()
+		continuation = nil
+		status = .ready
+	}
+
 	func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
 		pendingServices.insert(service)
 		service.delegate = self
