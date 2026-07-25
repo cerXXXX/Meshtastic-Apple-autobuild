@@ -177,6 +177,22 @@ struct MeshtasticAppleApp: App {
 		}
 	}
 
+	/// Single dispatch point for every URL the app receives — universal links
+	/// (user activities), custom-scheme opens, and file opens all route here.
+	private func dispatchIncomingURL(_ url: URL, fromActivity: Bool) {
+		if url.isFileURL {
+			// "Open in Meshtastic" from the Share Sheet / Files app / drag-and-drop —
+			// distinct from the meshtastic:// scheme handled below.
+			appState.router.importMapFile(url: url)
+		} else if ContactURLHandler.canHandle(url) {
+			ContactURLHandler.handleContactUrl(url: url, accessoryManager: accessoryManager)
+		} else if MeshtasticChannelURL.canHandle(url) {
+			handleChannelLinkURL(url, fromActivity: fromActivity)
+		} else if url.absoluteString.lowercased().contains("meshtastic:///") {
+			appState.router.route(url: url)
+		}
+	}
+
 	@discardableResult
 	private func handleChannelLinkURL(_ url: URL, fromActivity: Bool) -> Bool {
 		// Reset the state before processing a new URL
@@ -229,18 +245,23 @@ struct MeshtasticAppleApp: App {
 					.presentationDragIndicator(.visible)
 					#endif
 					}
+					.sheet(item: $appState.pendingContactToAdd) { pendingContact in
+						AddContactConfirmationView(
+							pendingContact: pendingContact,
+							accessoryManager: accessoryManager
+						)
+						.presentationDetents([.medium, .large])
+						#if !targetEnvironment(macCatalyst)
+						.presentationDragIndicator(.visible)
+						#endif
+					}
 					.onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
 						Logger.mesh.debug("Browsing web user activity received")
 						self.incomingUrl = userActivity.webpageURL
 						self.saveChannelLink = nil
 
 						if let url = userActivity.webpageURL {
-							if ContactURLHandler.canHandle(url) {
-								ContactURLHandler.handleContactUrl(url: url, accessoryManager: accessoryManager)
-							} else if MeshtasticChannelURL.canHandle(url) {
-								// **Consolidated Call for User Activity**
-								handleChannelLinkURL(url, fromActivity: true)
-							}
+							dispatchIncomingURL(url, fromActivity: true)
 						}
 
 						if self.saveChannelLink != nil {
@@ -251,19 +272,18 @@ struct MeshtasticAppleApp: App {
 						Logger.mesh.debug("URL received")
 						self.incomingUrl = url
 
-						if url.isFileURL {
-							// "Open in Meshtastic" from the Share Sheet / Files app / drag-and-drop —
-							// distinct from the meshtastic:// scheme handled below.
-							appState.router.importMapFile(url: url)
-						} else if ContactURLHandler.canHandle(url) {
-							ContactURLHandler.handleContactUrl(url: url, accessoryManager: accessoryManager)
-						} else if MeshtasticChannelURL.canHandle(url) {
-							// **Consolidated Call for Open URL**
-							handleChannelLinkURL(url, fromActivity: false)
-						} else if url.absoluteString.lowercased().contains("meshtastic:///") {
-							appState.router.route(url: url)
-						}
+						dispatchIncomingURL(url, fromActivity: false)
 					})
+					// Keep the badge in sync with read-state changes that happen outside
+					// the message lists (Siri/CarPlay read-aloud, background ingest) —
+					// previously those only reconciled on the next scene-active pass.
+					.onReceive(
+						NotificationCenter.default.publisher(for: .meshMessagesDidChange)
+							.debounce(for: .seconds(1), scheduler: DispatchQueue.main)
+					) { _ in
+						guard let persistenceController else { return }
+						appState.refreshBadgeCount(context: persistenceController.container.mainContext)
+					}
 				.task {
 					// Skip TipKit entirely during marketing screenshot capture so tip popovers never
 					// appear in the shots (unconfigured TipKit displays nothing).
