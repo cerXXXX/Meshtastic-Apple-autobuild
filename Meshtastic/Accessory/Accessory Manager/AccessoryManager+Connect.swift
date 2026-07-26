@@ -40,7 +40,7 @@ extension AccessoryManager {
 		packetsReceived = 0
 		packetsAtLastIngestRecycle = 0
 		expectedNodeDBSize = nil
-	
+
 		self.allowDisconnect = true
 		self.userRequestedConnectionCancellation = false
 
@@ -105,6 +105,11 @@ extension AccessoryManager {
 					}
 					self.activeConnection = (device: device, connection: connection)
 					self.activeDeviceNum = device.num
+					// Start sampling inbound mesh-traffic rate for this connection (map flyover gate).
+					// Started here — not once at the top of connect() — because a retry runs Step 0's
+					// closeConnection() which stops the monitor; restarting it on every successful
+					// connection setup keeps the flyover gate alive across retries. Idempotent.
+					self.meshTrafficMonitor.start()
 				} catch let error as CBError where error.code == .peerRemovedPairingInformation {
 					await self.connectionStepper?.cancelCurrentlyExecutingStep(withError: AccessoryError.coreBluetoothError(error), cancelFullProcess: true)
 				}
@@ -128,8 +133,11 @@ extension AccessoryManager {
 				}
 				Logger.transport.info("🔗👟 [Connect] Step 3: Send wantConfig (config)")
 				try await self.sendWantConfig()
-				// Always refresh bundled device catalog so hardware info and "I want one" links
-				// are present after any database clear, regardless of who initiated the connect.
+				// Always refresh the bundled device catalog so hardware metadata is present after any
+				// database clear, regardless of who initiated the connect. Metadata only: this call is
+				// awaited inside a 30s Step budget, so it must stay local (issue #2196). Device images
+				// and the "I want one" msh.to links are network-backed and are restored by the detached
+				// pass below instead.
 				do {
 					Logger.transport.info("🔗👟 [Connect] Step 3a: Refresh bundled Meshtastic device hardware data")
 					try await MeshtasticAPI.shared.refreshBundledDevicesData()
@@ -138,15 +146,24 @@ extension AccessoryManager {
 					Logger.services.warning("Failed to refresh bundled device hardware data after config completion: \(error.localizedDescription, privacy: .public)")
 				}
 
-				if refreshDeviceHardwareFromAPI {
-					Logger.transport.info("🔗👟 [Connect] Step 3b: Refresh Meshtastic device hardware API data")
-					Task.detached(priority: .utility) {
-						do {
-							try await MeshtasticAPI.shared.refreshDevicesAPIData()
-							Logger.services.info("✅ [MeshtasticAPI] Refreshed device hardware data after config completion")
-						} catch {
-							Logger.services.warning("Failed to refresh device hardware data after config completion: \(error.localizedDescription, privacy: .public)")
-						}
+				// Step 3b: images and msh.to links. `clearDatabase` batch-deletes
+				// DeviceHardwareImageEntity and DeviceLinkEntity, and a NodeDB/factory reset or a
+				// device switch clears mid-session and then reconnects — so launch-time population is
+				// already gone by the time we get here and something on the connect path has to
+				// restore them. Detached on purpose: both halves hit the network and must never be
+				// awaited inside this Step's 30s budget. `refreshDeviceHardwareFromAPI` defaults to
+				// false, so the bundle-only pass is what runs on a normal reconnect; it resolves
+				// images from the app bundle and msh.to links from the bundled urls.json.
+				Logger.transport.info("🔗👟 [Connect] Step 3b: Refresh device images and msh.to links")
+				// Held on the manager so closeConnection can cancel it: on a captive portal the pass's
+				// image HEADs would otherwise hang ~60s past a disconnect. A prior pass from a rapid
+				// reconnect is cancelled before the new one replaces the handle.
+				self.deviceRefreshTask?.cancel()
+				self.deviceRefreshTask = Task.detached(priority: .utility) {
+					if refreshDeviceHardwareFromAPI {
+						await MeshtasticAPI.shared.refreshDevicesPreferringAPI()
+					} else {
+						await MeshtasticAPI.shared.refreshDeviceImagesAndLinks()
 					}
 				}
 			}
@@ -186,7 +203,11 @@ extension AccessoryManager {
 			}
 			
 			// Step 5a: Wait for end of WantConfig (database)
-			Step { @MainActor _ in
+			// Bounded like its sibling steps: without a timeout, a malicious/misbehaving radio
+			// that completes config but never sends the database-complete nonce would wedge the
+			// connect flow in .retrievingDatabase forever (no watchdog until Step 8). 120s is
+			// generous for a large legitimate node-DB dump.
+			Step(timeout: .seconds(120)) { @MainActor _ in
 				guard wantDatabase else {
 					Logger.transport.info("👟 [Connect] Step 4: wantDatabase = false, skipping waitForWantDatabase")
 					return
