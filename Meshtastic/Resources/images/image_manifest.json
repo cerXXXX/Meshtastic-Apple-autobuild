@@ -1,5 +1,5 @@
 {
-  "api_hash": "91fcb9bc09c85d27451722530cbcd0d8b9ef5dbc00e27db5e1af5c241f2a54a7",
+  "api_hash": "78ad1f4fc5c37bfe064aa0a5a5dc6bd0aece879e75480baeddf35c958d3d768b",
   "files": {
     "crowpanel_2_4.svg": {
       "etag": "\"29194e5a415e5aee034b2d4a3ba2e398\""
@@ -141,6 +141,9 @@
     },
     "seeed-xiao-s3.svg": {
       "etag": "\"6475faad5c2459af8d133bf4956e8ba4\""
+    },
+    "seeed_mesh_tracker_x1.svg": {
+      "etag": "\"7c2c6d6f3c10fe0bd4f91ef693440b81\""
     },
     "seeed_solar.svg": {
       "etag": "\"1b517a452f66e0e5b1b7323dfce89fbc\""
