@@ -12,6 +12,7 @@ import SwiftUI
 
 struct ConnectView: View {
 	@Bindable var client: MeshClient
+	@Environment(\.scenePhase) private var scenePhase
 	@StateObject private var discovery = NodeDiscovery()
 
 	@AppStorage("tv.lastHost") private var host: String = ""
@@ -56,8 +57,13 @@ struct ConnectView: View {
 						}
 					}
 				}
+				// Focused tvOS controls grow beyond their rows; keep them inside the Form's clip.
+				.contentMargins(.horizontal, 16, for: .scrollContent)
 			}
 			.padding(.top, TVTheme.screenPadding)
+		}
+		.onChange(of: scenePhase) { _, phase in
+			discovery.handle(scenePhase: phase)
 		}
 	}
 
@@ -81,7 +87,11 @@ struct ConnectView: View {
 	@ViewBuilder
 	private var discoveredSection: some View {
 		Section {
-			if discovery.discovered.isEmpty {
+			if let errorMessage = discovery.errorMessage {
+				Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+					.foregroundStyle(Color("MeshtasticError"))
+				Button("Try Again") { discovery.retry() }
+			} else if discovery.discovered.isEmpty {
 				HStack(spacing: 16) {
 					ProgressView()
 					Text("Searching the local network…")
@@ -94,15 +104,14 @@ struct ConnectView: View {
 					} label: {
 						HStack(spacing: 16) {
 							Image(systemName: "antenna.radiowaves.left.and.right")
-								.foregroundStyle(Color("AccentColor"))
 							VStack(alignment: .leading, spacing: 4) {
 								Text(node.name)
 								Text(verbatim: "\(node.host):\(String(node.port))")
 									.font(.caption)
-									.foregroundStyle(.secondary)
 							}
 						}
 					}
+					.tint(.primary)
 				}
 			}
 		} header: {
