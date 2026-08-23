@@ -1,5 +1,5 @@
 {
-  "api_hash": "62b617737b7538a5151652c06c5f8abc552051ceecf96fb206feb6acf78aeed0",
+  "api_hash": "8b29de5edb44a1a92ce6db7b0824cc6d594436d03f899f9a593be05d37780535",
   "files": {
     "crowpanel_2_4.svg": {
       "etag": "\"29194e5a415e5aee034b2d4a3ba2e398\""
@@ -78,6 +78,9 @@
     },
     "m5stack_cardputer.svg": {
       "etag": "\"3b483e95371895fbaf5d22a289a9a48e\""
+    },
+    "meshnology_w10.svg": {
+      "etag": "\"04f7b6ff25d10b062e76c6aba1eb2dff\""
     },
     "meshtasticd_tux.svg": {
       "etag": "\"b1dd17d142f042f588989d682c159356\""
