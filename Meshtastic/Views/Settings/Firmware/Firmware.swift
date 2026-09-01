@@ -19,10 +19,14 @@ import WebKit
 struct Firmware: View {
 	let node: NodeInfoEntity?
 
+	@EnvironmentObject private var accessoryManager: AccessoryManager
 	@Query private var hardwareResults: [DeviceHardwareEntity]
 	@State private var cachedHardware: DeviceHardwareEntity?
 	@State private var cachedNode: NodeInfoEntity?
 	@State private var hardwareState = FirmwareHardwareViewState()
+
+	private static let catalogRefreshKey = "firmware.hardwareCatalogRefreshedAt"
+	private static let catalogRefreshInterval: TimeInterval = 60 * 60 * 6
 
 	init(node: NodeInfoEntity?) {
 		self.node = node
@@ -50,6 +54,9 @@ struct Firmware: View {
 		.onAppear {
 			resolveHardware()
 		}
+		.task {
+			await refreshCatalogIfNeeded()
+		}
 		.onChange(of: hardwareResults) {
 			resolveHardware()
 		}
@@ -62,6 +69,23 @@ struct Firmware: View {
 		}
 		.onChange(of: node?.user?.hwModelId) {
 			resolveHardware()
+		}
+	}
+
+	/// Pull the hardware catalog from the API so boards added since this build shipped
+	/// resolve by their PlatformIO target instead of falling back to another board that
+	/// shares their hardware model. Metadata only — the image pass is not worth running here.
+	private func refreshCatalogIfNeeded() async {
+		let lastRefresh = UserDefaults.standard.object(forKey: Self.catalogRefreshKey) as? Date
+		if let lastRefresh, Date().timeIntervalSince(lastRefresh) < Self.catalogRefreshInterval {
+			return
+		}
+		do {
+			try await MeshtasticAPI.shared.refreshDevicesAPIData(includeImages: false)
+			UserDefaults.standard.set(Date(), forKey: Self.catalogRefreshKey)
+			resolveHardware()
+		} catch {
+			Logger.services.warning("Hardware catalog refresh failed: \(error.localizedDescription, privacy: .public)")
 		}
 	}
 
@@ -95,8 +119,10 @@ struct Firmware: View {
 			in: records
 		)
 		if didReset, hardwareState.resolution == nil {
-			cachedNode = nil
-			cachedHardware = nil
+			if !accessoryManager.otaInProgress {
+				cachedNode = nil
+				cachedHardware = nil
+			}
 			return
 		}
 		cacheResolvedHardware(for: node)
@@ -115,6 +141,10 @@ struct Firmware: View {
 	}
 
 	private func resetHardwareCache() {
+		// An update disconnects the radio on purpose. Keep the cached content on
+		// screen through it, or the update sheet is torn down mid-flash and the
+		// device is left sitting in its bootloader.
+		if accessoryManager.otaInProgress { return }
 		cachedNode = nil
 		cachedHardware = nil
 		hardwareState.reset()
@@ -126,7 +156,7 @@ struct Firmware: View {
 private struct FirmwareContentView: View {
 	
 	private enum FirmwareTab {
-		case stable, alpha, downloaded
+		case stable, alpha, nightly, downloaded
 	}
 	
 	@EnvironmentObject var accessoryManager: AccessoryManager
@@ -235,6 +265,7 @@ private struct FirmwareContentView: View {
 				Picker("Firmware Version", selection: $firmwareSelection) {
 					Text("Stable").tag(FirmwareTab.stable)
 					Text("Alpha").tag(FirmwareTab.alpha)
+					Text("Nightly").tag(FirmwareTab.nightly)
 					Text("Downloaded").tag(FirmwareTab.downloaded)
 				}.pickerStyle(.segmented)
 				
@@ -317,6 +348,22 @@ private struct FirmwareContentView: View {
 			if let last = alphas.last, let notes = last.releaseNotes {
 				NavigationLink("Release Notes") {
 					FirmwareReleaseNotesView(markdown: notes, versionId: last.versionId)
+				}
+			}
+		case .nightly:
+			let nightlies = firmwareList.mostRecentFirmware(forReleaseType: .nightly)
+			if nightlies.isEmpty {
+				Text("No nightly build is available for this device right now.")
+			} else {
+				ForEach(nightlies, id: \.localUrl) { release in
+					FirmwareRow(firmwareFile: release) { type, url in
+						self.rowInstallation = RowInstallation(type: type, url: url)
+					}
+				}
+				if let last = nightlies.last, let notes = last.releaseNotes {
+					NavigationLink("Release Notes") {
+						FirmwareReleaseNotesView(markdown: notes, versionId: last.versionId)
+					}
 				}
 			}
 		case .downloaded:
@@ -531,9 +578,11 @@ struct FirmwareHeroImage: View {
 }
 
 struct FirmwareTagView: View {
-	let text: String
+	// LocalizedStringKey, not String: a String argument reaches Text() already resolved,
+	// so the tag literals were never extracted for translation.
+	let text: LocalizedStringKey
 	let color: Color
-	init(_ text: String, color: Color = .black) {
+	init(_ text: LocalizedStringKey, color: Color = .black) {
 		self.text = text
 		self.color = color
 	}
@@ -580,6 +629,8 @@ private struct FirmwareRow: View {
 						FirmwareTagView("STABLE", color: Color.green)
 					case .alpha:
 						FirmwareTagView("ALPHA", color: Color.blue)
+					case .nightly:
+						FirmwareTagView("NIGHTLY", color: Color.purple)
 					case .unlisted:
 						FirmwareTagView("UNLISTED", color: Color.orange)
 					}
@@ -620,9 +671,17 @@ private struct FirmwareRow: View {
 				.buttonStyle(.bordered)
 				.buttonBorderShape(.capsule)
 				.controlSize(.small)
+			case .unavailable:
+				Text("Not built for this device")
+					.font(.caption2)
+					.foregroundColor(.secondary)
+
 			case .error:
 				Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.red)
 			}
+		}
+		.task {
+			await firmwareFile.checkAvailability()
 		}
 	}
 	
