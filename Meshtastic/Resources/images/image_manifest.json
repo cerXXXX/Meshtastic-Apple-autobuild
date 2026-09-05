@@ -1,5 +1,5 @@
 {
-  "api_hash": "38f11d2edb4f2dd8ea7021369483bc82575a8c6f14309a53173f655dc68f9b3f",
+  "api_hash": "636ae7cc1e88f7af415e79a17710dca51b75af3ec181864a75b757f63be4e45f",
   "files": {
     "crowpanel_2_4.svg": {
       "etag": "\"29194e5a415e5aee034b2d4a3ba2e398\""
@@ -156,6 +156,9 @@
     },
     "seeed_solar.svg": {
       "etag": "\"1b517a452f66e0e5b1b7323dfce89fbc\""
+    },
+    "seeed_wio_tracker_l2.svg": {
+      "etag": "\"2bd32ce3ace0afb13dcd8258f9c3a6ae\""
     },
     "seeed_xiao_nrf52_kit.svg": {
       "etag": "\"c73c0f939e9f6ad244a36d4a3e3da289\""
