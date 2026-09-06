@@ -726,14 +726,11 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 		// Update the device in the devices array if it exists
 		if let index = devices.firstIndex(where: { $0.id == deviceId }) {
 			var device = devices[index]
-			device[keyPath: key] = value
 			if device[keyPath: key] != value {
-				// Update the @Published stuff for the UI
-				self.objectWillChange.send()
-				
-				if let index = devices.firstIndex(where: { $0.id == deviceId }) {
-					devices[index] = device
-				}
+				// No objectWillChange here: `devices` is @Published, so assigning to it
+				// notifies on its own. Sending as well invalidated twice per change.
+				device[keyPath: key] = value
+				devices[index] = device
 			}
 		} else {
 			// Durring active connections, this discover list will be empty, so this is expected.
@@ -1109,6 +1106,8 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 					Logger.mesh.info("[LoRa OTA] packet received from \(packet.from.toHex(), privacy: .public)")
 				case .remoteShellApp:
 					Logger.mesh.info("[Remote Shell] packet received from \(packet.from.toHex(), privacy: .public)")
+				case .pagingApp:
+					Logger.mesh.info("[Paging] packet received from \(packet.from.toHex(), privacy: .public)")
 				case .unknownApp:
 					Logger.mesh.info("[Unknown] packet received from \(packet.from.toHex(), privacy: .public)")
 				}
@@ -1244,6 +1243,16 @@ extension AccessoryManager {
 		return activeConnection?.device.firmwareVersion
 	}
 
+	/// The connected radio's `MyNodeInfo.device_id`, which is what backups are keyed on. Nil before
+	/// MyInfo lands, and for a radio whose firmware reports none.
+	var connectedDeviceId: Data? {
+		guard let connectedNodeNum = activeDeviceNum else { return nil }
+		let descriptor = FetchDescriptor<MyInfoEntity>(
+			predicate: #Predicate { $0.myNodeNum == connectedNodeNum }
+		)
+		return try? context.fetch(descriptor).first?.deviceId
+	}
+
 	var connectedDeviceRole: DeviceRoles? {
 		guard let connectedNodeNum = activeDeviceNum else { return nil }
 		guard let connectedNode = getNodeInfo(id: connectedNodeNum, context: context) else { return nil }
@@ -1323,6 +1332,30 @@ extension AccessoryManager {
 	/// editor still appears until the radio reports a confirmed sub-2.8.0 version.
 	var supportsStatusMessage: Bool {
 		checkIsVersionSupported(forVersion: "2.8.0")
+	}
+
+	/// Whether a LoRa config save lands without dropping the connection.
+	///
+	/// Firmware 2.8 applies every LoRa change live (firmware #9962). Before that, `set_config(lora)`
+	/// skipped the reboot only when no radio field actually changed, which a real edit never
+	/// satisfies.
+	///
+	/// Deliberately conservative where the other gates here are permissive, and read from the live
+	/// connection only. `UserDefaults.firmwareVersion` is global rather than per radio, so falling
+	/// back to it right after switching radios answers for the *previous* radio — and assuming
+	/// "no reboot" on the wrong radio is the direction that hurts: it warns nobody before a reboot
+	/// they did not expect, and turns a real post-save failure into a shrug. No live version means
+	/// assume it may reboot, which merely restores the old forgiving behavior for that window.
+	var appliesLoRaConfigWithoutReboot: Bool {
+		Self.appliesLoRaConfigWithoutReboot(liveVersion: connectedVersion)
+	}
+
+	/// Pure core of the gate, split out so tests exercise the decision without a live connection
+	/// or the global stored version.
+	nonisolated static func appliesLoRaConfigWithoutReboot(liveVersion: String?) -> Bool {
+		guard let liveVersion, !liveVersion.isEmpty else { return false }
+		let comparison = "2.8.0".compare(liveVersion, options: .numeric)
+		return comparison == .orderedAscending || comparison == .orderedSame
 	}
 }
 

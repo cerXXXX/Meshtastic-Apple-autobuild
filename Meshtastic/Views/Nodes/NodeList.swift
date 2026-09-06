@@ -95,6 +95,12 @@ struct NodeList: View {
 		.sheet(isPresented: $showingHelp) {
 			NodeListHelp()
 		}
+		.safeAreaInset(edge: .top) {
+			// Shown after the radio's LoRa settings move it to a different channel. A banner rather
+			// than an alert on the settings screen: a LoRa write reboots the radio, so anything modal
+			// at save time competes with the reconnect, and this needs to survive being missed.
+			UnheardNodesBanner()
+		}
 		.safeAreaInset(edge: .bottom, alignment: .leading) {
 			HStack {
 				Button(action: {
@@ -177,15 +183,6 @@ struct NodeList: View {
 		.toolbar {
 			ToolbarItem(placement: .topBarLeading) {
 				MeshtasticLogo()
-			}
-			if let connectedNode, ShareContactQR.canShareContact(for: connectedNode) {
-				ToolbarItem(placement: .topBarTrailing) {
-					Button {
-						shareContactNode = connectedNode
-					} label: {
-						Label("Share Connected Node", systemImage: "person.crop.circle.badge.plus")
-					}
-				}
 			}
 			ToolbarItem(placement: .topBarTrailing) {
 				ConnectedDevice(
@@ -480,7 +477,7 @@ private struct FilteredNodeList: View {
 				NodeAlertsButton(context: context, node: node, user: user)
 			}
 			if connectedNode.num != node.num {
-				if !(node.user?.unmessagable ?? true) {
+				if node.user?.showsDirectMessageAction == true {
 					Button(action: {
 						if let url = URL(string: "meshtastic:///messages?userNum=\(node.num)") {
 							UIApplication.shared.open(url)
