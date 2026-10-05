@@ -374,6 +374,9 @@ extension AccessoryManager {
 			Logger.services.error("NodeInfo packet with a zero nodeNum")
 			return
 		}
+		if nodeDatabaseDumpInProgress {
+			nodeDatabaseDumpNums.insert(Int64(nodeInfo.num))
+		}
 
 		// TODO: nodeInfoPacket's channel: parameter is not used
 		// Defer the save: during the node-DB dump this handler runs once per node, and a
@@ -381,7 +384,8 @@ extension AccessoryManager {
 		// throughput cliff behind slow/hung connects on large meshes. Deferred writes are
 		// flushed by the actor's debounced save (at most every 5s) and finally at
 		// configCompleteID (NONCE_ONLY_DB), which also batch-saves the main context.
-		_ = await MeshPackets.shared.nodeInfoPacket(nodeInfo: nodeInfo, channel: 0, deferSave: true, connectedNodeNum: activeConnection?.device.num)
+		_ = await MeshPackets.shared.nodeInfoPacket(nodeInfo: nodeInfo, channel: 0, deferSave: true, connectedNodeNum: activeConnection?.device.num,
+		                                           reportsHeardOnCurrentLora: reportsHeardOnCurrentLora)
 
 		// Update the connected device's display metadata straight from the protobuf — the
 		// previous code resolved the just-inserted entity on a fresh ModelContext for every

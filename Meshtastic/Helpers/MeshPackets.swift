@@ -1028,7 +1028,28 @@ actor MeshPackets {
 		}
 	}
 
-	func nodeInfoPacket (nodeInfo: NodeInfo, channel: UInt32, deferSave: Bool = false, connectedNodeNum: Int64? = nil) -> PersistentIdentifier? {
+	/// After a full node database download: nodes the radio did not include are ones it no longer
+	/// has, so it has no answer for them. Their stored heard-on-current-LoRa goes back to unknown,
+	/// rather than keeping an answer from an earlier download.
+	func markAbsentFromRadio(presentNums: Set<Int64>) {
+		let descriptor = FetchDescriptor<NodeInfoEntity>(predicate: #Predicate { $0.heardOnCurrentLora != nil })
+		guard let nodes = try? modelContext.fetch(descriptor) else { return }
+		for node in nodes where !presentNums.contains(node.num) {
+			node.heardOnCurrentLora = nil
+		}
+		savePendingChanges()
+	}
+
+	/// What to store for NodeInfo.heard_on_current_lora. Nil unless the radio is known to send it,
+	/// which also clears a value left by a newer firmware if the radio is downgraded. The radio's own
+	/// entry is left nil: it is not something it hears.
+	static func heardOnCurrentLora(_ nodeInfo: NodeInfo, reported: Bool, connectedNodeNum: Int64?) -> Bool? {
+		guard reported, Int64(nodeInfo.num) != connectedNodeNum else { return nil }
+		return nodeInfo.heardOnCurrentLora
+	}
+
+	func nodeInfoPacket (nodeInfo: NodeInfo, channel: UInt32, deferSave: Bool = false, connectedNodeNum: Int64? = nil,
+	                     reportsHeardOnCurrentLora: Bool = false) -> PersistentIdentifier? {
 		// This path handles the connected device's local node-DB dump during wantConfig
 		// (FromRadio.nodeInfo), not packets that crossed the mesh — log it as admin/setup.
 		// Over-the-air NodeInfo arrives via upsertNodeInfoPacket and stays on .mesh.
@@ -1060,6 +1081,7 @@ actor MeshPackets {
 					// first time — every node on a fresh install or after a database reset — lost
 					// the radio's verification until some later NodeInfo happened to update it.
 					newNode.isKeyManuallyVerified = nodeInfo.isKeyManuallyVerified
+					newNode.heardOnCurrentLora = Self.heardOnCurrentLora(nodeInfo, reported: reportsHeardOnCurrentLora, connectedNodeNum: connectedNodeNum)
 
 					if nodeInfo.hasDeviceMetrics {
 						let telemetry = TelemetryEntity()
@@ -1186,6 +1208,7 @@ actor MeshPackets {
 					// radio that does the actual verifying no longer holds.
 					fetchedNode[0].hasXeddsaSigned = nodeInfo.hasXeddsaSigned_p
 					fetchedNode[0].isKeyManuallyVerified = nodeInfo.isKeyManuallyVerified
+					fetchedNode[0].heardOnCurrentLora = Self.heardOnCurrentLora(nodeInfo, reported: reportsHeardOnCurrentLora, connectedNodeNum: connectedNodeNum)
 
 					if nodeInfo.hasUser {
 						if fetchedNode[0].user == nil {

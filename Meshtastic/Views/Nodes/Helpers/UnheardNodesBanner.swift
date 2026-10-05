@@ -9,11 +9,12 @@ import SwiftUI
 import SwiftData
 import OSLog
 
-/// Offered after the radio's LoRa settings move it to a different channel.
+/// Offered when most of the node list is nodes the radio has not heard on its current LoRa settings
+/// (NodeInfo.heard_on_current_lora, firmware 2.8.1+, meshtastic/design#146).
 ///
-/// The node db does not move with the radio: every node in the list was heard on the old channel and
-/// has no channel in common with this radio any more. Sends to them fail, and for channel broadcasts
-/// they fail silently, because a broadcast carries no ack.
+/// After a preset, region or frequency slot change the node db does not move with the radio, and
+/// sends to those nodes fail, silently for channel broadcasts. The radio decides what counts as
+/// heard; the app never works it out itself, so older firmware gets no offer.
 ///
 /// Only ever an offer. The client node db is deliberately a superset of the radio's, so nothing is
 /// removed without the user asking — a node may simply be out of range rather than on another preset,
@@ -25,12 +26,14 @@ import OSLog
 /// string catalog has a value to compile — theirs had none, so the markup reached the
 /// screen. A test that restates the literal would not have noticed.
 enum UnheardNodesStrings {
+	/// Says only what the radio knows, per meshtastic/design#146: it does not know a setting changed
+	/// or why.
 	static func headline(count: Int) -> String {
-		String(localized: "\(count) nodes not heard since you changed settings")
+		String(localized: "\(count) nodes not heard on your current LoRa settings")
 	}
 
 	static func removeConfirmation(count: Int) -> String {
-		String(localized: "Remove \(count) nodes?", comment: "Confirmation title for removing nodes not heard since the settings changed")
+		String(localized: "Remove \(count) nodes?", comment: "Confirmation title for removing nodes not heard on the current LoRa settings")
 	}
 }
 
@@ -39,6 +42,13 @@ struct UnheardNodesBanner: View {
 	@EnvironmentObject private var accessoryManager: AccessoryManager
 
 	@State private var unheardNodes: [NodeInfoEntity] = []
+	/// Nodes the radio has given an answer for, the denominator for "most of the list". The app keeps
+	/// more nodes than the radio does; the ones it never reported on are unknown, not heard, and
+	/// counting them hid the notice even when nearly every reported node was unheard.
+	@State private var radioNodeCount = 0
+	/// Of `unheardNodes`, the ones the radio reported unheard. Only these decide whether to offer:
+	/// most apps keep more nodes than the radio, so counting the rest would offer all the time.
+	@State private var reportedUnheardCount = 0
 	@State private var isConfirming = false
 	@State private var isRemoving = false
 
@@ -49,13 +59,26 @@ struct UnheardNodesBanner: View {
 
 	var body: some View {
 		Group {
-			if let connectedNodeNum, !unheardNodes.isEmpty,
-			   LoRaConfigChange.shouldOfferCleanup(forNode: connectedNodeNum) {
+			if let connectedNodeNum, !unheardNodes.isEmpty, shouldOffer(connectedNodeNum: connectedNodeNum) {
 				content(connectedNodeNum: connectedNodeNum)
 			}
 		}
 		.onAppear(perform: refresh)
 		.onChange(of: accessoryManager.activeDeviceNum) { _, _ in refresh() }
+		// The radio's answers arrive with its node db. The connect reports subscribed before that
+		// db is saved, so refresh once the save lands rather than on the state change.
+		.onChange(of: accessoryManager.nodeDatabaseSavedAt) { _, _ in refresh() }
+	}
+
+	/// One aggregate when most of the list is unheard; the rows carry the marker otherwise.
+	private func shouldOffer(connectedNodeNum: Int64) -> Bool {
+		accessoryManager.reportsHeardOnCurrentLora
+			&& UnheardOnCurrentLoraOffer.isMostOfList(unheard: reportedUnheardCount, reported: radioNodeCount)
+			&& UnheardOnCurrentLoraOffer.shouldOffer(count: unheardNodes.count, forNode: connectedNodeNum)
+	}
+
+	private func dismiss(connectedNodeNum: Int64) {
+		UnheardOnCurrentLoraOffer.dismiss(count: unheardNodes.count, forNode: connectedNodeNum)
 	}
 
 	private func content(connectedNodeNum: Int64) -> some View {
@@ -65,12 +88,11 @@ struct UnheardNodesBanner: View {
 				.foregroundStyle(.orange)
 
 			VStack(alignment: .leading, spacing: 6) {
-				// The honest claim: we know we have not heard them since the settings changed. We
-				// cannot know they moved to another preset — a radio cannot observe a channel it is
-				// not tuned to.
+				// The honest claim: the radio has not heard them on these settings. It cannot know
+				// they moved to another preset — a radio cannot observe a channel it is not tuned to.
 				Text(UnheardNodesStrings.headline(count: unheardNodes.count))
 					.font(.callout.weight(.semibold))
-				Text("They were heard on the old channel and cannot be reached from this one. Favorites and the connected node are kept.")
+				Text("Your radio has not heard them on the settings it is using now, or no longer has them. Favorites and the connected node are kept.")
 					.font(.caption)
 					.foregroundStyle(.secondary)
 
@@ -93,9 +115,10 @@ struct UnheardNodesBanner: View {
 								.frame(minWidth: 48, minHeight: 48)
 						}
 						.buttonStyle(.borderedProminent)
+						.tint(.accentFill)
 
 						Button {
-							LoRaConfigChange.dismissOffer(forNode: connectedNodeNum)
+							dismiss(connectedNodeNum: connectedNodeNum)
 							refresh()
 						} label: {
 							Text("Keep")
@@ -119,23 +142,31 @@ struct UnheardNodesBanner: View {
 			Button(role: .destructive) {
 				Task { await removeUnheardNodes(connectedNodeNum: connectedNodeNum) }
 			} label: {
-				Text("Remove", comment: "Confirms removing nodes not heard since the settings changed")
+				Text("Remove", comment: "Confirms removing nodes not heard on the current LoRa settings")
 			}
 			Button(role: .cancel) { } label: {
 				Text("Cancel")
 			}
 		} message: {
-			Text("They are removed from this app and from the radio. Any that are still out there come back when they are next heard.")
+			Text("They are removed from this app, and from the radio if it still has them. Any that are still out there come back when they are next heard.")
 		}
 	}
 
-	/// Nodes heard before the change and not since, excluding favorites and the radio itself.
+	/// A node the radio no longer has: it sends the field, a node database has been saved this
+	/// session (so absent nodes have been marked), and it gave no answer for this node. The radio
+	/// adds every node it hears, so it has not heard these on its current settings either.
+	private func isAppOnly(_ node: NodeInfoEntity) -> Bool {
+		accessoryManager.nodeDatabaseSavedAt != nil && node.heardOnCurrentLora == nil && !node.viaMqtt
+	}
+
+	private func isRemovable(_ node: NodeInfoEntity) -> Bool {
+		node.isUnheardOnCurrentLora || isAppOnly(node)
+	}
+
+	/// Nodes the radio reports unheard on its current settings, plus nodes only the app still has,
+	/// excluding favorites and the radio itself.
 	private func refresh() {
-		guard let connectedNodeNum else {
-			unheardNodes = []
-			return
-		}
-		guard let changedAt = LoRaConfigChange.changedAt(forNode: connectedNodeNum) else {
+		guard let connectedNodeNum, accessoryManager.reportsHeardOnCurrentLora else {
 			unheardNodes = []
 			return
 		}
@@ -149,13 +180,13 @@ struct UnheardNodesBanner: View {
 		do {
 			candidates = try context.fetch(descriptor)
 		} catch {
-			Logger.data.error("Could not read nodes to flag after a channel change: \(error.localizedDescription, privacy: .public)")
+			Logger.data.error("Could not read nodes not heard on the current LoRa settings: \(error.localizedDescription, privacy: .public)")
 			unheardNodes = []
 			return
 		}
-		unheardNodes = candidates.filter {
-			LoRaConfigChange.isUnheard(lastHeard: $0.lastHeard, viaMqtt: $0.viaMqtt, changedAt: changedAt)
-		}
+		radioNodeCount = candidates.filter { !$0.viaMqtt && $0.heardOnCurrentLora != nil }.count
+		reportedUnheardCount = candidates.filter(\.isUnheardOnCurrentLora).count
+		unheardNodes = candidates.filter(isRemovable)
 	}
 
 	private func removeUnheardNodes(connectedNodeNum: Int64) async {
@@ -164,21 +195,25 @@ struct UnheardNodesBanner: View {
 
 		// The list was built when the banner appeared. A node can be heard again between then and the
 		// confirmation, and removing one that has just come back is the one outcome worth avoiding
-		// here — so each is re-checked against the current lastHeard rather than trusted.
-		let changedAt = LoRaConfigChange.changedAt(forNode: connectedNodeNum)
+		// here — so each is re-checked rather than trusted.
 		var removed = 0
 		var failed = 0
 		var recovered = 0
 
 		for node in unheardNodes {
-			guard LoRaConfigChange.isUnheard(
-				lastHeard: node.lastHeard, viaMqtt: node.viaMqtt, changedAt: changedAt
-			) else {
+			guard isRemovable(node) else {
 				recovered += 1
 				continue
 			}
 			do {
-				try await accessoryManager.removeNode(node: node, connectedNodeNum: connectedNodeNum)
+				if isAppOnly(node) {
+					// The radio doesn't have it, so there is nothing to remove there.
+					if let user = node.user { context.delete(user) }
+					context.delete(node)
+					try context.save()
+				} else {
+					try await accessoryManager.removeNode(node: node, connectedNodeNum: connectedNodeNum)
+				}
 				removed += 1
 				unheardNodes.removeAll { $0.num == node.num }
 			} catch {
@@ -187,12 +222,12 @@ struct UnheardNodesBanner: View {
 				Logger.data.error("Could not remove unheard node \(node.num.toHex(), privacy: .public): \(error.localizedDescription, privacy: .public)")
 			}
 		}
-		Logger.data.info("Removed \(removed, privacy: .public) nodes not heard since the channel changed, \(failed, privacy: .public) failed, \(recovered, privacy: .public) heard again before removal")
+		Logger.data.info("Removed \(removed, privacy: .public) nodes not heard on the current LoRa settings, \(failed, privacy: .public) failed, \(recovered, privacy: .public) heard again before removal")
 
 		// Only stand the offer down once nothing is left to remove. Dismissing after a partial
 		// failure would hide the banner and take the retry with it.
 		if failed == 0 {
-			LoRaConfigChange.dismissOffer(forNode: connectedNodeNum)
+			dismiss(connectedNodeNum: connectedNodeNum)
 		}
 		refresh()
 	}
