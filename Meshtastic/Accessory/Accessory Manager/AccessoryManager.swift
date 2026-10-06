@@ -243,10 +243,23 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 	/// dump brings in (the unheard-on-current-LoRa notice) refresh on this, because the connect
 	/// reaches `.subscribed` before that save lands.
 	@Published var nodeDatabaseSavedAt: Date?
+	/// Bumped on each node database request and on disconnect, so a save finishing late for an
+	/// earlier request doesn't report the new one as saved.
+	private var nodeDatabaseSaveGeneration = 0
 	/// Node numbers in the node database download in progress. When it completes, nodes the radio
 	/// left out are marked unknown for heard-on-current-LoRa: the radio no longer has them.
 	var nodeDatabaseDumpNums: Set<Int64> = []
 	var nodeDatabaseDumpInProgress = false
+	/// The LoRa change the node database download in progress was asked for, or nil when it was
+	/// asked for by something else (the connect).
+	private var nodeDatabaseRequestLoRaChange: Int?
+	/// True from an app-initiated LoRa change until the node database asked for after the latest
+	/// one is saved. Until then the radio's heard-on-current-LoRa answers are for older settings,
+	/// so the unheard notice stays hidden rather than offering to remove nodes from them.
+	@Published private(set) var awaitingNodeDatabaseAfterLoRaChange = false
+	private var loraChangeTracker = LoRaChangeNodeDatabaseTracker() {
+		didSet { awaitingNodeDatabaseAfterLoRaChange = loraChangeTracker.isAwaiting }
+	}
 	@Published var isConnecting: Bool = false
 	@Published var isInBackground: Bool = false
 	@Published var firmwareEdition: FirmwareEditions = .vanilla
@@ -567,19 +580,33 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 	/// `nodeDatabaseSavedAt`, which is what the unheard notice and node rows refresh on.
 	func refreshNodeDatabaseAfterLoRaChange() {
 		guard reportsHeardOnCurrentLora, isConnected else { return }
+		let generation = loraChangeTracker.changed()
 		Task { @MainActor in
 			// Let the radio finish reprogramming the modem before asking.
 			try? await Task.sleep(for: .seconds(2))
-			guard self.isConnected else { return }
+			// One download at a time: the completion doesn't say which request it answers.
+			while self.nodeDatabaseDumpInProgress, self.isConnected {
+				try? await Task.sleep(for: .milliseconds(250))
+			}
+			guard self.isConnected else {
+				self.loraChangeTracker.reset()
+				return
+			}
+			// A newer change is waiting its turn and will ask instead.
+			guard self.loraChangeTracker.request(generation) else { return }
 			do {
-				try await self.sendWantDatabase()
+				try await self.sendWantDatabase(forLoRaChange: generation)
 			} catch {
 				Logger.transport.error("[LoRa] Could not refresh the node database after a settings change: \(error.localizedDescription, privacy: .public)")
+				self.loraChangeTracker.finished(generation)
 			}
 		}
 	}
 
-	func sendWantDatabase() async throws {
+	func sendWantDatabase(forLoRaChange loraChange: Int? = nil) async throws {
+		nodeDatabaseRequestLoRaChange = loraChange
+		nodeDatabaseSaveGeneration += 1
+		nodeDatabaseSavedAt = nil
 		nodeDatabaseDumpNums = []
 		nodeDatabaseDumpInProgress = true
 		if let firstDatabaseNodeInfoContinuation = firstDatabaseNodeInfoContinuation {
@@ -628,6 +655,9 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 		isClosingConnection = true
 		defer { isClosingConnection = false }
 
+		nodeDatabaseSaveGeneration += 1
+		nodeDatabaseSavedAt = nil
+
 		Logger.transport.debug("[AccessoryManager] received disconnect request")
 
 		// Here rather than in `disconnect()`: an unexpected link loss, a failed connect and a
@@ -644,6 +674,10 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 		}
 		self.activeDeviceNum = nil
 		self.firmwareUpdateRequired = false
+		// A dropped connection never finishes its download; the reconnect brings a fresh one.
+		loraChangeTracker.reset()
+		nodeDatabaseDumpInProgress = false
+		nodeDatabaseRequestLoRaChange = nil
 		if let refresh = activeAutomaticConfigRefresh {
 			automaticConfigRefreshTask?.cancel()
 			await finishAutomaticConfigRefresh(owner: refresh.owner, error: CancellationError())
@@ -1245,6 +1279,9 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 				let dumpNums = nodeDatabaseDumpNums
 				let dumpWasRequested = nodeDatabaseDumpInProgress
 				nodeDatabaseDumpInProgress = false
+				let saveGeneration = nodeDatabaseSaveGeneration
+				let loraChange = nodeDatabaseRequestLoRaChange
+				nodeDatabaseRequestLoRaChange = nil
 				Task {
 					// The dump was ingested with deferred saves on the MeshPackets actor
 					// (see handleNodeInfo); flush it so every node from the dump is persisted
@@ -1255,7 +1292,12 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 					}
 					do {
 						try context.save()
-						nodeDatabaseSavedAt = Date()
+						if let loraChange {
+							loraChangeTracker.finished(loraChange)
+						}
+						if nodeDatabaseSaveGeneration == saveGeneration {
+							nodeDatabaseSavedAt = Date()
+						}
 						Logger.data.info("💾 [Database] Batch saved all node info after database retrieval")
 						if let activeDeviceNum {
 							MeshShareSnapshotBuilder.refresh(
