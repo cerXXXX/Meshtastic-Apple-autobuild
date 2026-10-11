@@ -288,7 +288,7 @@ struct ChannelMessageList: View {
 			.messageBottomScrollPosition(request: bottomScrollRequest, tracker: scrollTracker)
 			.defaultScrollAnchor(.bottom)
 			.defaultScrollAnchorBottomSizeChanges()
-			.scrollDismissesKeyboard(.immediately)
+			.dismissesKeyboardOnScroll()
 			.onAppear {
 				DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 					if #available(iOS 18.0, macOS 15.0, *) {
@@ -457,8 +457,8 @@ private extension ChannelMessageList {
 		searchActor = actor
 		do {
 			let matches = try await actor.channelMatches(channelIndex: channel.index, query: query)
-			// Drop stale results if the query moved on while the background fetch ran.
-			guard query == searchQuery else { return }
+			// A query change or conversation switch can cancel us while the actor fetch runs.
+			guard !Task.isCancelled, query == searchQuery else { return }
 			searchMatches = matches
 			if matches.isEmpty {
 				currentMatchIndex = -1
