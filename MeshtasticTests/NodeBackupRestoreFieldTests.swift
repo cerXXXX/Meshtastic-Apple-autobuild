@@ -117,7 +117,7 @@ struct NodeBackupRestoreFieldTests {
 		telemetry.pm10Environmental = 4
 		telemetry.pm25Environmental = 5
 		telemetry.pm100Environmental = 6
-		telemetry.nodeTelemetry = node
+		telemetry.nodeNum = node.num
 		backup.insert(telemetry)
 		try backup.save()
 
@@ -132,7 +132,7 @@ struct NodeBackupRestoreFieldTests {
 		#expect(dst.pm10Environmental == 4)
 		#expect(dst.pm25Environmental == 5)
 		#expect(dst.pm100Environmental == 6)
-		#expect(dst.nodeTelemetry?.num == 99)
+		#expect(dst.nodeNum == 99)
 	}
 
 	// MARK: - MessageEntity
@@ -155,5 +155,33 @@ struct NodeBackupRestoreFieldTests {
 		let dst = try #require(try live.fetch(FetchDescriptor<MessageEntity>()).first)
 		#expect(dst.messageId == 123_456)
 		#expect(dst.xeddsaSigned)
+	}
+
+	// MARK: - TraceRouteEntity
+
+	@Test("Trace route restore keeps the send time and rate-limited flag")
+	func traceRouteFieldsSurviveRestore() throws {
+		let backup = try makeContext()
+		let live = try makeContext()
+
+		let sentAt = Date(timeIntervalSince1970: 1_800_000_000)
+		let route = TraceRouteEntity()
+		route.id = 4242
+		route.sent = true
+		route.response = true
+		route.sentAt = sentAt
+		route.time = sentAt.addingTimeInterval(9)
+		route.rateLimited = true
+		backup.insert(route)
+		try backup.save()
+
+		try NodeBackupManager.importTraceRoutes(from: backup, into: live, nodesByNum: [:])
+		try live.save()
+
+		let dst = try #require(try live.fetch(FetchDescriptor<TraceRouteEntity>()).first)
+		#expect(dst.id == 4242)
+		#expect(dst.sentAt == sentAt)
+		#expect(dst.roundTrip == 9)
+		#expect(dst.rateLimited)
 	}
 }

@@ -310,6 +310,9 @@
         }
       }
     },
+    "· %lld outside" : {
+      "comment" : "Spatial map: nodes too far away to fit on the terrain"
+    },
     "%lld could not be removed." : {
       "comment" : "Result after removing unheard nodes: nodes the radio refused to remove"
     },
@@ -336,6 +339,21 @@
         }
       }
     },
+    "Center" : {
+      "comment" : "Spatial map: slide the map to put this node in the middle"
+    },
+    "Connected radio" : {
+      "comment" : "Spatial map: the selected node is the connected radio"
+    },
+    "Dark Map" : {
+      "comment" : "Spatial map: draw the map in its dark appearance"
+    },
+    "Fly a traceroute" : {
+      "comment" : "VoiceOver label for the spatial map flyover menu"
+    },
+    "Live traffic" : {
+      "comment" : "VoiceOver label for the spatial map traffic toggle"
+    },
     "Maker" : {
       "comment" : "Accessibility name for the maker hardware mark"
     },
@@ -345,8 +363,44 @@
     "%lld were heard on the current settings before they were removed and were kept." : {
       "comment" : "Result after removing unheard nodes: nodes the radio reported heard again"
     },
+    "Map imagery unavailable; showing terrain shading" : {
+      "comment" : "Spatial map: the Apple map image could not be fetched"
+    },
+    "Map Layer" : {
+      "comment" : "Spatial map: picker for the image draped over the terrain"
+    },
+    "Map layer" : {
+      "comment" : "VoiceOver label for the spatial map layer menu"
+    },
+    "No traceroutes with positions" : {
+      "comment" : "Spatial map: flyover menu is empty"
+    },
+    "Node Detail" : {
+      "comment" : "Spatial map: open the node's detail screen"
+    },
+    "Node labels" : {
+      "comment" : "VoiceOver label for the spatial map labels toggle"
+    },
+    "Open 3D map" : {
+      "comment" : "VoiceOver label for the button that opens the spatial map volume"
+    },
     "Removed %lld nodes." : {
       "comment" : "Result after removing nodes not heard on the current LoRa settings"
+    },
+    "Show in 3D" : {
+      "comment" : "Node detail action: open the spatial map volume at this node"
+    },
+    "Shows the mesh on a terrain model in a volume." : {
+      "comment" : "VoiceOver hint for the button that opens the spatial map volume"
+    },
+    "Spatial Map" : {
+      "comment" : "Title of the visionOS spatial map volume"
+    },
+    "Terrain Shading" : {
+      "comment" : "Spatial map layer: hillshade only, no map imagery"
+    },
+    "Traceroute links" : {
+      "comment" : "VoiceOver label for the spatial map links toggle"
     },
     "Unheard Nodes" : {
       "comment" : "Title of the result shown after removing nodes not heard on the current LoRa settings"
@@ -1263,100 +1317,6 @@
       },
       "shouldTranslate" : false
     },
-    "%@ - %@ Towards  %@ Back" : {
-      "localizations" : {
-        "da" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ Mod %3$@ Tilbage"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Deine Position - Deine Position"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ Towards  %3$@ Back"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ ida %3$@ vuelta"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ - %2$@ Vers  %3$@ En arrière"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ Verso %3$@ Indietro"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ 送信 %3$@ 受信"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - 목적지까지 %2$@, 돌아오는 경로 %3$@"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ - %2$@ Em direção a %3$@ de volta"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ В обратном  %3$@ направлении"
-          }
-        },
-        "sr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ Одлазних скокова %3$@ Долазних скокова"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ вперед  %3$@ назад"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ Towards  %3$@ Back"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ - %2$@ 朝向 %3$@ 背向"
-          }
-        },
-        "zh-Hant-TW" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ - %2$@ 往  %3$@ 返"
-          }
-        }
-      }
-    },
     "%@ - No Response" : {
       "localizations" : {
         "da" : {
@@ -1988,36 +1948,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ %2$llds"
-          }
-        }
-      }
-    },
-    "%@ • %@ Towards • %@ Back" : {
-      "comment" : "A label that shows the time a trace route was created, the number of hops the route took towards the destination, and the number of hops the route took back. The first argument is a date and time. The second argument is the string “%arg Hops”. The third argument is the number of hops the route took back.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ • %2$@ Towards • %3$@ Back"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ • 목적지까지 %2$@ • 돌아오는 경로 %3$@"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ • %2$@ вперед • %3$@ назад"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ • %2$@ ida • %3$@ vuelta"
           }
         }
       }
@@ -2803,6 +2733,9 @@
           }
         }
       }
+    },
+    "%@ out · %@ back" : {
+      "comment" : "Trace route card when the forward and return paths differ, e.g. \"3 Hops out · 4 Hops back\""
     },
     "%@ percent" : {
       "comment" : "VoiceOver value spoken as a percentage reading on a chart. %@ is the number.",
@@ -9550,6 +9483,9 @@
         }
       }
     },
+    "Active topics" : {
+      "comment" : "Topic finder section: roots heard on the broker"
+    },
     "Activity" : {
       "localizations" : {
         "da" : {
@@ -12550,6 +12486,9 @@
           }
         }
       }
+    },
+    "All Estimates" : {
+      "comment" : "Spatial map coverage option: show every coverage estimate in the area"
     },
     "All secondary channel slots are full. Choose an existing secondary channel to replace — your primary channel is never touched." : {
       "comment" : "A message displayed when the user is prompted to replace a beacon's channel.",
@@ -17287,6 +17226,9 @@
         }
       }
     },
+    "Best / worst SNR" : {
+      "comment" : "Trace route share image: the highest and lowest SNR of the legs"
+    },
     "Biking" : {
       "comment" : "ActivityType.description\nActivityType.fileNameString"
     },
@@ -19369,6 +19311,9 @@
           }
         }
       }
+    },
+    "Cancel terrain download" : {
+      "comment" : "VoiceOver label to stop the spatial map terrain download"
     },
     "Canceled" : {
       "localizations" : {
@@ -23270,6 +23215,9 @@
         }
       }
     },
+    "City" : {
+      "comment" : "Topic finder: ladder level name"
+    },
     "Clear" : {
       "localizations" : {
         "da" : {
@@ -26933,6 +26881,9 @@
         }
       }
     },
+    "Connecting…" : {
+      "comment" : "Topic finder: sampler status"
+    },
     "Connection Attempt %lld of %lld" : {
       "localizations" : {
         "de" : {
@@ -28198,6 +28149,9 @@
         }
       }
     },
+    "Could not connect to %@." : {
+      "comment" : "Topic finder: sampler error"
+    },
     "Could not connect to the device." : {
       "comment" : "OTA failed to connect to the device in update mode",
       "localizations" : {
@@ -28308,6 +28262,9 @@
           }
         }
       }
+    },
+    "Could not look up the place name for your location." : {
+      "comment" : "Topic finder: geocoding failed"
     },
     "Could not open the selected drive." : {
       "comment" : "Error message when the user cannot access the selected bootloader drive.",
@@ -28568,6 +28525,15 @@
         }
       }
     },
+    "Counts are nodes heard during the sample. Busy topics fill in within seconds; quiet ones may stay at zero." : {
+      "comment" : "Topic finder: ladder footer"
+    },
+    "Coverage" : {
+      "comment" : "Spatial map menu: which Site Planner coverage estimates to show on the terrain"
+    },
+    "Coverage estimate" : {
+      "comment" : "VoiceOver label for the spatial map card's coverage menu"
+    },
     "Coverage estimate failed" : {
       "comment" : "A title for an alert that displays when a coverage estimate fails.",
       "isCommentAutoGenerated" : true,
@@ -28591,6 +28557,12 @@
           }
         }
       }
+    },
+    "Coverage legend" : {
+      "comment" : "VoiceOver label for the spatial map coverage colors"
+    },
+    "Coverage Opacity" : {
+      "comment" : "Spatial map menu: how see-through the coverage overlay is"
     },
     "Create Node Contact NFC Tag" : {
       "comment" : "A section header that instructs the user to create a contact NFC tag.",
@@ -29345,6 +29317,9 @@
     "Custom" : {
       "comment" : "LoRa preset shown when the radio uses its own modem settings"
     },
+    "Custom topic" : {
+      "comment" : "Topic finder: section and field for a typed root"
+    },
     "Custom: %@" : {
       "comment" : "A custom channel picker option that shows the name of the channel.",
       "isCommentAutoGenerated" : true,
@@ -29360,29 +29335,8 @@
     "Custom: %lld Seconds" : {
       "comment" : "UpdateInterval.description"
     },
-    "Dashed line back to the originator." : {
-      "comment" : "A description of a dashed line that represents the return path of a trace route.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "발신자로 돌아가는 점선"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Пунктирна лінія назад до відправника."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Línea discontinua de retorno al origen."
-          }
-        }
-      }
+    "Dashed green line back to the originator. Where both paths use the same leg, the two lines sit side by side." : {
+
     },
     "Dashed line showing a recorded route path." : {
       "comment" : "A description of a dashed line that shows a recorded route path.",
@@ -37035,6 +36989,15 @@
         }
       }
     },
+    "Download Terrain" : {
+      "comment" : "Spatial map: button that downloads elevation data so the volume shows relief"
+    },
+    "Download Terrain Automatically" : {
+      "comment" : "Spatial map menu: keep the volume's area covered by elevation data without asking"
+    },
+    "Download terrain for this area?" : {
+      "comment" : "Spatial map: title of the terrain download confirmation"
+    },
     "Download the %@ language pack to read the documentation in your language." : {
       "comment" : "A description of the action of downloading a translation language pack.",
       "isCommentAutoGenerated" : true,
@@ -37161,6 +37124,9 @@
         }
       }
     },
+    "Downloading terrain" : {
+      "comment" : "VoiceOver label for the spatial map terrain download progress"
+    },
     "Downloading, verifying and writing…" : {
       "localizations" : {
         "es" : {
@@ -37170,6 +37136,12 @@
           }
         }
       }
+    },
+    "Downloads about %@ of elevation data for a %@ area around the mesh." : {
+      "comment" : "Spatial map: terrain download confirmation; the arguments are the download size, e.g. 40 MB, and the area's width × height, e.g. 98 km × 104 km"
+    },
+    "Downloads elevation data so the map shows hills and valleys." : {
+      "comment" : "VoiceOver hint for the spatial map terrain download button"
     },
     "Drag the box, its corners, or the map to frame an area" : {
       "comment" : "A description of how to use the map selector.",
@@ -37581,18 +37553,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "預設的停留時間"
-          }
-        }
-      }
-    },
-    "Each leg is colored by its hop SNR — green (good), yellow (fair), orange (bad), red (none) — and also gets progressively thinner and more dashed as quality drops." : {
-      "comment" : "A description of how the signal strength is displayed on the map.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cada traza está coloreada por su SNR en el salto - verde (bueno), amarillo (pasable), naranja (malo), rojo (ninguno) - y también se vuelve progresivamente más delgada y más discontinua a medida que la calidad disminuye."
           }
         }
       }
@@ -39996,6 +39956,9 @@
         }
       }
     },
+    "Enter a topic." : {
+      "comment" : "MQTT root topic rule"
+    },
     "Enter hostname[:port]" : {
       "comment" : "A label for a text field where the user can enter a hostname or IP address and optionally a port number.",
       "isCommentAutoGenerated" : true,
@@ -41444,6 +41407,12 @@
           }
         }
       }
+    },
+    "Estimate Coverage…" : {
+      "comment" : "Spatial map card: open the coverage estimate form for this node"
+    },
+    "Estimated %@" : {
+      "comment" : "Spatial map card: when this node's coverage estimate was made, e.g. Estimated 2 days ago"
     },
     "Estimating coverage…" : {
       "comment" : "A label displayed while running a coverage estimate.",
@@ -44155,6 +44124,9 @@
         }
       }
     },
+    "Find Topics" : {
+      "comment" : "MQTT root topic: button that opens the topic finder, and the sheet title"
+    },
     "Finish" : {
       "localizations" : {
         "da" : {
@@ -44373,6 +44345,9 @@
           }
         }
       }
+    },
+    "Firmware before 2.8.1 replaces a custom root topic with msh/<REGION> whenever the LoRa region is saved." : {
+      "comment" : "MQTT root topic: warning on older firmware"
     },
     "Firmware Edition" : {
       "localizations" : {
@@ -46008,6 +45983,12 @@
     },
     "Forty Five Seconds" : {
       "comment" : "LocationUpdateInterval.description\nUpdateInterval.description"
+    },
+    "Forward hops" : {
+      "comment" : "Trace route: hop count towards the target"
+    },
+    "Forward route" : {
+      "comment" : "Trace route timeline: heading for the path towards the target"
     },
     "Four Hours" : {
       "comment" : "UpdateInterval.description"
@@ -48347,30 +48328,6 @@
     "gpx" : {
       "comment" : "Search keyword"
     },
-    "Green marks the originator, red marks the target node." : {
-      "comment" : "A description of the color-coded endpoints of a trace route.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "녹색은 발신자를, 빨간색은 대상 노드를 나타냅니다."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Зелений позначає відправника, червоний — цільовий вузол."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verde marca el origen, rojo marca el nodo destino"
-          }
-        }
-      }
-    },
     "Grey indicates successful delivery. Orange indicates a retryable error. Red indicates a permanent failure that will not succeed on retry." : {
       "comment" : "A description of the colors used in the AckErrors view.",
       "extractionState" : "stale",
@@ -49032,6 +48989,9 @@
         }
       }
     },
+    "Heard %lld messages on %lld topics" : {
+      "comment" : "Topic finder: result summary"
+    },
     "Heard on %@" : {
       "comment" : "A label that shows the name of the preset/region/frequency slot that the beacon is currently heard on.",
       "isCommentAutoGenerated" : true,
@@ -49498,6 +49458,9 @@
           }
         }
       }
+    },
+    "Hide Coverage" : {
+      "comment" : "Spatial map card: stop showing this node's coverage estimate"
     },
     "Hide help" : {
       "comment" : "VoiceOver label for the help toggle button when help is showing",
@@ -50252,6 +50215,9 @@
           }
         }
       }
+    },
+    "Hop Numbers" : {
+
     },
     "hops" : {
       "comment" : "Search keyword"
@@ -56040,6 +56006,9 @@
         }
       }
     },
+    "Kept up to date by the Spatial Map. Delete it any time; it is downloaded again when the volume needs it (turn off Download Terrain Automatically to stop that)." : {
+      "comment" : "Offline map row caption for the terrain region the visionOS spatial map manages"
+    },
     "key" : {
       "comment" : "Search keyword"
     },
@@ -57848,6 +57817,9 @@
         }
       }
     },
+    "Light" : {
+      "comment" : "Spatial map coverage opacity option: most see-through"
+    },
     "Limit all periodic broadcast intervals especially telemetry and position. If you need to increase hops, do it on nodes at the edges, not the ones in the middle. MQTT is not advised when you are duty cycle restricted because the gateway node is then doing all the work." : {
       "localizations" : {
         "da" : {
@@ -58094,6 +58066,12 @@
           }
         }
       }
+    },
+    "Listening…" : {
+      "comment" : "Topic finder: sampler status"
+    },
+    "Listens to %@ for one minute and publishes nothing. The broker sees your IP address and a random client ID, not your node. Your location is never sent to the broker; Apple's geocoder turns it into the state and city names on the rows. Picking a row fills in the Root Topic field; nothing is sent to the radio until you tap Save." : {
+      "comment" : "Topic finder: privacy footer"
     },
     "Live" : {
       "localizations" : {
@@ -62776,6 +62754,9 @@
           }
         }
       }
+    },
+    "Medium" : {
+      "comment" : "Spatial map coverage opacity option"
     },
     "Mesh activity update" : {
       "localizations" : {
@@ -84223,6 +84204,9 @@
         }
       }
     },
+    "Near you" : {
+      "comment" : "Topic finder section: geocoded ladder"
+    },
     "Nearby Devices" : {
       "localizations" : {
         "de" : {
@@ -84392,6 +84376,9 @@
           }
         }
       }
+    },
+    "nearest %@" : {
+      "comment" : "Topic finder: distance to the closest map-reported node"
     },
     "Need Hardware?" : {
       "comment" : "A link to learn more about the hardware needed to use Meshtastic.",
@@ -86268,6 +86255,9 @@
         }
       }
     },
+    "No local topics heard" : {
+      "comment" : "Topic finder: empty discovered section"
+    },
     "No LocalStats data collected" : {
       "comment" : "A message displayed when a user has not yet collected LocalStats data.",
       "isCommentAutoGenerated" : true,
@@ -86339,6 +86329,9 @@
           }
         }
       }
+    },
+    "No location yet. Connect a radio with a position fix, or allow location access, to see state and city topics." : {
+      "comment" : "Topic finder: ladder footer without a location"
     },
     "No map data files uploaded" : {
       "comment" : "Message when no files are uploaded",
@@ -87003,6 +86996,12 @@
         }
       }
     },
+    "No response" : {
+      "comment" : "Trace route state: request sent, nothing came back"
+    },
+    "No return route was reported." : {
+      "comment" : "Trace route share image: the response didn't include the path back"
+    },
     "No route to the destination node was found in the mesh. Try again when more nodes are reachable." : {
       "comment" : "RoutingError.description"
     },
@@ -87015,6 +87014,9 @@
           }
         }
       }
+    },
+    "No signal" : {
+      "comment" : "Spatial map legend: the dark shade where a coverage estimate found no signal"
     },
     "No SSH client found. We'll open the App Store so you can install one." : {
       "localizations" : {
@@ -88251,6 +88253,9 @@
         }
       }
     },
+    "nodes" : {
+      "comment" : "Topic finder: unit under the node count on a topic row"
+    },
     "Nodes" : {
       "localizations" : {
         "da" : {
@@ -89119,6 +89124,12 @@
         }
       }
     },
+    "Nothing heard yet" : {
+      "comment" : "Topic finder: discovered section while sampling"
+    },
+    "Nothing was heard during the sample." : {
+      "comment" : "Topic finder: empty discovered section"
+    },
     "Notifications for channel and direct messages." : {
       "localizations" : {
         "de" : {
@@ -89808,6 +89819,9 @@
           }
         }
       }
+    },
+    "Offline map storage is full. Delete a map in Offline Maps to download terrain for the whole mesh." : {
+      "comment" : "Spatial map: terrain for the whole mesh does not fit in the offline map storage limit"
     },
     "Offline Maps" : {
       "localizations" : {
@@ -90794,6 +90808,9 @@
           }
         }
       }
+    },
+    "Only the topics above were active during the sample." : {
+      "comment" : "Topic finder: empty discovered section"
     },
     "Open %@ documentation" : {
       "comment" : "VoiceOver label for a documentation source link",
@@ -100191,6 +100208,9 @@
         }
       }
     },
+    "Re-estimate Coverage…" : {
+      "comment" : "Spatial map card: run a new coverage estimate for this node"
+    },
     "Re-run Analysis" : {
       "comment" : "A button that triggers a re-run of the analysis.",
       "isCommentAutoGenerated" : true,
@@ -102060,6 +102080,9 @@
           }
         }
       }
+    },
+    "Relays are numbered in order, filled blue on the way out and outlined green on the way back." : {
+
     },
     "Release Notes" : {
       "localizations" : {
@@ -104089,6 +104112,9 @@
         }
       }
     },
+    "Reset zoom" : {
+      "comment" : "Spatial map: button showing how far the map is zoomed in; tapping it zooms back out to the whole mesh"
+    },
     "Resetting…" : {
       "localizations" : {
         "ko" : {
@@ -104975,6 +105001,9 @@
         }
       }
     },
+    "Retry terrain download" : {
+      "comment" : "VoiceOver label to retry the spatial map terrain download after it failed"
+    },
     "Retry Update" : {
       "localizations" : {
         "de" : {
@@ -105197,6 +105226,9 @@
         }
       }
     },
+    "Return hops" : {
+      "comment" : "Trace route: hop count on the way back"
+    },
     "Return Path" : {
       "comment" : "A description of the return path of a trace route.",
       "isCommentAutoGenerated" : true,
@@ -105220,6 +105252,9 @@
           }
         }
       }
+    },
+    "Return route" : {
+      "comment" : "Trace route timeline: heading for the path back from the target"
     },
     "Review in Meshtastic" : {
       "comment" : "A button that opens a web page in the user's browser.",
@@ -106169,6 +106204,9 @@
           }
         }
       }
+    },
+    "Round trip" : {
+      "comment" : "Trace route: time from sending the request to getting the response"
     },
     "route" : {
       "comment" : "Search keyword"
@@ -107509,6 +107547,9 @@
           }
         }
       }
+    },
+    "Sample again" : {
+      "comment" : "Topic finder: rerun the broker sample"
     },
     "Satellite" : {
       "comment" : "MapLayer.localized: map layer style\nMeshMapTypes.description"
@@ -109890,6 +109931,9 @@
         }
       }
     },
+    "See which root topics are active on your broker near you, and pick one." : {
+      "comment" : "MQTT root topic: help under the Find Topics button"
+    },
     "Select a channel" : {
       "localizations" : {
         "da" : {
@@ -110816,6 +110860,9 @@
           }
         }
       }
+    },
+    "Selected Node" : {
+      "comment" : "Spatial map coverage option: show the selected node's coverage estimate"
     },
     "Send" : {
       "localizations" : {
@@ -114741,6 +114788,9 @@
         }
       }
     },
+    "Set the LoRa region first" : {
+      "comment" : "Topic finder: sampling needs a region"
+    },
     "Set to current location" : {
       "comment" : "VoiceOver label for the use-my-location button",
       "localizations" : {
@@ -115269,6 +115319,9 @@
     },
     "share" : {
       "comment" : "Search keyword"
+    },
+    "Share" : {
+      "comment" : "Button that shares the trace route image"
     },
     "Share Channels" : {
       "comment" : "A tip that explains how to share channels.",
@@ -116458,6 +116511,9 @@
           }
         }
       }
+    },
+    "Show Coverage" : {
+      "comment" : "Spatial map card: show this node's coverage estimate on the terrain"
     },
     "Show help" : {
       "comment" : "VoiceOver label for the help toggle button when help is hidden",
@@ -119643,27 +119699,8 @@
         }
       }
     },
-    "Solid line toward the target; arrows point in the direction of travel." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "대상을 향하는 실선이며, 화살표는 진행 방향을 나타냅니다."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Суцільна лінія до цілі; стрілки вказують напрямок руху."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Línea continua hacia el objetivo; las flechas apuntan en la dirección de la ruta."
-          }
-        }
-      }
+    "Solid blue line toward the target; arrows point in the direction of travel." : {
+
     },
     "Source" : {
       "comment" : "A label that displays the source of a map.",
@@ -119688,6 +119725,9 @@
           }
         }
       }
+    },
+    "Spatial Map terrain" : {
+      "comment" : "Name of the terrain-only offline map the visionOS spatial map downloads and keeps up to date"
     },
     "Speed" : {
       "localizations" : {
@@ -120695,6 +120735,9 @@
     "State Broadcast Interval" : {
 
     },
+    "State or province" : {
+      "comment" : "Topic finder: ladder level name"
+    },
     "Static" : {
       "localizations" : {
         "ko" : {
@@ -121514,6 +121557,9 @@
         }
       }
     },
+    "Strong" : {
+      "comment" : "Spatial map coverage opacity option: least see-through"
+    },
     "Subnet" : {
       "localizations" : {
         "ko" : {
@@ -121635,6 +121681,9 @@
           }
         }
       }
+    },
+    "Subscribing…" : {
+      "comment" : "Topic finder: sampler status"
     },
     "Successfully uploaded '%@' with %lld overlays" : {
       "localizations" : {
@@ -123535,6 +123584,9 @@
         }
       }
     },
+    "Terrain Download Failed" : {
+      "comment" : "Spatial map: alert title when downloading terrain for the volume fails"
+    },
     "Terrain for %@" : {
       "localizations" : {
         "es" : {
@@ -123963,6 +124015,18 @@
           }
         }
       }
+    },
+    "The broker closed the connection." : {
+      "comment" : "Topic finder: sampler error"
+    },
+    "The broker did not confirm the subscription." : {
+      "comment" : "Topic finder: sampler error"
+    },
+    "The broker does not allow these topic filters." : {
+      "comment" : "Topic finder: sampler error"
+    },
+    "The broker refused the connection: %@." : {
+      "comment" : "Topic finder: sampler error"
     },
     "The channel and preset the beacon transmits on. Add a target to broadcast on more channels." : {
       "localizations" : {
@@ -125035,6 +125099,9 @@
         }
       }
     },
+    "The mesh is too spread out to download terrain for all of it." : {
+      "comment" : "Spatial map: the area around the mesh is over the per-map download limit"
+    },
     "The Meshtastic Apple app requires firmware version %@ or later. Older firmware versions are no longer supported and may have compatibility issues or missing features." : {
       "comment" : "A body text that explains that the app requires a certain version of the firmware.",
       "extractionState" : "stale",
@@ -125595,6 +125662,9 @@
         }
       }
     },
+    "The originator's short name has a green ring, the target's a white ring." : {
+
+    },
     "The owner, channels, identity keys, settings, and node database are permanently removed." : {
       "localizations" : {
         "es" : {
@@ -125604,6 +125674,9 @@
           }
         }
       }
+    },
+    "The pill on each leg shows its SNR, colored green (good), yellow (fair), orange (bad) or red (none). Pills that would overlap stay hidden until you zoom in." : {
+
     },
     "The primary channel handles broadcast traffic. Add secondary channels for separate messaging groups, each secured by their own key. [Learn more](https://meshtastic.org/docs/configuration/tips/)" : {
       "comment" : "A description of the channels feature.",
@@ -126355,6 +126428,9 @@
           }
         }
       }
+    },
+    "The terrain download could not start." : {
+      "comment" : "Spatial map: alert message when the manager refuses the terrain download"
     },
     "The tertiary public key authorized to send admin messages to this node." : {
       "localizations" : {
@@ -128887,6 +128963,9 @@
         }
       }
     },
+    "Time window" : {
+      "comment" : "Trace route log: how far back the chart and list go"
+    },
     "Time window in seconds for rate limiting calculations." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -130022,6 +130101,30 @@
         }
       }
     },
+    "Topics are limited to 31 characters." : {
+      "comment" : "MQTT root topic rule"
+    },
+    "Topics cannot contain + or #." : {
+      "comment" : "MQTT root topic rule"
+    },
+    "Topics cannot contain spaces or control characters." : {
+      "comment" : "MQTT root topic rule"
+    },
+    "Topics cannot contain two slashes in a row." : {
+      "comment" : "MQTT root topic rule"
+    },
+    "Topics cannot end with /2." : {
+      "comment" : "MQTT root topic rule"
+    },
+    "Topics cannot end with a slash." : {
+      "comment" : "MQTT root topic rule"
+    },
+    "Topics cannot start with a slash." : {
+      "comment" : "MQTT root topic rule"
+    },
+    "Topics must use ASCII characters." : {
+      "comment" : "MQTT root topic rule"
+    },
     "Total" : {
       "localizations" : {
         "da" : {
@@ -131105,6 +131208,9 @@
           }
         }
       }
+    },
+    "Traceroute Complete" : {
+      "comment" : "Notification title when a trace route you sent gets a response"
     },
     "track" : {
       "comment" : "Search keyword"
@@ -133169,6 +133275,12 @@
         }
       }
     },
+    "Unknown repeater" : {
+      "comment" : "Trace route hop that didn't add its node number"
+    },
+    "Unknown signal" : {
+      "comment" : "Trace route timeline: a leg whose SNR wasn't reported"
+    },
     "UNLISTED" : {
       "comment" : "A label for a firmware tag.",
       "isCommentAutoGenerated" : true,
@@ -133694,6 +133806,9 @@
           }
         }
       }
+    },
+    "Up to 31 ASCII characters, no leading or trailing slash, no + or #." : {
+      "comment" : "Topic finder: custom topic footer"
     },
     "update" : {
       "comment" : "Search keyword"
@@ -135728,6 +135843,9 @@
         }
       }
     },
+    "Use this topic" : {
+      "comment" : "Topic finder: apply the typed root"
+    },
     "Use your phone GPS to send locations to your node to instead of using a hardware GPS on your node." : {
       "localizations" : {
         "de" : {
@@ -137682,6 +137800,9 @@
         }
       }
     },
+    "via MQTT" : {
+      "comment" : "Spatial map: node heard over MQTT"
+    },
     "Via Mqtt" : {
       "localizations" : {
         "da" : {
@@ -138336,6 +138457,9 @@
           }
         }
       }
+    },
+    "Waiting for response" : {
+      "comment" : "Trace route state: request sent, no answer yet"
     },
     "Waiting to be acknowledged. . ." : {
       "extractionState" : "stale",
@@ -142787,6 +142911,12 @@
           }
         }
       }
+    },
+    "Zoom in" : {
+      "comment" : "Spatial map: show a smaller area on the table in more detail"
+    },
+    "Zoom out" : {
+      "comment" : "Spatial map: show a wider area on the table"
     }
   },
   "version" : "1.1"

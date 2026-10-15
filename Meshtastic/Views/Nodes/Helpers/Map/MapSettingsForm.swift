@@ -11,7 +11,6 @@ import OSLog
 import UniformTypeIdentifiers
 
 struct MapSettingsForm: View {
-	@Environment(\.dismiss) private var dismiss
 	@State private var currentDetent = PresentationDetent.medium
 	@State private var isShowingFilePicker = false
 	@State private var isProcessingUpload = false
@@ -162,7 +161,7 @@ struct MapSettingsForm: View {
 											.font(.caption)
 											.foregroundColor(.secondary)
 									} else {
-										Text("\(offlineMapManager.regions.count) downloaded · \(offlineMapManager.formattedTotalSize)")
+										Text("\(offlineMapManager.userRegionCount) downloaded · \(offlineMapManager.formattedTotalSize)")
 											.font(.caption)
 											.foregroundColor(.secondary)
 									}
@@ -263,6 +262,7 @@ struct MapSettingsForm: View {
 			}
 			.navigationTitle("Map Options")
 			.navigationBarTitleDisplayMode(.inline)
+			.sheetCloseButton()
 			.fileImporter(
 				isPresented: $isShowingFilePicker,
 				allowedContentTypes: [
@@ -279,22 +279,6 @@ struct MapSettingsForm: View {
 				Text(uploadErrorMessage)
 			}
 		}
-		#if targetEnvironment(macCatalyst)
-		.overlay(alignment: .topLeading) {
-			Button {
-				dismiss()
-			} label: {
-				Image(systemName: "xmark.circle.fill")
-					.font(.system(size: 34))
-					.symbolRenderingMode(.palette)
-					.foregroundStyle(.white, Color(.systemGray3))
-			}
-			.accessibilityLabel(String(localized: "Close", comment: "VoiceOver: dismiss this sheet"))
-			.buttonStyle(.plain)
-			.padding(.top, 12)
-			.padding(.leading, 14)
-		}
-		#endif
 		.presentationDetents([.large], selection: $currentDetent)
 		.presentationContentInteraction(.scrolls)
 		#if !targetEnvironment(macCatalyst)
@@ -418,7 +402,7 @@ struct MapSettingsForm: View {
 	}
 
 	/// Marks a file produced by an in-app Site Planner coverage run — those are
-	/// managed automatically (only the newest stays active).
+	/// managed automatically (only the newest per transmitter stays active).
 	private func overlaySourcePill() -> some View {
 		Text("Site Planner")
 			.font(.caption2)

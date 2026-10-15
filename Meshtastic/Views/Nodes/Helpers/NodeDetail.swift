@@ -141,7 +141,7 @@ struct NodeDetail: View {
 					.id("topOfList")
 					nodeDetailList
 						.sheet(isPresented: $showingCompassSheet) {
-							CompassView(waypointLocation: latestPosition?.nodeCoordinate ?? nil, waypointLongName: currentUser?.displayLongName, waypointShortName: currentUser?.shortName, color: Color(UIColor(hex: UInt32(nodeNum))))
+							CompassView(waypointLocation: latestPosition?.nodeCoordinate ?? nil, waypointLongName: currentUser?.displayLongName, waypointShortName: currentUser?.shortName, color: Color(UIColor(hex: UInt32(nodeNum))), showsCloseButton: true)
 						}
 						.sheet(isPresented: $showingShareContactQR) {
 							ShareContactQRDialog(
@@ -886,6 +886,9 @@ struct NodeDetail: View {
 						}
 					#endif
 						NavigateToButton(node: node)
+						#if os(visionOS)
+						ShowInSpatialMapButton(nodeNum: nodeNum)
+						#endif
 					}
 					#if !targetEnvironment(macCatalyst)
 					if WatchSessionManager.shared.isWatchAvailable {

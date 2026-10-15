@@ -5,6 +5,7 @@ import Testing
 import SwiftUI
 import SwiftData
 import UIKit
+import CoreLocation
 @testable import Meshtastic
 import MeshtasticProtobufs
 
@@ -733,7 +734,9 @@ struct NodeListItemCompactSnapshotTests {
 			let telemetry = TelemetryEntity()
 			telemetry.batteryLevel = battery
 			telemetry.distance = 100
-			node.telemetries = [telemetry]
+			telemetry.time = Date()
+			telemetry.nodeNum = num
+			sharedModelContainer.mainContext.insert(telemetry)
 		}
 		if let lat = latitudeI, let lon = longitudeI {
 			let position = PositionEntity()
@@ -1036,7 +1039,9 @@ struct NodeListItemSnapshotTests {
 			let telemetry = TelemetryEntity()
 			telemetry.batteryLevel = battery
 			telemetry.distance = 100
-			node.telemetries = [telemetry]
+			telemetry.time = Date()
+			telemetry.nodeNum = num
+			sharedModelContainer.mainContext.insert(telemetry)
 		}
 		if let lat = latitudeI, let lon = longitudeI {
 			let position = PositionEntity()
@@ -1580,7 +1585,10 @@ struct NodeDetailSnapshotTests {
 		envTelemetry.relativeHumidity = 55.0
 		envTelemetry.barometricPressure = 1013.25
 
-		node.telemetries = [deviceTelemetry, envTelemetry]
+		deviceTelemetry.nodeNum = node.num
+		envTelemetry.nodeNum = node.num
+		context.insert(deviceTelemetry)
+		context.insert(envTelemetry)
 		context.insert(node)
 
 		let view = NodeDetail(node: node, nodeNum: node.num)
@@ -1655,7 +1663,46 @@ struct MQTTConfigSnapshotTests {
 				.environmentObject(AccessoryManager.shared)
 				.modelContainer(PersistenceController.preview.container)
 		}
-		await assertViewSnapshot(of: view, width: 390, height: 900, named: "mqttConfig", forDocs: true)
+		// Tall enough to show the Find Topics button the guide describes.
+		await assertViewSnapshot(of: view, width: 390, height: 1040, named: "mqttConfig", forDocs: true)
+	}
+
+	@Test("Topic finder sheet, finished sample")
+	@MainActor
+	func topicFinderSheet() async throws {
+		let node = try makeNode()
+		let lora = LoRaConfigEntity()
+		lora.regionCode = 1
+		sharedModelContainer.mainContext.insert(lora)
+		node.loRaConfig = lora
+		let mqtt = try #require(node.mqttConfig)
+		let config = ModuleConfig.MQTTConfig(entity: mqtt)
+		// A finished sample with two roots and one map report, driven through the handlers: no socket.
+		let sampler = MqttTopicSampler()
+		sampler.beginConnecting(settings: .init(config: config), regionTopic: "msh/US")
+		sampler.handleConnAck(accepted: true, description: "")
+		sampler.handleSubAck(granted: sampler.filters, failed: [])
+		sampler.handleMessage(topic: "msh/US/WA/2/e/LongFast/!a1b2c3d4", payload: Data())
+		sampler.handleMessage(topic: "msh/US/WA/seattle/2/e/LongFast/!0badf00d", payload: Data())
+		var report = MapReport()
+		report.latitudeI = 476_062_000
+		report.longitudeI = -1_223_321_000
+		report.numOnlineLocalNodes = 12
+		var data = DataMessage()
+		data.portnum = .mapReportApp
+		data.payload = try report.serializedData()
+		var envelope = ServiceEnvelope()
+		envelope.gatewayID = "!0badf00d"
+		envelope.channelID = "LongFast"
+		var packet = MeshPacket()
+		packet.payloadVariant = .decoded(data)
+		envelope.packet = packet
+		sampler.handleMessage(topic: "msh/US/WA/seattle/2/map/", payload: try envelope.serializedData())
+		sampler.stop()
+		let view = MQTTTopicFinder(config: .constant(config), node: node, autoStart: false, sampler: sampler)
+			.environmentObject(AccessoryManager.shared)
+			.modelContainer(sharedModelContainer)
+		await assertViewSnapshot(of: view, width: 390, height: 1200, named: "mqttTopicFinder")
 	}
 }
 
@@ -2958,5 +3005,90 @@ struct AddContactConfirmationSnapshotTests {
 			height: 780,
 			colorScheme: .light,
 			named: "addContactMatchesStoredKey")
+	}
+}
+
+// MARK: - Trace Route Log Snapshot Tests
+
+@Suite("Trace Route Log Snapshots")
+struct TraceRouteLogSnapshotTests {
+
+	private static let date = Date(timeIntervalSince1970: 1_800_000_000)
+
+	private static func card(_ state: TraceRouteState, towards: Int, back: Int?, roundTrip: TimeInterval?, title: String? = nil) -> TraceRouteCardModel {
+		TraceRouteCardModel(title: title, date: date, state: state, hopsTowards: towards, hopsBack: back, roundTrip: roundTrip)
+	}
+
+	@ViewBuilder
+	private static func cards() -> some View {
+		List {
+			TraceRouteCard(model: card(.complete, towards: 3, back: 2, roundTrip: 12.6))
+			TraceRouteCard(model: card(.complete, towards: 0, back: 0, roundTrip: 2.4))
+			TraceRouteCard(model: card(.pending, towards: 0, back: nil, roundTrip: nil))
+			TraceRouteCard(model: card(.noResponse, towards: 0, back: nil, roundTrip: nil))
+			TraceRouteCard(model: card(.observed, towards: 2, back: nil, roundTrip: nil, title: "Ridge Peer → Harbor Base"), showsOrigin: true)
+		}
+		.listStyle(.insetGrouped)
+	}
+
+	/// Forward: origin, a known relay, an unknown repeater, a node not in the DB, target.
+	/// Back: target, the unknown node, a relay, origin. One leg has no SNR.
+	private static var legs: TraceRouteLegs {
+		let names: [Int64: TraceRouteLegs.NodeDetails] = [
+			0x0A1B_2C3D: .init(longName: "Sim Radio", shortName: "SIM"),
+			0x5E6F_7A8B: .init(longName: "Ridge Relay", shortName: "RDG"),
+			0x3C9D_4E21: .init(longName: "Harbor Base", shortName: "HBR"),
+			0x7F21_A0C4: .init(longName: "Cloud Bridge", shortName: "MQ", viaMqtt: true)
+		]
+		let positions: [Int64: CLLocationCoordinate2D] = [
+			0x0A1B_2C3D: CLLocationCoordinate2D(latitude: 47.6062, longitude: -122.3321),
+			0x5E6F_7A8B: CLLocationCoordinate2D(latitude: 47.6500, longitude: -122.3500),
+			0x3C9D_4E21: CLLocationCoordinate2D(latitude: 47.6900, longitude: -122.4000)
+		]
+		return TraceRouteLegs(
+			originNum: 0x0A1B_2C3D,
+			targetNum: 0x3C9D_4E21,
+			forwardHops: [
+				.init(num: 0x0A1B_2C3D, snr: 11.5),
+				.init(num: 0x5E6F_7A8B, snr: 9.5),
+				.init(num: TraceRouteLegs.unknownRepeaterNum, snr: TraceRouteLegs.unknownSnr),
+				.init(num: 0x2BAD_F00D, snr: -4.25),
+				.init(num: 0x3C9D_4E21, snr: -14)
+			],
+			backRelays: [.init(num: 0x2BAD_F00D, snr: -2.75), .init(num: 0x7F21_A0C4, snr: 6)],
+			originBackSnr: 11.5,
+			hasBack: true,
+			preset: .longFast,
+			positions: positions,
+			lookup: { names[$0] }
+		)
+	}
+
+	@Test("Cards for each state")
+	func cardsLight() async {
+		await assertViewSnapshot(of: Self.cards(), width: 390, height: 620, colorScheme: .light, named: "traceRouteCards")
+	}
+
+	@Test("Cards for each state, dark")
+	func cardsDark() async {
+		await assertViewSnapshot(of: Self.cards(), width: 390, height: 620, colorScheme: .dark, named: "traceRouteCards_dark")
+	}
+
+	@Test("Hop timeline, stacked")
+	func timelineStacked() async {
+		await assertViewSnapshot(
+			of: TraceRouteHopTimeline(legs: Self.legs).padding().environment(\.horizontalSizeClass, .compact),
+			width: 390,
+			colorScheme: .light,
+			named: "traceRouteHopTimeline")
+	}
+
+	@Test("Hop timeline, side by side, dark")
+	func timelineSideBySide() async {
+		await assertViewSnapshot(
+			of: TraceRouteHopTimeline(legs: Self.legs).padding().environment(\.horizontalSizeClass, .regular),
+			width: 800,
+			colorScheme: .dark,
+			named: "traceRouteHopTimeline_regular_dark")
 	}
 }

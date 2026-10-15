@@ -93,6 +93,7 @@ enum ScreenName: String, CaseIterable {
 	case importDeviceProfile = "Import Device Profile"
 	case logDetail = "Log Detail"
 	case mapDataFiles = "Map Data Files"
+	case mqttTopicFinder = "MQTT Topic Finder"
 	case routeRecordingDetails = "Route Recording Details"
 
 	// MARK: Data browser
@@ -122,6 +123,7 @@ enum ScreenName: String, CaseIterable {
 	case mapLegend = "Map Legend"
 	case coverageEstimate = "Coverage Estimate"
 	case positionDetail = "Position Detail"
+	case spatialMap = "Spatial Map"
 
 	// MARK: Node detail
 
