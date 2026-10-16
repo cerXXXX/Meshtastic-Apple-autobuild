@@ -73,9 +73,9 @@ enum AccessoryError: Error, LocalizedError {
 			// Map specific CBATTError values to a more user-friendly message
 			switch attError.code {
 			case .insufficientAuthentication: // 5
-				return "Bluetooth \(attError.localizedDescription) Please try connecting again and check the BLE PIN carefully.".localized
+				return String(localized: "Bluetooth \(attError.localizedDescription) Please try connecting again and check the BLE PIN carefully.")
 			case .insufficientEncryption: // 15
-				return "Bluetooth \(attError.localizedDescription) Please try connecting again and check the BLE PIN carefully.".localized
+				return String(localized: "Bluetooth \(attError.localizedDescription) Please try connecting again and check the BLE PIN carefully.")
 			default:
 				// Fallback for other CBError codes
 				return "A Bluetooth Attribute Protocol error occurred: \(attError.localizedDescription)"
@@ -1143,11 +1143,11 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 					handleTraceRouteApp(packet)
 				case .neighborinfoApp:
 					if let neighborInfo = try? NeighborInfo(serializedBytes: decodedInfo.packet.decoded.payload) {
+						Logger.mesh.info("[Neighbor Info] packet received from \(packet.from.toHex(), privacy: .public) — \(neighborInfo.neighbors.count, privacy: .public) neighbors")
 						if let engine = discoveryScanEngine, engine.isScanning {
 							engine.handleNeighborInfo(neighborInfo, packet: decodedInfo.packet)
-						} else {
-							Logger.mesh.info("[Neighbor Info] packet received from \(packet.from.toHex(), privacy: .public) — \(neighborInfo.neighbors.count, privacy: .public) neighbors")
 						}
+						await MeshPackets.shared.neighborInfoPacket(neighborInfo, packet: decodedInfo.packet)
 					}
 				case .paxcounterApp:
 					await MeshPackets.shared.paxCounterPacket(packet: decodedInfo.packet)

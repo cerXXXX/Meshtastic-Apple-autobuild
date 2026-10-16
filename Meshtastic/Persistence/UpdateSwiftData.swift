@@ -46,6 +46,7 @@ extension MeshPackets {
 			}
 			let deletedNodes = staleNodes.count
 			TelemetryEntity.deleteAll(forNodes: staleNodes.map(\.num), in: modelContext)
+			NeighborLinkEntity.deleteAll(forNodes: staleNodes.map(\.num), in: modelContext)
 			for node in staleNodes {
 				modelContext.delete(node)
 			}
@@ -278,6 +279,12 @@ extension MeshPackets {
 		// Skip routing packets with no rxTime — these are locally-generated implicit ACKs
 		// that don't represent actual RF contact with the remote node.
 		let isImplicitAck = packet.decoded.portnum == .routingApp && packet.rxTime == 0
+		// After a node db download (firmware 2.8+) the radio resends packets it stored earlier. They are
+		// marked as LoRa but carry no RSSI, which every real reception has, and their rxTime is when the
+		// radio last heard the node. They say nothing new about signal, hops or when it was heard.
+		let isReplay = packet.transportMechanism == .transportLora && !packet.hasRxRssi
+		// Signal values only mean something for a packet this radio just received over the air.
+		let isLiveLora = packet.hasRxRssi && !packet.viaMqtt
 		
 		let num = Int64(packet.from)
 		var descriptor = FetchDescriptor<NodeInfoEntity>(
@@ -293,16 +300,19 @@ extension MeshPackets {
 				// Single source of truth for lastHeard on received packets: this runs for
 				// every packet (mirroring firmware NodeDB::updateFrom), so the per-packet
 				// handlers no longer touch lastHeard for remote nodes.
-				if !isImplicitAck {
-					if packet.rxTime > 0 {
-						node.lastHeard = Date(timeIntervalSince1970: TimeInterval(Int64(packet.rxTime)))
-					} else {
-						node.lastHeard = Date()
+				// Never moved backwards: a packet with an older rxTime doesn't make the node heard earlier.
+				// A stored time in the future came from a wrong clock, so any real packet replaces it.
+				if !isImplicitAck && !isReplay {
+					let heard = packet.rxTime > 0 ? Date(timeIntervalSince1970: TimeInterval(Int64(packet.rxTime))) : Date()
+					if node.lastHeard.map({ heard > $0 || $0 > Date() }) ?? true {
+						node.lastHeard = heard
 					}
 				}
 				
-				node.snr = packet.rxSnr
-				node.rssi = packet.rxRssi
+				if isLiveLora {
+					node.snr = packet.rxSnr
+					node.rssi = packet.rxRssi
+				}
 				node.viaMqtt = packet.viaMqtt
 				// Heard over RF just now, so heard on the current settings. Mirrors the firmware, which
 				// sets the flag when it hears the node, so the row clears before the next node db dump.
@@ -313,7 +323,8 @@ extension MeshPackets {
 					node.heardOnCurrentLora = true
 				}
 				
-				if packet.hopStart != 0 && packet.hopLimit <= packet.hopStart {
+				// MQTT packets still count: their hops are to the gateway, as on the radio.
+				if !isReplay && packet.hopStart != 0 && packet.hopLimit <= packet.hopStart {
 					node.hopsAway = Int32(truncatingIfNeeded: packet.hopStart - packet.hopLimit)
 					Logger.data.debug("💾 [updateAnyPacketFrom] Updating node \(packet.from.toHex(), privacy: .public) hopsAway=\(node.hopsAway)")
 				}
@@ -1434,23 +1445,26 @@ extension MeshPackets {
 					modelContext.insert(entity)
 					fetchedNode[0].meshBeaconConfig = entity
 				}
-				entity.flags = Int32(truncatingIfNeeded: config.flags)
-				entity.broadcastMessage = config.broadcastMessage
-				entity.broadcastOfferChannelName = config.hasBroadcastOfferChannel ? config.broadcastOfferChannel.name : ""
-				entity.broadcastOfferChannelPSK = config.hasBroadcastOfferChannel ? config.broadcastOfferChannel.psk : Data()
-				entity.broadcastOfferRegion = Int32(config.broadcastOfferRegion.rawValue)
-				entity.broadcastOfferPreset = config.hasBroadcastOfferPreset ? Int32(config.broadcastOfferPreset.rawValue) : -1
-				entity.broadcastIntervalSecs = config.broadcastIntervalSecs > 0 ? Int32(truncatingIfNeeded: config.broadcastIntervalSecs) : 3600
+				let values = MeshBeaconConfigValues(config: config)
+				entity.flags = values.flags
+				entity.broadcastMessage = values.message
+				entity.broadcastOfferChannelName = values.offerChannelName
+				entity.broadcastOfferChannelPSK = values.offerChannelPSK
+				entity.broadcastOfferRegion = values.offerRegion
+				entity.broadcastOfferPreset = values.offerPreset
+				entity.broadcastOfferFrequencySlot = values.offerFrequencySlot
+				entity.broadcastIntervalSecs = values.intervalSecs
 
 				// Rebuild the multi-target list from the incoming config (cascade replaces the old rows).
 				for old in entity.broadcastTargets {
 					modelContext.delete(old)
 				}
-				entity.broadcastTargets = config.broadcastTargets.map { target in
+				entity.broadcastTargets = values.targets.map { target in
 					let newTarget = BroadcastTargetEntity(
-						preset: target.hasPreset ? Int32(target.preset.rawValue) : -1,
-						region: Int32(target.region.rawValue),
-						channelIndex: target.hasChannelIndex ? Int32(truncatingIfNeeded: target.channelIndex) : -1
+						preset: target.preset,
+						region: target.region,
+						channelIndex: target.channelIndex,
+						frequencySlot: target.frequencySlot
 					)
 					modelContext.insert(newTarget)
 					return newTarget

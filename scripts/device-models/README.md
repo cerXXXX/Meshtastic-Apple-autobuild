@@ -61,12 +61,38 @@ Other optional entries, with coordinates in SVG units:
 - `[[antenna]]`: a round antenna from `start` (its base) to `end` (its tip),
   at any angle. The radius is measured from the drawing, or set with `radius_mm`
   for an antenna drawn end-on, and `min_radius_mm` bridges small gaps in the
-  drawing. Each color band becomes its own part.
+  drawing. Each color band becomes its own part. Unless `dome = false`, the tip
+  ends in an even dome as wide as the shaft just below it. Don't add a wider
+  cap at the tip; end the whip (or a `[[lathe]]`) with `dome = true` instead.
 - `[[thin]]`: a region (`bbox` or `polygon`) built at its own `depth_mm`
   instead of full depth, for lanyards, clips, side buttons, stands and flat
   antennas. `edge_radius_mm` rounds its edges.
 
 `[materials]` entries take `color`, `roughness`, `metallic` and `opacity`.
+
+When the flasher's illustration isn't a front view (a perspective drawing, or
+several views in one), draw the front ourselves from the device's measurements
+and point the spec at it with a top-level `drawing = "drawings/<name>.svg"`.
+build.sh then uses that file instead of downloading the flasher's. Draw it in
+mm so it can be checked against the measurements.
+
+`[[solid]]` places a block by measurement instead of by the drawing, for ports,
+buttons and screws on the sides, top and back, and for stands:
+
+```toml
+[[solid]]
+name = "USBC"
+material = "port"
+center_mm = [0, -0.1, 1.25]  # x from the center line, y up from the bottom, z out of the front (0 = middle of the body)
+size_mm = [8.9, 0.4, 3.2]
+radius_mm = 1.6              # rounds the corners of its two largest sides
+rotate_deg = [0, 0, 0]       # about x, y, then z, around its own center
+source = "Seeed STEP, measured"
+```
+
+For a round part such as an SMA connector or a hinge, set `shape = "cylinder"`
+and `axis` (`"x"`, `"y"` or `"z"`): `size_mm` is then its length along the axis
+and its diameter across. `sides = 6` makes a hex nut.
 
 For a hand-tuned model, set `auto = false` and describe the parts with
 `[[part]]` rules (match an SVG class and place it as body or a raised layer),

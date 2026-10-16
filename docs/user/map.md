@@ -58,9 +58,14 @@ Tap the **info button** (`info.circle`) in the bottom-right toolbar to open the 
 | Precise Locations Only | Hide nodes that broadcast an approximate (reduced-precision) location. Imprecise nodes are normally drawn with a translucent circle showing how large the possible area is; turn this on to show only nodes reporting an exact position. Both the imprecise pins and their precision circles are hidden. |
 | Cluster Nodes | Group nearby nodes into one numbered pin; tap it to zoom in. Turn off to always show every node individually. |
 | My Location | Show or hide your own position (the blue dot) on the map |
+| Direct Links | Draw a line between nodes that hear each other directly, colored by signal quality like the signal meter, with the SNR in a small pill near the node that measured it when you zoom in. Lines from your connected radio come from nodes it heard directly (no hops, not over MQTT) in the last 12 hours. Lines between other nodes come from their Neighbor Info reports from the last day; these only arrive when your radio's Neighbor Info module is on, and reports that came over MQTT are left out. A line is solid when both directions are known and dashed when only one is, and it fades as it gets older. Both ends need a position, and node filters apply. Hidden while a trace route is shown. |
 | Convex Hull | Draw an outline around the outermost LoRa nodes to visualize mesh coverage |
 | Traffic | Show Apple Maps live traffic |
 | Points of Interest | Show Apple Maps points of interest |
+
+### Direct links on the spatial map (Apple Vision Pro)
+
+On the 3D spatial map, the **link** button in the toolbar draws the same direct links as the 2D map, between the tops of the pins. It is off by default and has its own setting. Lines use the signal quality colors, are dashed when only one direction is known, and fade as they get older. To keep the volume smooth, at most 12 SNR pills are shown: the selected node's links when a node is selected, otherwise the newest links, your radio's first. Links are hidden while a trace route is shown.
 
 ### Offline Maps
 
@@ -176,14 +181,14 @@ Tap the **legend** button (map icon, bottom-right) for a key to the colors and m
 
 ### On the spatial map (Apple Vision Pro)
 
-On the 3D spatial map, tap the **airplane** button in the toolbar and pick a trace route. A marker flies the route, and the route stays drawn on the terrain after it lands so you can read it. Tap **✕** in the toolbar to clear it.
+On the 3D spatial map, tap the **trace route** button in the toolbar and pick a route. The menu lists the 20 most recent trace routes that came back with node positions, newest first. Each shows the originator and target, then the hop count, whether a return path came back, and how long ago it arrived (for example "3 Hops · 2 hours ago"). A comet flies the route, orange on the way out and blue on the way back, with a short fading tail (just the head when **Reduce Motion** is on). The route stays drawn on the terrain after it lands so you can read it. Tap **✕** in the toolbar to clear it.
 
 - **Forward and return** — the forward path toward the target is a **solid orange** line (short dashes where the SNR is unknown) and the return path back to the originator is a **dashed blue** line, the same colors as the Forward route and Return route headings in the hop timeline. Each has a dark edge so it stands out on the terrain. Where both paths use the same leg, the two lines sit side by side.
 - **Arrows** — small cones along each line, a shade lighter than the line, point in the direction of travel and drift slowly along it. They stay still when **Reduce Motion** is on.
 - **Endpoints** — the originator has a **green** ring at its foot and the target a **white** ring.
 - **Hop numbers** — each relay gets a numbered badge beside its pin, in the order the packet reached it: filled orange on the way out, a blue ring on the way back.
 - **Signal labels** — each leg shows its SNR (for example "7.0 dB") in a small pill colored by signal quality. A forward leg whose SNR wasn't reported is drawn with short dashes and has no label. Labels that would crowd each other are hidden; zoom in to see more.
-- While a route is shown, the traceroute links between nodes are faded so the route stands out, and the toolbar shows a key to the two line colors.
+- While a route is shown, the toolbar shows a key to the two line colors.
 
 ## Node Trail
 

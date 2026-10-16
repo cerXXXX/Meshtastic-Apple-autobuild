@@ -1448,6 +1448,7 @@ extension AccessoryManager {
 					context.delete(user)
 				}
 				TelemetryEntity.deleteAll(forNodes: [node.num], in: context)
+				NeighborLinkEntity.deleteAll(forNodes: [node.num], in: context)
 				context.delete(node)
 				try context.save()
 			} catch {
@@ -1686,6 +1687,31 @@ extension AccessoryManager {
 		await MeshPackets.shared.upsertMeshBeaconModuleConfigPacket(config: config, nodeNum: toUser.num)
 
 		return Int64(meshPacket.id)
+	}
+
+	public func requestMeshBeaconModuleConfig(fromUser: UserEntity, toUser: UserEntity) async throws {
+
+		var adminPacket = AdminMessage()
+		adminPacket.getModuleConfigRequest = AdminMessage.ModuleConfigType.meshbeaconConfig
+		var meshPacket: MeshPacket = MeshPacket()
+		meshPacket.to = UInt32(toUser.num)
+		meshPacket.from	= UInt32(fromUser.num)
+		meshPacket.id = UInt32.random(in: UInt32(UInt8.max)..<UInt32.max)
+		meshPacket.priority =  MeshPacket.Priority.reliable
+		meshPacket.wantAck = true
+
+		var dataMessage = DataMessage()
+		guard let adminData: Data = try? adminPacket.serializedData() else {
+			throw AccessoryError.ioFailed("requestMeshBeaconModuleConfig: Unable to serialize admin packet")
+		}
+		dataMessage.payload = adminData
+		dataMessage.portnum = PortNum.adminApp
+		dataMessage.wantResponse = true
+
+		meshPacket.decoded = dataMessage
+
+		let messageDescription = "🛎️ Requested Mesh Beacon Module Config using an admin key for node: \(toUser.longName ?? "Unknown".localized)"
+		try await sendAdminMessageToRadio(meshPacket: meshPacket, adminDescription: messageDescription)
 	}
 
 	public func requestDetectionSensorModuleConfig(fromUser: UserEntity, toUser: UserEntity) async throws {

@@ -470,6 +470,8 @@ actor MeshPackets {
 		// One deadline for the pass, not one per collection: two three-second budgets would
 		// be a six-second burst, which is the thing being bounded.
 		let deadline = ContinuousClock.now + Self.evictionBudget
+		// At most a couple of thousand small rows; the commit below picks the deletes up.
+		pruneNeighborLinks()
 		await evictInChunks(until: deadline) {
 			self.evictNodesIfOverCap(nodeCap, limit: chunkSize)
 		}
@@ -586,6 +588,7 @@ actor MeshPackets {
 		descriptor.includePendingChanges = false
 		guard let stale = try? modelContext.fetch(descriptor), !stale.isEmpty else { return 0 }
 		TelemetryEntity.deleteAll(forNodes: stale.map(\.num), in: modelContext)
+		NeighborLinkEntity.deleteAll(forNodes: stale.map(\.num), in: modelContext)
 		for node in stale { modelContext.delete(node) }
 		Logger.data.info("🗄️ [Caps] Evicted \(stale.count, privacy: .public) least-recently-heard node(s) (was \(nodeCount, privacy: .public), cap \(cap, privacy: .public))")
 		return stale.count
@@ -1076,7 +1079,11 @@ actor MeshPackets {
 					newNode.channel = Int32(truncatingIfNeeded: nodeInfo.channel)
 					newNode.favorite = nodeInfo.isFavorite
 					newNode.ignored = nodeInfo.isIgnored
-					newNode.hopsAway = Int32(truncatingIfNeeded: nodeInfo.hopsAway)
+					// Left out when the radio doesn't know how far away the node is; reading it anyway gives 0, which means direct.
+					if nodeInfo.hasHopsAway {
+						newNode.hopsAway = Int32(truncatingIfNeeded: nodeInfo.hopsAway)
+					}
+					newNode.viaMqtt = nodeInfo.viaMqtt
 					newNode.hasXeddsaSigned = nodeInfo.hasXeddsaSigned_p
 					// Was missing here while the update path below set it, so a node seen for the
 					// first time — every node on a fresh install or after a database reset — lost
@@ -1199,7 +1206,10 @@ actor MeshPackets {
 					fetchedNode[0].channel = Int32(truncatingIfNeeded: nodeInfo.channel)
 					fetchedNode[0].favorite = nodeInfo.isFavorite
 					fetchedNode[0].ignored = nodeInfo.isIgnored
-					fetchedNode[0].hopsAway = Int32(truncatingIfNeeded: nodeInfo.hopsAway)
+					if nodeInfo.hasHopsAway {
+						fetchedNode[0].hopsAway = Int32(truncatingIfNeeded: nodeInfo.hopsAway)
+					}
+					fetchedNode[0].viaMqtt = nodeInfo.viaMqtt
 					// Both trust flags come from the radio's node db, which is where they live: the
 					// firmware sets has_xeddsa_signed when it verifies a signature and
 					// is_key_manually_verified on a contact exchange, and persists both across its
@@ -1403,6 +1413,13 @@ actor MeshPackets {
 					self.upsertStatusMessageModuleConfigPacket(config: moduleConfig.statusmessage, nodeNum: Int64(packet.from))
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.trafficManagement(moduleConfig.trafficManagement) {
 					self.upsertTrafficManagementModuleConfigPacket(config: moduleConfig.trafficManagement, nodeNum: Int64(packet.from))
+				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.meshBeacon(moduleConfig.meshBeacon) {
+					// An empty key means the reply carried none; keep the stored one.
+					self.upsertMeshBeaconModuleConfigPacket(
+						config: moduleConfig.meshBeacon,
+						nodeNum: Int64(packet.from),
+						sessionPasskey: adminMessage.sessionPasskey.isEmpty ? nil : adminMessage.sessionPasskey
+					)
 				}
 			} else if adminMessage.payloadVariant == AdminMessage.OneOf_PayloadVariant.getRingtoneResponse(adminMessage.getRingtoneResponse) {
 				if let rt = try? RTTTLConfig(serializedBytes: packet.decoded.payload) {

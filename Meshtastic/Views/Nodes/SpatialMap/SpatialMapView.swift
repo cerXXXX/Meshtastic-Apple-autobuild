@@ -16,7 +16,6 @@ struct SpatialMapView: View {
 	let scene: SpatialSceneController
 	let traffic: SpatialTrafficController
 	let preset: ModemPresets
-	let showLinks: Bool
 	let onOpenNode: (Int64) -> Void
 	let onCoverage: (Int64, SpatialCoverageAction) -> Void
 
@@ -51,7 +50,9 @@ struct SpatialMapView: View {
 				scene.apply(nodes: model.nodes)
 				scene.apply(target: liveZoom.flatMap { model.circle(forZoom: $0) } ?? model.targetCircle)
 				traffic.applyBaseGlow()
-				scene.apply(links: showLinks ? model.links : [], preset: preset, dimmed: model.shownRoute != nil)
+				// Hidden while a trace route is shown, as on the 2D map, so the two sets of colored
+				// lines and pills can't be mixed up.
+				scene.apply(links: shownLinks, pills: linkPills, preset: preset, attachments: attachments, attachmentIDs: linkPills.map { SpatialLinkDrawing.pillAttachmentID($0.id) })
 				scene.apply(route: model.shownRoute, attachments: attachments, attachmentIDs: routeAttachmentIDs)
 				scene.apply(labels: model.labeledNodeNums, attachments: attachments)
 				scene.apply(selection: model.selectedNodeNum, attachments: attachments)
@@ -63,6 +64,12 @@ struct SpatialMapView: View {
 								model.select(num)
 							}
 						}
+					}
+				}
+				ForEach(linkPills) { pill in
+					Attachment(id: SpatialLinkDrawing.pillAttachmentID(pill.id)) {
+						SpatialRouteSnrPill(snr: pill.snr, color: getSnrColor(snr: pill.snr, preset: preset))
+							.opacity(pill.opacity)
 					}
 				}
 				if let route = model.shownRoute {
@@ -105,6 +112,15 @@ struct SpatialMapView: View {
 				if !pinching { endPinch() }
 			}
 		}
+	}
+
+	private var shownLinks: [SpatialLinkSnapshot] {
+		model.shownRoute == nil ? model.links : []
+	}
+
+	/// Pills for the selected node's links, or for the newest links when nothing is selected.
+	private var linkPills: [SpatialLinkPill] {
+		SpatialLinkLayout.pills(for: shownLinks, selected: model.selectedNodeNum, connected: model.connectedNodeNum)
 	}
 
 	private var routeAttachmentIDs: [String] {

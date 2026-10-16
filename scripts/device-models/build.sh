@@ -19,7 +19,7 @@ CACHE="$OUT/svg"
 INSTALL_DIR="$REPO/Meshtastic/Resources/DeviceModels"
 IMAGE_BASE_URL="https://flasher.meshtastic.org/img/devices"
 API_URL="https://api.meshtastic.org/resource/deviceHardware"
-VENDORS='seeed|rak|elecrow|thinknode|crowpanel|sensecap|xiao|wio'
+VENDORS='seeed|rak|elecrow|thinknode|crowpanel|sensecap|xiao|wio|muzi'
 
 install=false
 names=()
@@ -47,7 +47,14 @@ for name in "${names[@]}"; do
 	svg="$CACHE/$name.svg"
 	url="$IMAGE_BASE_URL/$name.svg"
 	[ -f "$spec" ] || { echo "no spec for $name"; failed+=("$name (no spec)"); continue; }
-	if ! curl -sfL -o "$svg" "$url" || ! head -c 512 "$svg" | grep -q "<svg"; then
+	# A spec can name our own drawing instead, for a device whose flasher
+	# illustration isn't a front view.
+	drawing=$(sed -n 's/^drawing *= *"\(.*\)".*/\1/p' "$spec")
+	if [ -n "$drawing" ]; then
+		svg="$HERE/$drawing"
+		url="https://github.com/meshtastic/Meshtastic-Apple/blob/main/scripts/device-models/$drawing"
+		[ -f "$svg" ] || { echo "$name: $drawing is missing"; failed+=("$name (missing drawing)"); continue; }
+	elif ! curl -sfL -o "$svg" "$url" || ! head -c 512 "$svg" | grep -q "<svg"; then
 		echo "$name: $url is not an SVG"
 		failed+=("$name (missing on flasher)")
 		continue
