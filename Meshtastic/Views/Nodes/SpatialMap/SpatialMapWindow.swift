@@ -22,6 +22,7 @@ struct SpatialMapWindow: View {
 	@Environment(\.physicalMetrics) private var metrics
 	@StateObject private var nodeFilters = NodeFilterParameters()
 	@State private var model = SpatialMapModel()
+	@ObservedObject private var connectivity = OfflineMapConnectivityMonitor.shared
 	@State private var scene: SpatialSceneController
 	@State private var traffic: SpatialTrafficController
 	@AppStorage("mapLayer") private var mapLayer: MapLayer = .standard
@@ -91,6 +92,9 @@ struct SpatialMapWindow: View {
 		.onChange(of: coverageOpacity, initial: true) { _, opacity in
 			model.coverageOpacity = Float(opacity)
 		}
+		.onChange(of: connectivity.isNetworkAvailable) { wasAvailable, isAvailable in
+			if !wasAvailable && isAvailable { model.retryImagery() }
+		}
 		.onChange(of: appState.spatialMapFocus?.id) {
 			claimFocus()
 		}
@@ -100,10 +104,14 @@ struct SpatialMapWindow: View {
 			}
 		}
 		.onAppear {
+			SpatialTerrainKeeper.shared.volumeAppeared()
 			claimFocus()
 			if !Self.mainWindowIsOpen {
 				dismissWindow(id: SpatialMapScene.id)
 			}
+		}
+		.onDisappear {
+			SpatialTerrainKeeper.shared.volumeDisappeared()
 		}
 		.onReceive(NotificationCenter.default.publisher(for: UIScene.didDisconnectNotification)) { _ in
 			if !Self.mainWindowIsOpen {
@@ -239,9 +247,15 @@ struct SpatialMapOrnament: View {
 	var body: some View {
 		HStack(spacing: 10) {
 			Menu {
-				Picker(String(localized: "Map Layer", comment: "Spatial map: picker for the image draped over the terrain"), selection: $mapLayer) {
-					ForEach([MapLayer.standard, .hybrid, .satellite, .offline], id: \.self) { layer in
-						Text(layer == .offline ? String(localized: "Terrain Shading", comment: "Spatial map layer: hillshade only, no map imagery") : layer.localized).tag(layer)
+				// Offline is offered only where a downloaded basemap covers the map. The setting is
+				// shared with the 2D map, so a stored Offline shows as Standard elsewhere.
+				let offlineAvailable = model.offlineLayerAvailable(regions: offline.regions)
+				Picker(String(localized: "Map Layer", comment: "Spatial map: picker for the image draped over the terrain"), selection: Binding(
+					get: { SpatialOfflineMap.buildLayer(mapLayer, offlineAvailable: offlineAvailable) },
+					set: { mapLayer = $0 }
+				)) {
+					ForEach(SpatialOfflineMap.layers(offlineAvailable: offlineAvailable), id: \.self) { layer in
+						Text(layer.localized).tag(layer)
 					}
 				}
 				Toggle(isOn: $darkMap) {
@@ -257,13 +271,17 @@ struct SpatialMapOrnament: View {
 			} label: {
 				Image(systemName: "map")
 			}
+			.help(String(localized: "Map layer", comment: "VoiceOver label for the spatial map layer menu"))
 			.accessibilityLabel(String(localized: "Map layer", comment: "VoiceOver label for the spatial map layer menu"))
 
 			Toggle(isOn: $showLabels) { Image(systemName: "tag") }
+				.help(String(localized: "Node labels", comment: "VoiceOver label for the spatial map labels toggle"))
 				.accessibilityLabel(String(localized: "Node labels", comment: "VoiceOver label for the spatial map labels toggle"))
 			Toggle(isOn: $showLinks) { Image(systemName: "link") }
+				.help(String(localized: "Direct Links", comment: "Map settings toggle that draws lines between nodes that hear each other directly."))
 				.accessibilityLabel(String(localized: "Direct Links", comment: "Map settings toggle that draws lines between nodes that hear each other directly."))
 			Toggle(isOn: $showTraffic) { Image(systemName: "dot.radiowaves.left.and.right") }
+				.help(String(localized: "Live traffic", comment: "VoiceOver label for the spatial map traffic toggle"))
 				.accessibilityLabel(String(localized: "Live traffic", comment: "VoiceOver label for the spatial map traffic toggle"))
 
 			traceRoutes
@@ -276,6 +294,7 @@ struct SpatialMapOrnament: View {
 				Image(systemName: "minus.magnifyingglass")
 			}
 			.disabled(model.zoom <= 1.01)
+			.help(String(localized: "Zoom out", comment: "Spatial map: show a wider area on the table"))
 			.accessibilityLabel(String(localized: "Zoom out", comment: "Spatial map: show a wider area on the table"))
 			Button {
 				model.setZoom(model.clampedZoom(model.zoom * 2))
@@ -283,6 +302,7 @@ struct SpatialMapOrnament: View {
 				Image(systemName: "plus.magnifyingglass")
 			}
 			.disabled(model.clampedZoom(model.zoom * 2) <= model.zoom + 0.01)
+			.help(String(localized: "Zoom in", comment: "Spatial map: show a smaller area on the table in more detail"))
 			.accessibilityLabel(String(localized: "Zoom in", comment: "Spatial map: show a smaller area on the table in more detail"))
 			if model.zoom > 1.01 {
 				Button {
@@ -318,10 +338,12 @@ struct SpatialMapOrnament: View {
 				if !model.coverageLegend.isEmpty {
 					SpatialCoverageLegendStrip(entries: model.coverageLegend)
 				}
-				if model.textureSource == .offline, mapLayer != .offline {
+				if model.imageryUnavailable {
 					Image(systemName: "wifi.slash")
 						.foregroundStyle(.secondary)
-						.help(String(localized: "Map imagery unavailable; showing terrain shading", comment: "Spatial map: the Apple map image could not be fetched"))
+						.help(model.textureSource == .offlineMap
+							? String(localized: "Map imagery unavailable; showing the offline map", comment: "Spatial map: the Apple map image could not be fetched, so the downloaded offline map is shown")
+							: String(localized: "Map imagery unavailable; showing terrain shading", comment: "Spatial map: the Apple map image could not be fetched"))
 				}
 			}
 			.font(.caption)
@@ -377,9 +399,9 @@ struct SpatialMapOrnament: View {
 		}
 	}
 
-	/// Progress while terrain downloads. Otherwise, when the terrain doesn't cover the box: the
-	/// Download Terrain button if automatic downloads are off or have given up on this area, a
-	/// retry after an automatic download failed, or why terrain can't be downloaded.
+	/// Progress while the offline map downloads. Otherwise, when streets and terrain don't cover the
+	/// box: the Download Terrain button if automatic downloads are off or have given up on this
+	/// area, a retry after an automatic download failed, or why it can't be downloaded.
 	@ViewBuilder private var terrainDownload: some View {
 		if model.isDownloadingTerrain {
 			HStack(spacing: 6) {
@@ -394,6 +416,7 @@ struct SpatialMapOrnament: View {
 				} label: {
 					Image(systemName: "xmark.circle")
 				}
+				.help(String(localized: "Cancel terrain download", comment: "VoiceOver label to stop the spatial map terrain download"))
 				.accessibilityLabel(String(localized: "Cancel terrain download", comment: "VoiceOver label to stop the spatial map terrain download"))
 			}
 			.accessibilityElement(children: .contain)
@@ -407,6 +430,7 @@ struct SpatialMapOrnament: View {
 					} label: {
 						Image(systemName: "arrow.clockwise")
 					}
+					.help(String(localized: "Retry terrain download", comment: "VoiceOver label to retry the spatial map terrain download after it failed"))
 					.accessibilityLabel(String(localized: "Retry terrain download", comment: "VoiceOver label to retry the spatial map terrain download after it failed"))
 				} else if !autoTerrain || model.autoDownloadGaveUp(on: target) {
 					Button {
@@ -415,6 +439,7 @@ struct SpatialMapOrnament: View {
 						Label(String(localized: "Download Terrain", comment: "Spatial map: button that downloads elevation data so the volume shows relief"), systemImage: "arrow.down.circle")
 							.labelStyle(.titleAndIcon)
 					}
+					.help(String(localized: "Downloads elevation data so the map shows hills and valleys.", comment: "VoiceOver hint for the spatial map terrain download button"))
 					.accessibilityHint(String(localized: "Downloads elevation data so the map shows hills and valleys.", comment: "VoiceOver hint for the spatial map terrain download button"))
 					.confirmationDialog(
 						String(localized: "Download terrain for this area?", comment: "Spatial map: title of the terrain download confirmation"),
@@ -434,6 +459,8 @@ struct SpatialMapOrnament: View {
 				case .tooLarge:
 					caption(String(localized: "The mesh is too spread out to download terrain for all of it.", comment: "Spatial map: the area around the mesh is over the per-map download limit"))
 				}
+			} else if model.streetsLeftOut {
+				caption(String(localized: "The street map for the mesh is over the per-map limit, so only terrain was downloaded.", comment: "Spatial map: the offline map kept for the mesh has terrain but no streets because the street map is too large"))
 			}
 		}
 	}
@@ -473,7 +500,7 @@ struct SpatialMapOrnament: View {
 		let style = Measurement<UnitLength>.FormatStyle(width: .abbreviated, usage: .road, numberFormatStyle: .number.precision(.fractionLength(0)))
 		let size = "\(Measurement(value: area.width, unit: UnitLength.meters).formatted(style)) × \(Measurement(value: area.height, unit: UnitLength.meters).formatted(style))"
 		let bytes = ByteCountFormatter.string(fromByteCount: SpatialTerrainAutoDecision.estimatedBytes(target), countStyle: .file)
-		return String(localized: "Downloads about \(bytes) of elevation data for a \(size) area around the mesh.", comment: "Spatial map: terrain download confirmation; the arguments are the download size, e.g. 40 MB, and the area's width × height, e.g. 98 km × 104 km")
+		return String(localized: "Downloads about \(bytes) of street map and elevation data for a \(size) area around the mesh.", comment: "Spatial map: offline map download confirmation; the arguments are the download size, e.g. 40 MB, and the area's width × height, e.g. 98 km × 104 km")
 	}
 }
 

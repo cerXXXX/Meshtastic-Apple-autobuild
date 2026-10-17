@@ -836,6 +836,9 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 			self.isConnecting = false
 		}
 		self.state = newState
+		// Widgets must never show a dead link as live; every state change
+		// refreshes the shared snapshot (debounced in the broker).
+		WidgetDataBroker.shared.refresh(.connection)
 	}
 
 	func send(_ data: ToRadio, debugDescription: String? = nil) async throws {
@@ -1267,6 +1270,7 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 				if let completedNodeNum = refresh.nodeNum {
 					await MeshPackets.shared.commitChannelRefreshStage(for: completedNodeNum, owner: refresh.owner)
 					MeshShareSnapshotBuilder.refresh(nodeNum: completedNodeNum, context: context)
+					WidgetDataBroker.shared.refresh(.config)
 				}
 				await finishAutomaticConfigRefresh(owner: refresh.owner, error: nil)
 				
@@ -1311,6 +1315,7 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 								nodeNum: activeDeviceNum,
 								context: context
 							)
+							WidgetDataBroker.shared.refresh(.config)
 						}
 
 						// Push updated node data to the companion Watch app
@@ -1605,6 +1610,8 @@ extension AccessoryManager {
 		entity.hasOfferChannel = hasCustomChannel
 		entity.offerChannelName = channelName
 		entity.offerChannelPSK = hasCustomChannel ? beacon.offerChannel.psk : Data()
+		// Same as the scan path: zero means the beacon didn't pin a slot.
+		entity.offerFrequencySlot = beacon.hasOfferFrequencySlot ? Int(beacon.offerFrequencySlot) : 0
 		entity.snr = packet.rxSnr
 		entity.rssi = Int(packet.rxRssi)
 		entity.timestamp = Date()

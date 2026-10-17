@@ -1002,7 +1002,7 @@ actor MeshPackets {
 		Self.applyChannelRefresh(stagedChannel, to: channel)
 	}
 
-	func deviceMetadataPacket (metadata: DeviceMetadata, fromNum: Int64, sessionPasskey: Data? = Data()) {
+	func deviceMetadataPacket (metadata: DeviceMetadata, fromNum: Int64, sessionPasskey: Data? = nil) {
 		if metadata.isInitialized {
 			let logString = String.localizedStringWithFormat("Device Metadata received from: %@".localized, fromNum.toHex())
 			Logger.admin.info("🏷️ \(logString, privacy: .public)")
@@ -1019,7 +1019,7 @@ actor MeshPackets {
 					node.metadata = storedMetadata
 				}
 				storedMetadata.update(from: metadata)
-				if sessionPasskey?.count != 0 {
+				if let sessionPasskey, !sessionPasskey.isEmpty {
 					node.sessionPasskey = sessionPasskey
 					node.sessionExpiration = Date().addingTimeInterval(300)
 				}
@@ -1336,6 +1336,18 @@ actor MeshPackets {
 
 	func adminAppPacket (packet: MeshPacket, connectedNodeNum: Int64? = nil) {
 		if let adminMessage = try? AdminMessage(serializedBytes: packet.decoded.payload) {
+			// The session key from a reply to a request we sent, addressed to the connected
+			// node. An unsolicited or forwarded admin message, or one with no key, leaves the
+			// stored session alone.
+			let responsePasskey: Data?
+			if let connectedNodeNum,
+			   packet.decoded.requestID != 0,
+			   Int64(packet.to) == connectedNodeNum,
+			   !adminMessage.sessionPasskey.isEmpty {
+				responsePasskey = adminMessage.sessionPasskey
+			} else {
+				responsePasskey = nil
+			}
 
 			if adminMessage.payloadVariant == AdminMessage.OneOf_PayloadVariant.getCannedMessageModuleMessagesResponse(adminMessage.getCannedMessageModuleMessagesResponse) {
 
@@ -1365,65 +1377,60 @@ actor MeshPackets {
 			} else if adminMessage.payloadVariant == AdminMessage.OneOf_PayloadVariant.getChannelResponse(adminMessage.getChannelResponse) {
 				channelPacket(channel: adminMessage.getChannelResponse, fromNum: Int64(packet.from))
 			} else if adminMessage.payloadVariant == AdminMessage.OneOf_PayloadVariant.getDeviceMetadataResponse(adminMessage.getDeviceMetadataResponse) {
-				deviceMetadataPacket(metadata: adminMessage.getDeviceMetadataResponse, fromNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+				deviceMetadataPacket(metadata: adminMessage.getDeviceMetadataResponse, fromNum: Int64(packet.from), sessionPasskey: responsePasskey)
 			} else if adminMessage.payloadVariant == AdminMessage.OneOf_PayloadVariant.getConfigResponse(adminMessage.getConfigResponse) {
 				let config = adminMessage.getConfigResponse
 				if config.payloadVariant == Config.OneOf_PayloadVariant.bluetooth(config.bluetooth) {
-					upsertBluetoothConfigPacket(config: config.bluetooth, nodeNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+					upsertBluetoothConfigPacket(config: config.bluetooth, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if config.payloadVariant == Config.OneOf_PayloadVariant.device(config.device) {
-					upsertDeviceConfigPacket(config: config.device, nodeNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+					upsertDeviceConfigPacket(config: config.device, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if config.payloadVariant == Config.OneOf_PayloadVariant.display(config.display) {
-					self.upsertDisplayConfigPacket(config: config.display, nodeNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+					self.upsertDisplayConfigPacket(config: config.display, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if config.payloadVariant == Config.OneOf_PayloadVariant.lora(config.lora) {
-					self.upsertLoRaConfigPacket(config: config.lora, nodeNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+					self.upsertLoRaConfigPacket(config: config.lora, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if config.payloadVariant == Config.OneOf_PayloadVariant.network(config.network) {
-					self.upsertNetworkConfigPacket(config: config.network, nodeNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+					self.upsertNetworkConfigPacket(config: config.network, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if config.payloadVariant == Config.OneOf_PayloadVariant.position(config.position) {
-					self.upsertPositionConfigPacket(config: config.position, nodeNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+					self.upsertPositionConfigPacket(config: config.position, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if config.payloadVariant == Config.OneOf_PayloadVariant.power(config.power) {
-					self.upsertPowerConfigPacket(config: config.power, nodeNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+					self.upsertPowerConfigPacket(config: config.power, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if config.payloadVariant == Config.OneOf_PayloadVariant.security(config.security) {
-					self.upsertSecurityConfigPacket(config: config.security, nodeNum: Int64(packet.from), sessionPasskey: adminMessage.sessionPasskey)
+					self.upsertSecurityConfigPacket(config: config.security, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				}
 			} else if adminMessage.payloadVariant == AdminMessage.OneOf_PayloadVariant.getModuleConfigResponse(adminMessage.getModuleConfigResponse) {
 				let moduleConfig = adminMessage.getModuleConfigResponse
 				if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.ambientLighting(moduleConfig.ambientLighting) {
-					self.upsertAmbientLightingModuleConfigPacket(config: moduleConfig.ambientLighting, nodeNum: Int64(packet.from))
+					self.upsertAmbientLightingModuleConfigPacket(config: moduleConfig.ambientLighting, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.audio(moduleConfig.audio) {
-					self.upsertAudioModuleConfigPacket(config: moduleConfig.audio, nodeNum: Int64(packet.from))
+					self.upsertAudioModuleConfigPacket(config: moduleConfig.audio, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.cannedMessage(moduleConfig.cannedMessage) {
-					self.upsertCannedMessagesModuleConfigPacket(config: moduleConfig.cannedMessage, nodeNum: Int64(packet.from))
+					self.upsertCannedMessagesModuleConfigPacket(config: moduleConfig.cannedMessage, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.detectionSensor(moduleConfig.detectionSensor) {
-					self.upsertDetectionSensorModuleConfigPacket(config: moduleConfig.detectionSensor, nodeNum: Int64(packet.from))
+					self.upsertDetectionSensorModuleConfigPacket(config: moduleConfig.detectionSensor, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.externalNotification(moduleConfig.externalNotification) {
-					self.upsertExternalNotificationModuleConfigPacket(config: moduleConfig.externalNotification, nodeNum: Int64(packet.from))
+					self.upsertExternalNotificationModuleConfigPacket(config: moduleConfig.externalNotification, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.mqtt(moduleConfig.mqtt) {
-					self.upsertMqttModuleConfigPacket(config: moduleConfig.mqtt, nodeNum: Int64(packet.from))
+					self.upsertMqttModuleConfigPacket(config: moduleConfig.mqtt, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.rangeTest(moduleConfig.rangeTest) {
-					self.upsertRangeTestModuleConfigPacket(config: moduleConfig.rangeTest, nodeNum: Int64(packet.from))
+					self.upsertRangeTestModuleConfigPacket(config: moduleConfig.rangeTest, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.serial(moduleConfig.serial) {
-					self.upsertSerialModuleConfigPacket(config: moduleConfig.serial, nodeNum: Int64(packet.from))
+					self.upsertSerialModuleConfigPacket(config: moduleConfig.serial, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.storeForward(moduleConfig.storeForward) {
-					self.upsertStoreForwardModuleConfigPacket(config: moduleConfig.storeForward, nodeNum: Int64(packet.from))
+					self.upsertStoreForwardModuleConfigPacket(config: moduleConfig.storeForward, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.telemetry(moduleConfig.telemetry) {
-					self.upsertTelemetryModuleConfigPacket(config: moduleConfig.telemetry, nodeNum: Int64(packet.from))
+					self.upsertTelemetryModuleConfigPacket(config: moduleConfig.telemetry, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.tak(moduleConfig.tak) {
-					self.upsertTAKModuleConfigPacket(config: moduleConfig.tak, nodeNum: Int64(packet.from))
+					self.upsertTAKModuleConfigPacket(config: moduleConfig.tak, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.statusmessage(moduleConfig.statusmessage) {
-					self.upsertStatusMessageModuleConfigPacket(config: moduleConfig.statusmessage, nodeNum: Int64(packet.from))
+					self.upsertStatusMessageModuleConfigPacket(config: moduleConfig.statusmessage, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.trafficManagement(moduleConfig.trafficManagement) {
-					self.upsertTrafficManagementModuleConfigPacket(config: moduleConfig.trafficManagement, nodeNum: Int64(packet.from))
+					self.upsertTrafficManagementModuleConfigPacket(config: moduleConfig.trafficManagement, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				} else if moduleConfig.payloadVariant == ModuleConfig.OneOf_PayloadVariant.meshBeacon(moduleConfig.meshBeacon) {
-					// An empty key means the reply carried none; keep the stored one.
-					self.upsertMeshBeaconModuleConfigPacket(
-						config: moduleConfig.meshBeacon,
-						nodeNum: Int64(packet.from),
-						sessionPasskey: adminMessage.sessionPasskey.isEmpty ? nil : adminMessage.sessionPasskey
-					)
+					self.upsertMeshBeaconModuleConfigPacket(config: moduleConfig.meshBeacon, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				}
 			} else if adminMessage.payloadVariant == AdminMessage.OneOf_PayloadVariant.getRingtoneResponse(adminMessage.getRingtoneResponse) {
 				if let rt = try? RTTTLConfig(serializedBytes: packet.decoded.payload) {
-					self.upsertRtttlConfigPacket(ringtone: rt.ringtone, nodeNum: Int64(packet.from))
+					self.upsertRtttlConfigPacket(ringtone: rt.ringtone, nodeNum: Int64(packet.from), sessionPasskey: responsePasskey)
 				}
 			} else {
 				Logger.admin.error("🕸️ MESH PACKET received Admin App UNHANDLED \((try? packet.decoded.jsonString()) ?? "JSON Decode Failure", privacy: .public)")
@@ -1435,10 +1442,7 @@ actor MeshPackets {
 			// to the connected node — an unsolicited or forwarded admin message never
 			// unlocks the remote-admin UI. Runs after the handlers above so a node first
 			// heard via a metadata response exists by now.
-			if let connectedNodeNum,
-			   packet.decoded.requestID != 0,
-			   Int64(packet.to) == connectedNodeNum,
-			   !adminMessage.sessionPasskey.isEmpty {
+			if responsePasskey != nil {
 				switch adminMessage.payloadVariant {
 				case .getChannelResponse, .getOwnerResponse, .getConfigResponse, .getModuleConfigResponse,
 					 .getCannedMessageModuleMessagesResponse, .getDeviceMetadataResponse, .getRingtoneResponse,
@@ -1785,6 +1789,32 @@ actor MeshPackets {
 					}
 				}
 			} else if telemetry.metricsType == 4 {
+				// Hand the connected radio's LocalStats to the widget snapshot as
+				// plain values — the broker runs on the main actor and must not
+				// hold this context-bound entity across the hop. Guarded to the
+				// connected node like the device-metrics branch above: relayed
+				// LocalStats from other nodes are not our radio's counters.
+				if connectedNode == Int64(packet.from) {
+					let statsNodeNum = connectedNode
+					let widgetStats = LocalStatsSnapshot(
+						statsAt: telemetry.time ?? Date(),
+						uptimeSeconds: telemetry.uptimeSeconds,
+						channelUtilization: telemetry.channelUtilization,
+						airUtilTx: telemetry.airUtilTx,
+						packetsSent: telemetry.numPacketsTx,
+						packetsReceived: telemetry.numPacketsRx,
+						packetsReceivedBad: telemetry.numPacketsRxBad,
+						packetsReceivedDupe: telemetry.numRxDupe,
+						packetsRelayed: telemetry.numTxRelay,
+						packetsRelayCanceled: telemetry.numTxRelayCanceled,
+						nodesOnline: telemetry.numOnlineNodes,
+						nodesTotal: telemetry.numTotalNodes
+					)
+					Task { @MainActor in
+						WidgetDataBroker.shared.updateLocalStats(widgetStats, nodeNum: statsNodeNum)
+					}
+				}
+
 				// Update our live activity if there is one running, not available on mac
 #if !targetEnvironment(macCatalyst)
 #if canImport(ActivityKit)
@@ -1808,7 +1838,9 @@ actor MeshPackets {
 				let updatedContent = ActivityContent(state: updatedMeshStatus, staleDate: nil)
 
 				let meshActivity = Activity<MeshActivityAttributes>.activities.first(where: { $0.attributes.nodeNum == connectedNode })
-				if meshActivity != nil {
+				// Same origin guard as the widget hand-off above: another node's
+				// relayed LocalStats must not be shown as the connected radio's.
+				if meshActivity != nil, connectedNode == Int64(packet.from) {
 					Task {
 						// await meshActivity?.update(updatedContent, alertConfiguration: alertConfiguration)
 						await meshActivity?.update(updatedContent)
