@@ -1,5 +1,5 @@
 {
-  "api_hash": "f6bc0397f4908e530fe0fe1617ae4c6d7fb0199c0b28795daf340334440974dd",
+  "api_hash": "ac6b3c97844c136572f1a884ecdc852e84d149151bc62b070fc485f6129476c9",
   "files": {
     "crowpanel_2_4.svg": {
       "etag": "\"29194e5a415e5aee034b2d4a3ba2e398\""
@@ -144,6 +144,9 @@
     },
     "rak_3312.svg": {
       "etag": "\"8db94664189df83d099b726cd21045b4\""
+    },
+    "rak_wismesh_pocket.svg": {
+      "etag": "\"27c2102c07267a9b78df385a7b55e09a\""
     },
     "rak_wismesh_tag.svg": {
       "etag": "\"d0fe0072bdfd0c3671ed8be8339708fa\""
