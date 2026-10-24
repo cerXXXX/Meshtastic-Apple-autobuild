@@ -45,6 +45,8 @@ packages:
     path: MeshtasticProtobufs
   ShowcaseContent:
     path: Packages/ShowcaseContent
+  Kp1812:
+    path: Packages/Kp1812
 
 settings:
   configs:
@@ -278,6 +280,9 @@ targets:
       - package: ShowcaseContent
         product: ShowcaseContent
         destinationFilters: [visionOS]
+      # On-device coverage estimates (ITU-R P.1812).
+      - package: Kp1812
+        product: Kp1812
       - package: dd-sdk-ios
         product: DatadogCore
       - package: dd-sdk-ios
@@ -361,7 +366,7 @@ targets:
             - "$(inherited)"
             - "@executable_path/Frameworks"
           MACOSX_DEPLOYMENT_TARGET: "14.6"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           OTHER_LDFLAGS:
             - "-weak_framework"
             - "SwiftUI"
@@ -411,7 +416,7 @@ targets:
             - "$(inherited)"
             - "@executable_path/Frameworks"
           MACOSX_DEPLOYMENT_TARGET: "14.6"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           OTHER_LDFLAGS:
             - "-weak_framework"
             - "SwiftUI"
@@ -461,7 +466,7 @@ targets:
             - "@executable_path/Frameworks"
             - "@executable_path/../../Frameworks"
           MACOSX_DEPLOYMENT_TARGET: "14.6"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.Widgets"
           PRODUCT_NAME: "$(TARGET_NAME)"
           PROVISIONING_PROFILE_SPECIFIER: ""
@@ -490,7 +495,7 @@ targets:
             - "@executable_path/Frameworks"
             - "@executable_path/../../Frameworks"
           MACOSX_DEPLOYMENT_TARGET: "14.6"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.Widgets"
           PRODUCT_NAME: "$(TARGET_NAME)"
           PROVISIONING_PROFILE_SPECIFIER: ""
@@ -537,7 +542,7 @@ targets:
             - "$(inherited)"
             - "@executable_path/Frameworks"
             - "@executable_path/../../Frameworks"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.MessagesExtension"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SKIP_INSTALL: "YES"
@@ -565,7 +570,7 @@ targets:
             - "$(inherited)"
             - "@executable_path/Frameworks"
             - "@executable_path/../../Frameworks"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.MessagesExtension"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SKIP_INSTALL: "YES"
@@ -601,7 +606,7 @@ targets:
           GCC_C_LANGUAGE_STANDARD: "gnu17"
           GENERATE_INFOPLIST_FILE: "YES"
           IPHONEOS_DEPLOYMENT_TARGET: "17.5"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.MeshtasticTests"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
@@ -621,7 +626,7 @@ targets:
           GCC_C_LANGUAGE_STANDARD: "gnu17"
           GENERATE_INFOPLIST_FILE: "YES"
           IPHONEOS_DEPLOYMENT_TARGET: "17.5"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.MeshtasticTests"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
@@ -661,7 +666,7 @@ targets:
           LD_RUNPATH_SEARCH_PATHS:
             - "$(inherited)"
             - "@executable_path/Frameworks"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.watchkitapp"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SDKROOT: "watchos"
@@ -689,7 +694,7 @@ targets:
           LD_RUNPATH_SEARCH_PATHS:
             - "$(inherited)"
             - "@executable_path/Frameworks"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.watchkitapp"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SDKROOT: "watchos"
@@ -750,7 +755,7 @@ targets:
           LD_RUNPATH_SEARCH_PATHS:
             - "$(inherited)"
             - "@executable_path/Frameworks"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SDKROOT: "appletvos"
@@ -769,7 +774,7 @@ targets:
           LD_RUNPATH_SEARCH_PATHS:
             - "$(inherited)"
             - "@executable_path/Frameworks"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SDKROOT: "appletvos"
@@ -794,7 +799,7 @@ targets:
           CURRENT_PROJECT_VERSION: "1"
           DEVELOPMENT_TEAM: "GCH7VS5Y9R"
           GENERATE_INFOPLIST_FILE: "YES"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.TVUITests"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SDKROOT: "appletvos"
@@ -807,7 +812,7 @@ targets:
           CURRENT_PROJECT_VERSION: "1"
           DEVELOPMENT_TEAM: "GCH7VS5Y9R"
           GENERATE_INFOPLIST_FILE: "YES"
-          MARKETING_VERSION: "2.7.25"
+          MARKETING_VERSION: "2.7.26"
           PRODUCT_BUNDLE_IDENTIFIER: "gvh.MeshtasticClient.TVUITests"
           PRODUCT_NAME: "$(TARGET_NAME)"
           SDKROOT: "appletvos"

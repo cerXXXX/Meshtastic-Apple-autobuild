@@ -135,12 +135,14 @@ Enable the <strong>Via LoRa</strong> filter and disable <strong>Via MQTT</strong
 <p>On the 3D spatial map, the <strong>link</strong> button in the toolbar draws the same direct links as the 2D map, between the tops of the pins. It is off by default and has its own setting. Lines use the signal quality colors, are dashed when only one direction is known, and fade as they get older. To keep the volume smooth, at most 12 SNR pills are shown: the selected node's links when a node is selected, otherwise the newest links, your radio's first. Links are hidden while a trace route is shown.</p>
 <h3>Offline Maps</h3>
 <p>A dedicated section of the sheet for working without a connection: a link opens the list of downloaded map regions to manage them or download new ones, and the <strong>Offline Tiles</strong> toggle overlays a downloaded region on the base map so it keeps rendering with no internet connection.</p>
+<h4>Importing a map file</h4>
+<p>To use a map file you already have, open the offline map list and tap <strong>Import MBTiles or PMTiles File</strong>, or the import button in the corner of the screen. You can also open a <code>.mbtiles</code> or <code>.pmtiles</code> file from the Files app. The app checks the file, copies it in, and adds it to the list, where it counts toward the same limits as a downloaded map: 512 MB per map (1 GB on Apple Vision Pro), 10 maps, and 3 GB in total. A file that is already installed, is too large, or isn't a map is turned down with a message. It shows on the map with the <strong>Offline Tiles</strong> toggle, like a downloaded map.</p>
 <h3>Offline map for the spatial map (Apple Vision Pro)</h3>
 <p>The 3D spatial map needs elevation data to show hills and valleys, and a street map to draw on when there is no internet connection. With <strong>Download Terrain Automatically</strong> on (in the spatial map's map menu, on by default), the app keeps one full offline map of its own, named <strong>Spatial Map area</strong> in the offline map list: the Standard detail street map plus terrain for the mesh. It works like any other offline map, so it also shows on the 2D map when offline tiles are in use. Where it overlaps one of your own maps, both are drawn. The spatial map creates it the first time you open it. After that it grows while the app is open on Vision Pro, not only while the spatial map is: the app checks the mesh's area shortly after launch, after each new connection, and every five minutes while a radio is connected. A terrain-only region from an earlier version is replaced with a full one the next time the app checks. If you delete the region in Offline Maps, it comes back only the next time you open the spatial map. The area is the one the spatial map would show, around your connected radio, with the map filters left off. Your own offline map regions are never changed, and this one never blocks them: it doesn't count toward your map count or the total storage limit for your downloads. It only grows while there is room under that limit, counting your maps too. Where your maps already have streets and terrain for the whole area, nothing more is downloaded. If the street map for the area is over the per-map limit, a smaller area around the mesh is tried. If none fits, the street map you already have is kept, terrain is downloaded for the rest, and the spatial map says so. A failed download is retried later, and a cancelled one is not retried for that area. Turn the setting off to stop automatic downloads; <strong>Download Terrain</strong> in the spatial map's toolbar still downloads on request.</p>
 <h3>Map Overlays</h3>
 <p>Custom GeoJSON overlays you've uploaded are listed here, each with its own toggle and file details (format, feature count, size, upload date). Swipe a file left to delete it, or tap <strong>Upload Map Data</strong> to add another. The section's master toggle turns uploaded overlays on the map on or off as a group.</p>
 <h2>Coverage Estimate (Site Planner)</h2>
-<p>Estimate the radio coverage of a transmitter site without leaving the app. The app drives the hosted <a href="https://site.meshtastic.org">Meshtastic Site Planner</a> — a SPLAT!/ITM propagation simulator — and imports the resulting coverage map as a styled GeoJSON overlay.</p>
+<p>Estimate the radio coverage of a transmitter site without leaving the app. The app predicts received signal strength on the device with the ITU-R P.1812 propagation model over Mapterhorn terrain, the same engine the Android app uses, and adds the result to the map as a styled GeoJSON overlay. It uses the same inputs and color palettes as the <a href="https://site.meshtastic.org">Meshtastic Site Planner</a>, though its SPLAT!/ITM model won't match pixel for pixel.</p>
 <h3>Starting an estimate</h3>
 <p>You can open the estimate form two ways:</p>
 <ul>
@@ -163,11 +165,11 @@ Enable the <strong>Via LoRa</strong> filter and disable <strong>Via MQTT</strong
 </tr>
 <tr>
 <td>Receiver</td>
-<td>Receiver sensitivity (dBm) — the coverage threshold.</td>
+<td>Receiver sensitivity (dBm) — the coverage threshold — and receiver height, how high above the ground the listening node is (1 m, a handheld, by default).</td>
 </tr>
 <tr>
 <td>Simulation Options</td>
-<td>Maximum range (km) and a high-resolution terrain toggle (which caps the range at 70 km).</td>
+<td>Maximum range, from 1 to 150 km.</td>
 </tr>
 <tr>
 <td>Display</td>
@@ -177,10 +179,10 @@ Enable the <strong>Via LoRa</strong> filter and disable <strong>Via MQTT</strong
 </table>
 <p><strong>Prefill from the connected radio:</strong> frequency is computed from the radio's region, modem preset, and channel; transmit power is converted from the device's dBm setting; and receiver sensitivity is mapped from the modem preset (for example LongFast → −139 dBm). Antenna gain and height aren't part of the device config, so they keep the planner's defaults. You can edit any value before running.</p>
 <h3>Running it</h3>
-<p>Tap <strong>Estimate</strong>. A progress indicator appears while the planner computes the coverage; you can <strong>Cancel</strong> at any time. When it finishes, the styled coverage map is added as a map overlay (in its dBm colors), the GeoJSON overlays layer is enabled, and the map recenters on the transmitter. The imported layer is managed like any other GeoJSON overlay in <strong>Map Options</strong>.</p>
+<p>Tap <strong>Estimate</strong>. A progress indicator appears while the coverage is computed; you can <strong>Cancel</strong> at any time. The result is drawn as six signal bands starting at the receiver sensitivity. When it finishes, the styled coverage map is added as a map overlay (in its dBm colors), the GeoJSON overlays layer is enabled, and the map recenters on the transmitter. The imported layer is managed like any other GeoJSON overlay in <strong>Map Options</strong>.</p>
 <p>A new estimate hides older estimates for the same node, so estimates for different nodes can be shown together. Estimates run from the map center or another location replace each other.</p>
-<div class="tips-callout"><strong>Note — Requires a network connection</strong>
-The coverage simulation runs in the hosted Site Planner, so an internet connection is needed. Estimates time out after 45 seconds; on failure the flow ends cleanly without leaving a stuck spinner.</div>
+<div class="tips-callout"><strong>Note — Terrain download</strong>
+The first estimate in an area downloads its terrain tiles, so it needs an internet connection; later estimates there use the cached terrain. Terrain from an offline map region you've downloaded is used without the network. The frequency must be between 30 and 6000 MHz, the range the model covers. Terrain data © <a href="https://mapterhorn.com/attribution">Mapterhorn</a>.</div>
 <h3>Coverage on the spatial map (Apple Vision Pro)</h3>
 <p>On Apple Vision Pro, estimates also show on the 3D spatial map, laid over the terrain. Inside the range the planner computed, ground with no signal is shaded dark, so a ridge or valley that blocks the signal shows as a dark hole in the colors.</p>
 <ul>
