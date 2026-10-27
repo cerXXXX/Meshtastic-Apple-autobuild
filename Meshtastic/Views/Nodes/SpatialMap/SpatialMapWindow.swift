@@ -30,6 +30,9 @@ struct SpatialMapWindow: View {
 	@AppStorage("spatialMapDark") private var darkMap = true
 	/// Shared with the 2D map's Contour Lines setting.
 	@AppStorage("meshMapShowContours") private var showContours = false
+	/// Shared with the 2D map's Weather Radar setting.
+	@AppStorage("meshMapShowWeatherRadar") private var showWeatherRadar = false
+	@ObservedObject private var weatherRadar = WeatherRadarAvailability.shared
 	@AppStorage("spatialMapShowLabels") private var showLabels = true
 	@AppStorage("spatialMapShowTraffic") private var showTraffic = true
 	@AppStorage("spatialMapShowDirectLinks") private var showLinks = false
@@ -38,6 +41,8 @@ struct SpatialMapWindow: View {
 	@AppStorage("spatialMapCoverageOpacity") private var coverageOpacity = 0.55
 	@State private var downloadPrompt = SpatialMapDownloadPrompt()
 	@State private var showingMapSearch = false
+	/// Flies a route asked for by id once the routes and the table are ready.
+	@State private var routeRequestTask: Task<Void, Never>?
 
 	init() {
 		let scene = SpatialSceneController()
@@ -48,27 +53,29 @@ struct SpatialMapWindow: View {
 	private var preset: ModemPresets { ModemPresets(rawValue: UserDefaults.modemPreset) ?? .longFast }
 
 	private var refreshKey: String {
-		"\(mapLayer.rawValue)|\(darkMap)|\(showContours)|\(preciseLocationsOnly)|\(showLinks)|\(coverageMode.rawValue)|\(accessoryManager.activeDeviceNum ?? 0)|\(accessoryManager.isInBackground)"
+		"\(mapLayer.rawValue)|\(darkMap)|\(showContours)|\(showWeatherRadar)|\(preciseLocationsOnly)|\(showLinks)|\(coverageMode.rawValue)|\(accessoryManager.activeDeviceNum ?? 0)|\(accessoryManager.isInBackground)"
 	}
 
 	var body: some View {
 		SpatialMapView(model: model, scene: scene, traffic: traffic, preset: preset) { nodeNum in
-			showInMainWindow("meshtastic:///nodes?nodenum=\(nodeNum)")
+			openNode(nodeNum)
 		} onCoverage: { nodeNum, action in
 			handleCoverage(action, nodeNum: nodeNum)
 		}
 		// The window takes its size limits from these, so the user can resize the table between them.
+		// In the cinema the minimum is the maximum, so the volume opens (and stays) at its largest;
+		// a geometry request can't size a volume.
 		.frame(
-			minWidth: points(SpatialVolumeFit.minimumSize.x), maxWidth: points(SpatialVolumeFit.maximumSize.x),
-			minHeight: points(SpatialVolumeFit.minimumSize.y), maxHeight: points(SpatialVolumeFit.maximumSize.y)
+			minWidth: points(minimumSize.x), maxWidth: points(SpatialVolumeFit.maximumSize.x),
+			minHeight: points(minimumSize.y), maxHeight: points(SpatialVolumeFit.maximumSize.y)
 		)
-		.frame(minDepth: points(SpatialVolumeFit.minimumSize.z), maxDepth: points(SpatialVolumeFit.maximumSize.z))
+		.frame(minDepth: points(minimumSize.z), maxDepth: points(SpatialVolumeFit.maximumSize.z))
 		.volumeBaseplateVisibility(.visible)
 		.ornament(attachmentAnchor: .scene(.bottomFront)) {
 			SpatialMapOrnament(
 				model: model, traffic: traffic, mapLayer: $mapLayer, darkMap: $darkMap, showContours: $showContours,
-				showLabels: $showLabels, showLinks: $showLinks, showTraffic: $showTraffic, autoTerrain: $autoTerrain,
-				coverageMode: $coverageMode, coverageOpacity: $coverageOpacity
+				showWeatherRadar: $showWeatherRadar, showLabels: $showLabels, showLinks: $showLinks, showTraffic: $showTraffic, autoTerrain: $autoTerrain,
+				coverageMode: $coverageMode, coverageOpacity: $coverageOpacity, showRoute: show(route:)
 			)
 		}
 		.task(id: refreshKey) {
@@ -79,6 +86,18 @@ struct SpatialMapWindow: View {
 					showingMapSearch = true
 				}
 				try? await Task.sleep(for: .seconds(2))
+			}
+		}
+		.task(id: showWeatherRadar) {
+			// Where the radar is offered follows the device, as on the 2D map: looked up once on
+			// open, so the map menu can offer the toggle, then once a period while the radar is on.
+			// It reverse geocodes, so it stays out of the node loop above.
+			await refreshWeatherRadarAvailability()
+			guard showWeatherRadar else { return }
+			while !Task.isCancelled {
+				let next = Double(WeatherRadar.refreshPeriod() + 1) * WeatherRadar.refreshInterval
+				guard (try? await Task.sleep(for: .seconds(max(1, next - Date.now.timeIntervalSince1970)))) != nil else { return }
+				await refreshWeatherRadarAvailability()
 			}
 		}
 		// No node has a position and no map has been downloaded: offer the map search.
@@ -112,34 +131,63 @@ struct SpatialMapWindow: View {
 			model.coverageOpacity = Float(opacity)
 		}
 		.onChange(of: connectivity.isNetworkAvailable) { wasAvailable, isAvailable in
+			model.networkAvailable = isAvailable
 			if !wasAvailable && isAvailable { model.retryImagery() }
 		}
 		.onChange(of: appState.spatialMapFocus?.id) {
 			claimFocus()
 		}
+		.onChange(of: appState.spatialMapRoute?.id) {
+			claimRoute()
+		}
+		.onChange(of: appState.spatialMapReopening) { _, reopening in
+			if !reopening {
+				claimFocus()
+				claimRoute()
+			}
+		}
 		.onChange(of: scenePhase) { _, phase in
 			if phase == .background {
-				dismissWindow(id: SpatialMapScene.id)
+				close()
+			}
+		}
+		// Backup for the cinema closing without bringing an app window back, so the volume isn't
+		// left on its own. After the cinema's own reopen has had a moment, and not while that one
+		// is still on its way, so they don't open two.
+		.onChange(of: appState.cinemaOpen) { _, open in
+			guard !open else { return }
+			Task {
+				try? await Task.sleep(for: .seconds(1.5))
+				if !appState.cinemaOpen, UIApplication.shared.applicationState != .background {
+					CinemaScene.reopenMainWindow(openWindow, appState: appState)
+				}
 			}
 		}
 		.onAppear {
+			model.isClosed = false
 			SpatialTerrainKeeper.shared.volumeAppeared()
+			appState.spatialMapWindowCount += 1
 			claimFocus()
+			claimRoute()
 			if !Self.mainWindowIsOpen {
-				dismissWindow(id: SpatialMapScene.id)
+				close()
 			}
 		}
 		.onDisappear {
+			model.isClosed = true
 			SpatialTerrainKeeper.shared.volumeDisappeared()
+			appState.spatialMapWindowCount = max(0, appState.spatialMapWindowCount - 1)
+			routeRequestTask?.cancel()
 		}
 		.onReceive(NotificationCenter.default.publisher(for: UIScene.didDisconnectNotification)) { _ in
 			if !Self.mainWindowIsOpen {
-				dismissWindow(id: SpatialMapScene.id)
+				close()
 			}
 		}
 		.trackScreen(.spatialMap)
 		#if DEBUG
 		.task { await showRouteForScreenshots() }
+		.task { await closeForTests() }
 		#endif
 	}
 
@@ -169,6 +217,23 @@ struct SpatialMapWindow: View {
 		traffic.startFlyover(route, speed: 10)
 	}
 
+	/// Simulator checks: `--meshtastic-spatial-close <seconds>` closes the volume that long after
+	/// it opens, once a terrain build is in flight, to see what the build does when it finishes
+	/// after the volume is gone.
+	private func closeForTests() async {
+		let arguments = ProcessInfo.processInfo.arguments
+		guard let flagIndex = arguments.firstIndex(of: "--meshtastic-spatial-close"), arguments.indices.contains(flagIndex + 1),
+			  let seconds = Double(arguments[flagIndex + 1]) else { return }
+		guard (try? await Task.sleep(for: .seconds(seconds))) != nil else { return }
+		var waited = 0
+		while !model.isBuildingTerrain, waited < 3000 {
+			guard (try? await Task.sleep(for: .milliseconds(20))) != nil else { return }
+			waited += 1
+		}
+		Logger.services.info("🧪 [Spatial] Closing the volume during a terrain build, radar offered \(model.weatherRadarOffered, privacy: .public) (launch argument)")
+		close()
+	}
+
 	/// The simulator's camera looks at the table edge on; tip it toward the viewer.
 	private func tiltForScreenshots(_ arguments: [String]) {
 		if let tiltIndex = arguments.firstIndex(of: "--meshtastic-spatial-tilt"), arguments.indices.contains(tiltIndex + 1),
@@ -181,15 +246,31 @@ struct SpatialMapWindow: View {
 	}
 	#endif
 
+	/// The volume's smallest allowed size: its largest while the cinema is open.
+	private var minimumSize: SIMD3<Double> {
+		appState.cinemaOpen ? SpatialVolumeFit.maximumSize : SpatialVolumeFit.minimumSize
+	}
+
 	private func points(_ meters: Double) -> CGFloat {
 		metrics.convert(CGFloat(meters), from: .meters)
+	}
+
+	/// Closes the volume. The model stops its radar fetches now, not when the scene has finished
+	/// going away, which takes a moment; a terrain build still running then finds it closed.
+	private func close() {
+		model.isClosed = true
+		dismissWindow(id: SpatialMapScene.id)
 	}
 
 	private func refresh() {
 		model.connectedNodeNum = accessoryManager.activeDeviceNum
 		traffic.connectedNodeNum = accessoryManager.activeDeviceNum
 		traffic.preset = preset
+		// Before the radar's settings, so an offline open can't start a fetch.
+		model.networkAvailable = connectivity.isNetworkAvailable
 		model.showContours = showContours
+		model.showWeatherRadar = showWeatherRadar
+		model.weatherRadarOffered = weatherRadar.isOffered
 		model.showLinks = showLinks
 		model.autoDownloadTerrain = autoTerrain
 		model.coverageMode = coverageMode
@@ -205,12 +286,22 @@ struct SpatialMapWindow: View {
 		}
 	}
 
-	/// The estimate runs in the main window's form, which has the antenna settings and a full-size
-	/// window for the planner. Show and hide flip the file's visibility, shared with the 2D map.
+	private func refreshWeatherRadarAvailability() async {
+		await weatherRadar.refresh()
+		Logger.services.info("🧊 [Spatial] Weather radar availability refreshed: offered \(self.weatherRadar.isOffered, privacy: .public)")
+	}
+
+	/// The estimate runs in the map's form, which has the antenna settings and a full-size window
+	/// for the planner: in the main window, or on the cinema's front screen while the cinema is
+	/// open. Show and hide flip the file's visibility, shared with the 2D map.
 	private func handleCoverage(_ action: SpatialCoverageAction, nodeNum: Int64) {
 		switch action {
 		case .estimate:
-			showInMainWindow("meshtastic:///map?coverage=1&nodenum=\(nodeNum)")
+			if appState.cinemaOpen {
+				appState.cinemaScreenRequest = .coverageEstimate(nodeNum)
+			} else {
+				showInMainWindow("meshtastic:///map?coverage=1&nodenum=\(nodeNum)")
+			}
 		case .show, .hide:
 			guard let file = model.coverageByNode[nodeNum] else { return }
 			GeoJSONOverlayManager.shared.setFileActive(file.fileID, action == .show)
@@ -222,12 +313,61 @@ struct SpatialMapWindow: View {
 		}
 	}
 
-	/// Opens the showcase and, once it is showing, closes this volume: the showcase is one space,
-	/// and the map moves onto its desk.
+	/// Selects and zooms to the node another window or a cinema board asked for. Not while the
+	/// cinema is about to close and reopen this volume: the request waits for the reopened one.
 	private func claimFocus() {
-		guard let nodeNum = appState.claimSpatialMapFocus() else { return }
+		guard !appState.spatialMapReopening, let nodeNum = appState.claimSpatialMapFocus() else { return }
 		model.focus(on: nodeNum)
 		refresh()
+	}
+
+	/// Shows a trace route asked for by id, as picking it in the route menu does. The route may be
+	/// newer than the last read, so the routes are read again if it isn't there. A volume that just
+	/// opened waits for its table first. Like the focus, not while the cinema is about to reopen
+	/// the volume.
+	private func claimRoute() {
+		guard !appState.spatialMapReopening, let routeId = appState.claimSpatialMapRoute() else { return }
+		routeRequestTask?.cancel()
+		routeRequestTask = Task {
+			if !model.routes.contains(where: { $0.id == routeId }) {
+				await model.reloadRoutes(container: context.container)
+			}
+			guard !Task.isCancelled else { return }
+			guard let route = model.routes.first(where: { $0.id == routeId }) else {
+				Logger.services.info("[Spatial] Trace route \(routeId, privacy: .public) has no positions to draw; not shown")
+				return
+			}
+			var waited = 0
+			while scene.placement == nil, waited < 30 {
+				guard (try? await Task.sleep(for: .seconds(1))) != nil else { return }
+				waited += 1
+			}
+			guard scene.placement != nil else {
+				Logger.services.info("[Spatial] Trace route \(routeId, privacy: .public) not shown: the map isn't ready")
+				return
+			}
+			Logger.services.info("[Spatial] Showing trace route \(routeId, privacy: .public)")
+			show(route: route)
+		}
+	}
+
+	/// Flies the route and leaves it drawn, for the route menu and a request by id alike. The map
+	/// is fitted to the whole route, there and back, first, so it is all on the disk before the
+	/// comet sets off. Clearing the route leaves the map where it is.
+	private func show(route: SpatialRouteSnapshot) {
+		model.fit((route.forward + route.back).map(\.coordinate))
+		model.shownRoute = route
+		traffic.startFlyover(route)
+	}
+
+	/// Opens the node's detail: on the cinema's front screen while the cinema is open, since the
+	/// screen took the main window's place; otherwise in the main window.
+	private func openNode(_ nodeNum: Int64) {
+		if appState.cinemaOpen {
+			appState.cinemaScreenRequest = .node(nodeNum)
+		} else {
+			showInMainWindow("meshtastic:///nodes?nodenum=\(nodeNum)")
+		}
 	}
 
 	/// Hands a route to the main window, which comes forward to show it. Opening the URL with
@@ -236,9 +376,7 @@ struct SpatialMapWindow: View {
 		guard let url = URL(string: route) else { return }
 		appState.pendingRoute = PendingRoute(url: url, bringForward: true)
 		// With no main window, open one; it takes the route as it appears.
-		if appState.mainWindowCount == 0 {
-			openWindow(id: MeshtasticAppleApp.mainWindowID)
-		}
+		CinemaScene.reopenMainWindow(openWindow, appState: appState)
 	}
 
 	/// Any scene that is not one of the secondary windows.
@@ -258,13 +396,17 @@ struct SpatialMapOrnament: View {
 	@Binding var mapLayer: MapLayer
 	@Binding var darkMap: Bool
 	@Binding var showContours: Bool
+	@Binding var showWeatherRadar: Bool
 	@Binding var showLabels: Bool
 	@Binding var showLinks: Bool
 	@Binding var showTraffic: Bool
 	@Binding var autoTerrain: Bool
 	@Binding var coverageMode: SpatialCoverageMode
 	@Binding var coverageOpacity: Double
+	/// Shows a route picked in the trace route menu; the window fits the map to it and flies it.
+	let showRoute: (SpatialRouteSnapshot) -> Void
 	@ObservedObject private var offline = OfflineMapManager.shared
+	@ObservedObject private var weatherRadar = WeatherRadarAvailability.shared
 	@State private var confirmingTerrainDownload = false
 
 	var body: some View {
@@ -286,6 +428,12 @@ struct SpatialMapOrnament: View {
 				}
 				Toggle(isOn: $showContours) {
 					Label(String(localized: "Contour Lines"), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+				}
+				// Only where the radar has data, like the 2D map's setting it shares.
+				if weatherRadar.isOffered {
+					Toggle(isOn: $showWeatherRadar) {
+						Label(String(localized: "Weather Radar"), systemImage: "cloud.rain")
+					}
 				}
 				coverageMenu
 				Toggle(isOn: $autoTerrain) {
@@ -344,7 +492,6 @@ struct SpatialMapOrnament: View {
 				.accessibilityValue(Text(verbatim: "\(model.zoom.formatted(.number.precision(.fractionLength(0...1))))×"))
 			}
 
-
 			Divider().frame(height: 20)
 
 			HStack(spacing: 6) {
@@ -398,8 +545,7 @@ struct SpatialMapOrnament: View {
 			ForEach(model.routes) { route in
 				let entry = SpatialRouteMenuEntry(route: route, now: now)
 				Button {
-					model.shownRoute = route
-					traffic.startFlyover(route)
+					showRoute(route)
 				} label: {
 					Text(verbatim: entry.title)
 					Text(verbatim: entry.subtitle)

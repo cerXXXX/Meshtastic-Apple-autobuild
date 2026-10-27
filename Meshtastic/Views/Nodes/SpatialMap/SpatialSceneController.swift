@@ -45,6 +45,8 @@ final class SpatialSceneController {
 	let terrainAnchor = Entity()
 	/// Holds the coverage overlay, in model units like the terrain, so it is not counter-scaled.
 	let coverageContainer = Entity()
+	/// Holds the weather radar overlay, under the coverage.
+	let weatherRadarContainer = Entity()
 	let nodesContainer = Entity()
 	let selectionContainer = Entity()
 	let trafficContainer = Entity()
@@ -116,6 +118,7 @@ final class SpatialSceneController {
 	private var terrainEntity: ModelEntity?
 	private var coverageEntity: ModelEntity?
 	private var coverageOpacity: Float?
+	private var weatherRadarEntity: ModelEntity?
 	private var pins: [Int64: Pin] = [:]
 	private var hitShapes: [HitShapeKey: [ShapeResource]] = [:]
 	private var applied: [Int64: SpatialNodeSnapshot] = [:]
@@ -158,6 +161,7 @@ final class SpatialSceneController {
 		model.addChild(terrainAnchor)
 		model.addChild(wheel.root)
 		terrainAnchor.addChild(placeholder)
+		terrainAnchor.addChild(weatherRadarContainer)
 		terrainAnchor.addChild(coverageContainer)
 		terrainAnchor.addChild(nodesContainer)
 		terrainAnchor.addChild(links.root)
@@ -166,6 +170,7 @@ final class SpatialSceneController {
 		terrainAnchor.addChild(trafficContainer)
 		selectionContainer.addChild(ring)
 		selectionContainer.addChild(tether)
+		root.addChild(ownLight)
 	}
 
 	static func transparentMaterial(_ color: UIColor, opacity: Float) -> UnlitMaterial {
@@ -219,7 +224,16 @@ final class SpatialSceneController {
 		let top = min(rimTop * fit.scale + SpatialWheelLayout.bezelLift, SpatialWheelLayout.maximumTop)
 		wheel.root.scale = SIMD3(repeating: 1 / fit.scale)
 		wheel.update(diskRadius: fit.diskRadius, bottom: -skirtDepth * fit.scale, top: top)
+		// The wheel makes its rim, spokes and knobs here, once it knows its size.
+		applyLight(to: wheel.root)
 	}
+
+	// MARK: Light
+
+	/// The map's own light for the terrain, wheel and towers. Left to the system, they take the
+	/// light of whatever is around: a dim room, or in the cinema the dusk tent, leaves the map in
+	/// the shade.
+	private let ownLight = SpatialMapLight.make()
 
 	// MARK: Placement and terrain
 
@@ -234,28 +248,15 @@ final class SpatialSceneController {
 	func apply(terrainEntity entity: ModelEntity?, building: Bool) {
 		if entity !== terrainEntity {
 			terrainEntity?.removeFromParent()
-			if let entity { terrainAnchor.addChild(entity) }
+			if let entity {
+				terrainAnchor.addChild(entity)
+				applyLight(to: entity)
+			}
 			terrainEntity = entity
 		}
 		// While a new circle builds, the old terrain stays up with the zoom previewed on it.
 		terrainEntity?.isEnabled = terrainEntity != nil
 		placeholder.isEnabled = terrainEntity == nil
-	}
-
-	/// Swaps in the coverage overlay. It is built for one terrain, so it only shows while that
-	/// terrain (`revision`) is the one on the table; a new terrain hides it until its own is built.
-	func apply(coverage entity: ModelEntity?, revision: Int?, opacity: Float) {
-		if entity !== coverageEntity {
-			coverageEntity?.removeFromParent()
-			if let entity { coverageContainer.addChild(entity) }
-			coverageEntity = entity
-			coverageOpacity = opacity
-		}
-		if let coverageEntity, opacity != coverageOpacity {
-			SpatialCoverageEntity.setOpacity(opacity, on: coverageEntity)
-			coverageOpacity = opacity
-		}
-		coverageContainer.isEnabled = coverageEntity != nil && terrainEntity != nil && revision != nil && revision == placement?.revision
 	}
 
 	/// Shows the circle the map is heading for on the terrain that is built: scaled about the new
@@ -607,6 +608,7 @@ extension SpatialSceneController {
 		halo.components.set(OpacityComponent(opacity: 0))
 		holder.addChild(target)
 		holder.addChild(halo)
+		applyLight(to: holder)
 		let result = Pin(holder: holder, target: target, colored: base, tower: Tower(height: height, beacon: beacon), halo: halo, baseGlow: 0)
 		style(result, for: node)
 		return result
@@ -724,5 +726,85 @@ extension SpatialSceneController {
 		guard wheelMotion.step(dt: deltaTime) else { return }
 		model.orientation = simd_quatf(angle: wheelMotion.shown, axis: [0, 1, 0])
 	}
+}
+
+// MARK: - Overlays
+
+extension SpatialSceneController {
+	/// Swaps in the coverage overlay. It is built for one terrain, so it only shows while that
+	/// terrain (`revision`) is the one on the table; a new terrain hides it until its own is built.
+	func apply(coverage entity: ModelEntity?, revision: Int?, opacity: Float) {
+		if entity !== coverageEntity {
+			coverageEntity?.removeFromParent()
+			if let entity { coverageContainer.addChild(entity) }
+			coverageEntity = entity
+			coverageOpacity = opacity
+		}
+		if let coverageEntity, opacity != coverageOpacity {
+			SpatialOverlayEntity.setOpacity(opacity, on: coverageEntity)
+			coverageOpacity = opacity
+		}
+		coverageContainer.isEnabled = coverageEntity != nil && terrainEntity != nil && revision != nil && revision == placement?.revision
+	}
+
+	/// Swaps in the weather radar overlay. Like the coverage, it only shows on the terrain it was
+	/// built for.
+	func apply(weatherRadar entity: ModelEntity?, revision: Int?) {
+		if entity !== weatherRadarEntity {
+			weatherRadarEntity?.removeFromParent()
+			if let entity { weatherRadarContainer.addChild(entity) }
+			weatherRadarEntity = entity
+		}
+		weatherRadarContainer.isEnabled = weatherRadarEntity != nil && terrainEntity != nil && revision != nil && revision == placement?.revision
+	}
+}
+extension SpatialSceneController {
+	fileprivate func applyLight(to entity: Entity) {
+		SpatialMapLight.apply(ownLight, to: entity)
+	}
+}
+
+/// A plain daylit room's light for the map: bright overhead, softer around the walls, darker below.
+@MainActor
+enum SpatialMapLight {
+	static func make() -> Entity {
+		let light = Entity()
+		light.name = "mapLight"
+		if let environment {
+			light.components.set(ImageBasedLightComponent(source: .single(environment), intensityExponent: 0.5))
+		}
+		return light
+	}
+
+	/// Gives every lit part under `entity` the light.
+	static func apply(_ light: Entity, to entity: Entity) {
+		let receiver = ImageBasedLightReceiverComponent(imageBasedLight: light)
+		var pending = [entity]
+		while let next = pending.popLast() {
+			if next.components.has(ModelComponent.self) {
+				next.components.set(receiver)
+			}
+			pending += next.children
+		}
+	}
+
+	private static let environment: EnvironmentResource? = {
+		let width = 64, height = 32
+		var pixels = [UInt8](repeating: 0, count: width * height)
+		for row in 0..<height {
+			let up = 1 - Double(row) / Double(height - 1)
+			let level = 0.25 + 0.75 * pow(up, 1.2)
+			for column in 0..<width {
+				pixels[row * width + column] = UInt8(level * 255)
+			}
+		}
+		guard let provider = CGDataProvider(data: Data(pixels) as CFData),
+			let image = CGImage(
+				width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: width,
+				space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: 0),
+				provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent
+			) else { return nil }
+		return try? EnvironmentResource(equirectangular: image)
+	}()
 }
 #endif
