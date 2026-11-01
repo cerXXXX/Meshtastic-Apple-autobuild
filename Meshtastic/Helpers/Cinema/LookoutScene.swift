@@ -70,7 +70,7 @@ final class LookoutScene {
 		bounds = union
 		// The files the search and the peak names read, so a list found in files that have since
 		// gone isn't kept.
-		let terrainFiles = Set(sources.flatMap { [$0.globalURL.lastPathComponent] + ($0.regionalURL.map { [$0.lastPathComponent] } ?? []) })
+		let terrainFiles = Set(sources.flatMap { [$0.globalURL.lastPathComponent] + $0.regionalURLs.map(\.lastPathComponent) })
 		let basemapFiles = Set(OfflineMapManager.persistedRegionFiles().filter { $0.region.hasBasemap }.map(\.url.lastPathComponent))
 		let maps = LookoutSiteCacheKey.maps(in: manager.regions, terrainFiles: terrainFiles, basemapFiles: basemapFiles)
 		if let kept = LookoutSiteCache.sites(for: maps) {
@@ -90,9 +90,18 @@ final class LookoutScene {
 	}
 
 	/// The terrain around `site` as an entity, or nil if it can't be built.
-	func terrain(for site: LookoutSite, sun: (azimuth: Float, elevation: Float)) async -> ModelEntity? {
+	func terrain(for site: LookoutSite, heading: Double, sun: (azimuth: Float, elevation: Float)) async -> ModelEntity? {
 		guard let bounds else { return nil }
-		guard let model = await LookoutTerrain.build(site: site, bounds: bounds, source: store, sun: sun) else { return nil }
+		let radius = LookoutTerrain.outerRadius(site: site, bounds: bounds)
+		let center = site.coordinate
+		// Off the main actor, and stopped with this task: leaving the lookout mid-build shouldn't leave
+		// tiles decoding for a view nobody sees.
+		let build = Task.detached(priority: .userInitiated) {
+			OfflineLandCoverMap.make(center: center, radius: radius, files: OfflineMapManager.persistedRegionFiles())
+		}
+		let landCover = await withTaskCancellationHandler { await build.value } onCancel: { build.cancel() }
+		if Task.isCancelled { return nil }
+		guard let model = await LookoutTerrain.build(site: site, bounds: bounds, source: store, landCover: landCover, heading: heading, sun: sun) else { return nil }
 		do {
 			return try await LookoutTerrain.entity(for: model)
 		} catch {
