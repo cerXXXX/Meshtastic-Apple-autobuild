@@ -14,6 +14,18 @@ Recent user-facing changes from roughly the last 12 months. Newest at the top.
 Show roughly the last 12 months of changes; archive entries older than a year by removing them.
 -->
 
+**Nov 2026** — [Cinema](cinema.md#fire-lookout) — On Apple Vision Pro, the fire lookout's real terrain has conifers on its forested ground, near and far, like the painted view's forest.
+
+**Nov 2026** — [Cinema](cinema.md#boards) — On Apple Vision Pro, the Team Favorites board scrolls: pinch and drag it to see favorites past the first eight.
+
+**Nov 2026** — [Cinema](cinema.md#radio-models) — On Apple Vision Pro, **Banana for Scale** on the card beside a radio's model in the cinema stands a real-size banana next to it.
+
+**Nov 2026** — [Map & Waypoints](map.md#map-options) — Contour lines on the Apple Vision Pro 3D map show their elevation, set in a gap along the line like a printed topographic map, and the 2D map's contour labels are spread further apart.
+
+**Nov 2026** — [Map & Waypoints](map.md#offline-maps) — The offline map names parks, schools, hospitals and other landmarks, and on Apple Vision Pro the 3D map's Offline layer prints street names along their streets.
+
+**Nov 2026** — [Getting Started](getting-started.md#step-3-set-up-your-radio) — On firmware 2.8, radio setup asks for an optional status message with the name, and ends on a Nearby Meshes page to listen for beacons, join a mesh heard so far, scan, or broadcast your own.
+
 **Nov 2026** — [Firmware Updates](firmware.md#installing-an-update) — When an nRF52 Bluetooth update loses the radio partway, the app starts it over from the beginning, up to three times, so it can finish instead of leaving the radio stuck in update mode.
 
 **Nov 2026** — [Nodes](nodes.md#device-screen) — On iPhone and iPad, the AR button on the connected radio's 3D model stands it on a table or the floor at its real size with its screen live, and the radio's buttons under the camera view.
