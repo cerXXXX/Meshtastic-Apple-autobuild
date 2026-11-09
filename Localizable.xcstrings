@@ -310,6 +310,15 @@
         }
       }
     },
+    "%@ Current" : {
+      "comment" : "Power tile and log column title. %@ is the channel's label, such as Solar or Channel 1."
+    },
+    "%@ Voltage" : {
+      "comment" : "Power tile and log column title. %@ is the channel's label, such as Solar or Channel 1."
+    },
+    "%lld bytes of input dropped, the node is not keeping up" : {
+
+    },
     "%lld Nodes" : {
       "comment" : "Cinema lookout: title of the card listing the nodes a marker out the window stands for",
       "localizations" : {
@@ -360,6 +369,9 @@
           }
         }
       }
+    },
+    "1 minute %lf, 5 minutes %lf, 15 minutes %lf" : {
+      "comment" : "VoiceOver value for a host's load averages"
     },
     "3D model © Meshtastic LLC. The product and its name, logos and marks belong to %@." : {
       "comment" : "Showcase model card: who owns the model and who owns the product; the argument is the maker",
@@ -412,6 +424,9 @@
           }
         }
       }
+    },
+    "Applies to the next key" : {
+
     },
     "Back to the list" : {
       "comment" : "Cinema lookout: button on a node's card that goes back to the list of nodes the marker stands for",
@@ -501,6 +516,15 @@
         }
       }
     },
+    "Closing…" : {
+
+    },
+    "Clear Screen" : {
+
+    },
+    "Command" : {
+
+    },
     "Confirm Your Region" : {
       "comment" : "Radio setup region title when one was pre-selected",
       "localizations" : {
@@ -521,6 +545,21 @@
           }
         }
       }
+    },
+    "Connect to this device?" : {
+
+    },
+    "Connect to your radio to open a remote shell." : {
+
+    },
+    "Could not open the session (%@). The node must list your radio's public key as an admin key, and be in range." : {
+
+    },
+    "Copy All Output" : {
+
+    },
+    "Control" : {
+
     },
     "Couldn't Import Map File" : {
       "localizations" : {
@@ -549,6 +588,9 @@
         }
       }
     },
+    "Down arrow" : {
+
+    },
     "E-ink screens redraw slowly. Tap Refresh for the latest picture." : {
       "localizations" : {
         "zh-Hant-TW" : {
@@ -558,6 +600,12 @@
           }
         }
       }
+    },
+    "End" : {
+
+    },
+    "End Session" : {
+      "comment" : "Remote shell menu: close the session without leaving the screen"
     },
     "Enter Showcase" : {
       "comment" : "Spatial map: open the showcase immersive space, closing this volume",
@@ -569,6 +617,15 @@
           }
         }
       }
+    },
+    "Error from the node: %@" : {
+
+    },
+    "Escape" : {
+
+    },
+    "Evacuate" : {
+      "comment" : "CO2 level of 30000 ppm or more"
     },
     "File is too large. Maximum size is %@." : {
       "localizations" : {
@@ -597,6 +654,15 @@
         }
       }
     },
+    "Poor" : {
+      "comment" : "CO2 level from 2000 to 5000 ppm"
+    },
+    "Stuffy" : {
+      "comment" : "CO2 level from 1000 to 2000 ppm"
+    },
+    "Unsafe" : {
+      "comment" : "CO2 level from 5000 to 30000 ppm"
+    },
     "frequency slot %lld" : {
       "comment" : "Beacon switch prompt; one of the changes listed",
       "localizations" : {
@@ -607,6 +673,9 @@
           }
         }
       }
+    },
+    "Full-screen programs need more than the mesh can carry, so their output may not display correctly." : {
+
     },
     "Hear beacons from meshes nearby. They show here and in Local Mesh Discovery." : {
       "comment" : "Radio setup beacons page; the listen setting"
@@ -629,6 +698,9 @@
         }
       }
     },
+    "Home" : {
+
+    },
     "How your radio shows up for others." : {
       "comment" : "Radio setup intro row",
       "localizations" : {
@@ -639,6 +711,9 @@
           }
         }
       }
+    },
+    "Hyphen" : {
+
     },
     "Import MBTiles or PMTiles File" : {
       "localizations" : {
@@ -656,6 +731,9 @@
         }
       }
     },
+    "Larger Text" : {
+
+    },
     "Leave" : {
       "comment" : "Showcase: close the immersive space",
       "localizations" : {
@@ -666,6 +744,15 @@
           }
         }
       }
+    },
+    "Line Mode" : {
+
+    },
+    "Line mode sends a whole command at once, which is lighter on a busy mesh." : {
+
+    },
+    "Left arrow" : {
+
     },
     "Listening for beacons" : {
       "comment" : "Radio setup done page; nearby meshes row"
@@ -697,6 +784,9 @@
           }
         }
       }
+    },
+    "More options" : {
+
     },
     "Move the cinema panel" : {
       "comment" : "Cinema: VoiceOver label for the bar under the panel that moves it",
@@ -760,6 +850,9 @@
         }
       }
     },
+    "No reply from the node. It must list your radio's public key as an admin key, and be in range." : {
+
+    },
     "None heard yet. A mesh's beacon can take an hour or more to arrive." : {
       "comment" : "Radio setup beacons page; listening but nothing heard"
     },
@@ -797,6 +890,18 @@
         }
       }
     },
+    "Opening session…" : {
+
+    },
+    "Open, %lld ms round trip" : {
+
+    },
+    "Open" : {
+
+    },
+    "Opens a shell on this node, starting a remote admin session first if needed" : {
+
+    },
     "Other people see these in their node lists and on the map." : {
       "comment" : "Radio setup name intro",
       "localizations" : {
@@ -807,6 +912,15 @@
           }
         }
       }
+    },
+    "Paste" : {
+
+    },
+    "Page up" : {
+
+    },
+    "Page down" : {
+
     },
     "Pick up to turn it over" : {
       "comment" : "Cinema: VoiceOver hint for the device model on the stand in front of the seat",
@@ -889,6 +1003,9 @@
     "Radio Not Switched" : {
 
     },
+    "Reconnect" : {
+
+    },
     "region %@" : {
       "comment" : "Beacon switch prompt; one of the changes listed",
       "localizations" : {
@@ -899,6 +1016,15 @@
           }
         }
       }
+    },
+    "Right arrow" : {
+
+    },
+    "Remote Shell" : {
+
+    },
+    "Remote admin session active" : {
+
     },
     "Save and Continue" : {
       "comment" : "Radio setup button",
@@ -933,6 +1059,15 @@
           }
         }
       }
+    },
+    "Session closed: %@" : {
+
+    },
+    "Session closed" : {
+
+    },
+    "Session failed" : {
+
     },
     "Set Up Radio" : {
       "localizations" : {
@@ -986,8 +1121,23 @@
         }
       }
     },
+    "Starting remote admin session…" : {
+
+    },
+    "Smaller Text" : {
+
+    },
+    "Slash" : {
+
+    },
     "Status is a short note other people see in their node lists." : {
       "comment" : "Radio setup name footer; the node's status message"
+    },
+    "Terminal output" : {
+
+    },
+    "Tab" : {
+
     },
     "the %@ preset" : {
       "comment" : "Beacon switch prompt; one of the changes listed",
@@ -1010,6 +1160,18 @@
         }
       }
     },
+    "The node refused the session. It must list your radio's public key as an admin key." : {
+
+    },
+    "The node stopped answering." : {
+
+    },
+    "Couldn't tell the node to end the session: %@" : {
+
+    },
+    "The node asked for input this device no longer holds." : {
+
+    },
     "The short name shows in your node's circle: up to 4 characters or one emoji." : {
       "comment" : "Radio setup name footer",
       "localizations" : {
@@ -1031,6 +1193,15 @@
           }
         }
       }
+    },
+    "This node isn't in the node list." : {
+
+    },
+    "This node hasn't shared a public key yet, so a remote shell can't be opened to it." : {
+
+    },
+    "This node's firmware is older than 2.8.2, which added the remote shell. Update it to use the shell." : {
+
     },
     "This region has an hourly duty cycle of %lld%%." : {
       "comment" : "Radio setup region footer",
@@ -1074,6 +1245,9 @@
         }
       }
     },
+    "Up arrow" : {
+
+    },
     "Use Keyboard" : {
       "localizations" : {
         "zh-Hant-TW" : {
@@ -1103,6 +1277,9 @@
           }
         }
       }
+    },
+    "Waiting for the node, last heard %lld s ago" : {
+
     },
     "Waiting for your radio's beacon settings." : {
       "comment" : "Radio setup beacons page; the listen setting has not arrived from the radio yet"
@@ -1361,6 +1538,9 @@
           }
         }
       }
+    },
+    "Pipe" : {
+      "comment" : "Remote shell key bar: accessibility label"
     },
     "Previous rack page" : {
       "comment" : "Showcase: show the previous page of the wall rack",
@@ -1901,6 +2081,9 @@
         }
       }
     },
+    "Stop Recording" : {
+      "comment" : "Button in the AR view: stop recording the screen and open the recording"
+    },
     "Swipe left to disconnect. Long press for more options." : {
       "comment" : "Bluetooth tip on the Connect screen",
       "extractionState" : "extracted_with_value",
@@ -2296,17 +2479,6 @@
         }
       }
     },
-    "📊 Sent Local Stats Request from: %@ to: %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "zh-Hant-TW" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "📊 已從 %@ 傳送本機統計請求至 %@"
-          }
-        }
-      }
-    },
     "📟 [NodeInfo] received for: %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2647,6 +2819,12 @@
           }
         }
       }
+    },
+    "Bluetooth radio %@\n\nChoose the radio on Connect." : {
+      "comment" : "Connect link prompt for a Bluetooth radio without a PIN; the value is its Bluetooth address"
+    },
+    "Bluetooth radio %@\nPIN %@\n\nThe PIN is copied when you connect. Choose the radio on Connect, then paste the PIN when iOS asks to pair." : {
+      "comment" : "Connect link prompt for a Bluetooth radio with a pairing PIN; the first value is its Bluetooth address"
     },
     "Bootloader erase — **firmware is kept**" : {
       "extractionState" : "manual",
@@ -3075,6 +3253,9 @@
           }
         }
       }
+    },
+    "device metrics" : {
+      "comment" : "Telemetry request: the kind of readings, used inside a sentence"
     },
     "Device that does not forward packets from other devices." : {
       "extractionState" : "manual",
@@ -7534,6 +7715,9 @@
         }
       }
     },
+    "power metrics" : {
+      "comment" : "Telemetry request: the kind of readings, used inside a sentence"
+    },
     "Preparing" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8050,6 +8234,9 @@
         }
       }
     },
+    "Show Keyboard" : {
+      "comment" : "Remote shell key bar: accessibility label"
+    },
     "Shows the mesh on a terrain model in a volume." : {
       "comment" : "VoiceOver hint for the button that opens the spatial map volume",
       "localizations" : {
@@ -8202,6 +8389,12 @@
           }
         }
       }
+    },
+    "Telemetry Request Failed" : {
+      "comment" : "Alert title when the mesh reports that a telemetry request failed"
+    },
+    "Telemetry Requested" : {
+      "comment" : "Alert title after asking a node for telemetry"
     },
     "Trace routes" : {
       "comment" : "VoiceOver label for the spatial map trace route menu",
@@ -16650,36 +16843,6 @@
       },
       "extractionState" : "stale"
     },
-    "A local stats request has been sent to %@. Responses can take some time." : {
-      "comment" : "An alert message explaining that a local stats request has been sent to a specific node. The placeholder is replaced with the node name.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@에 로컬 통계 요청을 보냈습니다. 응답을 받는 데 시간이 걸릴 수 있습니다."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запит локальної статистики надіслано до %@. Відповіді можуть надійти не одразу."
-          }
-        },
-        "zh-Hant-TW" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已向 %@ 傳送本機統計要求。回應可能需要一些時間。"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se ha enviado una solicitud de estadísticas locales a %@. Las respuestas pueden tardar algún tiempo."
-          }
-        }
-      }
-    },
     "A node rejected this message. Try again when the route changes." : {
       "comment" : "RoutingError.description",
       "localizations" : {
@@ -20154,6 +20317,9 @@
         }
       }
     },
+    "air quality metrics" : {
+      "comment" : "Telemetry request: the kind of readings, used inside a sentence"
+    },
     "Air Quality Metrics" : {
       "localizations" : {
         "zh-Hant-TW" : {
@@ -23461,6 +23627,9 @@
         }
       }
     },
+    "AR" : {
+      "comment" : "Tab in the AR view: the radio's 3D model in the room through the camera"
+    },
     "Architecture" : {
       "comment" : "A label displayed under the architecture of a device.",
       "isCommentAutoGenerated" : true,
@@ -23532,6 +23701,12 @@
           }
         }
       }
+    },
+    "Archived" : {
+
+    },
+    "Archived, no longer on the radio" : {
+
     },
     "Are you sure you want to delete this message?" : {
       "localizations" : {
@@ -33996,6 +34171,9 @@
         }
       }
     },
+    "Community mesh" : {
+      "comment" : "Topic finder: a named community root from the shared directory that serves the user's area"
+    },
     "Community supported Linux device." : {
       "localizations" : {
         "ko" : {
@@ -37798,6 +37976,9 @@
         }
       }
     },
+    "Couldn’t Send Request" : {
+      "comment" : "Alert title when a telemetry request could not be sent to the radio"
+    },
     "Couldn't Share" : {
       "comment" : "A title for an alert that indicates a failure to share.",
       "isCommentAutoGenerated" : true,
@@ -37949,6 +38130,9 @@
           }
         }
       }
+    },
+    "Country" : {
+      "comment" : "Topic finder: ladder level name"
     },
     "Counts are nodes heard during the sample. Busy topics fill in within seconds; quiet ones may stay at zero." : {
       "comment" : "Topic finder: ladder footer",
@@ -40227,6 +40411,9 @@
           }
         }
       }
+    },
+    "Delete all host metrics?" : {
+      "comment" : "Host Metrics log: confirm deleting every reading"
     },
     "Delete all local stats?" : {
       "localizations" : {
@@ -50474,6 +50661,9 @@
         }
       }
     },
+    "environment metrics" : {
+      "comment" : "Telemetry request: the kind of readings, used inside a sentence"
+    },
     "Environment Metrics" : {
       "localizations" : {
         "zh-Hant-TW" : {
@@ -56668,6 +56858,18 @@
         }
       }
     },
+    "Free Disk Space" : {
+      "comment" : "Host metrics: free space on the node's main disk"
+    },
+    "Free Disk Space 2" : {
+      "comment" : "Host metrics: free space on the node's second disk"
+    },
+    "Free Disk Space 3" : {
+      "comment" : "Host metrics: free space on the node's third disk"
+    },
+    "Free Memory" : {
+      "comment" : "Host metrics: free memory on the node's computer"
+    },
     "Frequency" : {
       "localizations" : {
         "da" : {
@@ -60278,6 +60480,9 @@
         }
       }
     },
+    "Hide Keyboard" : {
+      "comment" : "Remote shell key bar: accessibility label"
+    },
     "Hide legend" : {
       "comment" : "A label for a button that hides the map legend.",
       "isCommentAutoGenerated" : true,
@@ -61375,6 +61580,15 @@
           }
         }
       }
+    },
+    "Host" : {
+      "comment" : "Node details: section with the latest host metrics from a Linux node"
+    },
+    "host metrics" : {
+      "comment" : "Telemetry request: the kind of readings, used inside a sentence"
+    },
+    "Host Metrics Log" : {
+      "comment" : "Node details: log of host metrics from a Linux node"
     },
     "Hour" : {
       "localizations" : {
@@ -63798,6 +64012,9 @@
           }
         }
       }
+    },
+    "If every admin key is lost, a managed node can't be configured again until it is erased and reflashed with the [Web Flasher](https://flasher.meshtastic.org)." : {
+
     },
     "If set, any packets you send will be echoed back to your device." : {
       "localizations" : {
@@ -69293,6 +69510,9 @@
         }
       }
     },
+    "Linux nodes running meshtasticd send their uptime, free memory, load and free disk space." : {
+      "comment" : "Host Metrics log: shown before any readings arrive"
+    },
     "Listen for Beacons" : {
       "localizations" : {
         "es" : {
@@ -69416,6 +69636,9 @@
           }
         }
       }
+    },
+    "Load Average" : {
+      "comment" : "Host metrics: the computer's load over the last 1, 5 and 15 minutes"
     },
     "Load Earlier Messages" : {
       "comment" : "A button that loads older messages.",
@@ -70110,6 +70333,9 @@
         }
       }
     },
+    "local stats" : {
+      "comment" : "Telemetry request: the kind of readings, used inside a sentence"
+    },
     "Local Stats" : {
       "localizations" : {
         "ko" : {
@@ -70162,36 +70388,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Registro de estadísticas locales"
-          }
-        }
-      }
-    },
-    "Local Stats Requested" : {
-      "comment" : "The title of an alert that appears when a user successfully requests a local stats update.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "로컬 통계 요청됨"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Локальну статистику запитано"
-          }
-        },
-        "zh-Hant-TW" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已要求本機統計"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estadísticas locales solicitadas"
           }
         }
       }
@@ -95738,6 +95934,9 @@
         }
       }
     },
+    "Model Copyright" : {
+      "comment" : "Button in the full-screen 3D model view: show the model's copyright notice"
+    },
     "Modem Presets" : {
       "comment" : "A heading for the list of available modem presets.",
       "isCommentAutoGenerated" : true,
@@ -98079,6 +98278,9 @@
         }
       }
     },
+    "Network radio %@" : {
+      "comment" : "Connect link prompt for a radio reached over the network; the value is host:port"
+    },
     "Network Servers" : {
       "localizations" : {
         "ko" : {
@@ -99576,6 +99778,9 @@
           }
         }
       }
+    },
+    "No Host Metrics" : {
+      "comment" : "Host Metrics log: title shown before any readings arrive"
     },
     "No Local Stats" : {
       "localizations" : {
@@ -103363,9 +103568,11 @@
         }
       }
     },
+    "Object" : {
+      "comment" : "Tab in the AR view: the radio's 3D model on its own, without the camera"
+    },
     "Observed" : {
-      "comment" : "A label indicating that a trace route was observed.",
-      "isCommentAutoGenerated" : true,
+      "comment" : "Trace route: a response to a request this app didn't send",
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -114497,27 +114704,8 @@
         }
       }
     },
-    "Read a Meshtastic tag to add the contact or channel it contains." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Meshtastic 태그를 읽어 태그에 포함된 연락처 또는 채널을 추가합니다."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lee una etiqueta de Meshtastic para añadir el contacto o canal que contiene."
-          }
-        },
-        "zh-Hant-TW" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "讀取 Meshtastic 標籤以新增其包含的聯絡人或頻道。"
-          }
-        }
-      }
+    "Read a Meshtastic tag to add the contact or channel it contains, or connect to the radio it names." : {
+
     },
     "Read and reply to Meshtastic channel and direct messages directly from your car's display using CarPlay." : {
       "comment" : "A description of how to use CarPlay with Meshtastic.",
@@ -115655,6 +115843,9 @@
           }
         }
       }
+    },
+    "Record" : {
+      "comment" : "Button in the AR view: record the screen with the radio's 3D model"
     },
     "Recorded trace route paths showing the hops a message took through the mesh to reach this node." : {
       "localizations" : {
@@ -117593,6 +117784,21 @@
         }
       }
     },
+    "Request" : {
+      "comment" : "Local Stats log: button that asks the node for its local stats"
+    },
+    "Request Air Quality Metrics" : {
+      "comment" : "Node details: accessibility label for the button beside a log that asks the node for its readings"
+    },
+    "Request Device Metrics" : {
+      "comment" : "Node details: accessibility label for the button beside a log that asks the node for its readings"
+    },
+    "Request Environment Metrics" : {
+      "comment" : "Node details: accessibility label for the button beside a log that asks the node for its readings"
+    },
+    "Request Host Metrics" : {
+      "comment" : "Node details: accessibility label for the button beside a log that asks the node for its readings"
+    },
     "Request Local Stats" : {
       "localizations" : {
         "ko" : {
@@ -117727,6 +117933,9 @@
         }
       }
     },
+    "Request Power Metrics" : {
+      "comment" : "Node details: accessibility label for the button beside a log that asks the node for its readings"
+    },
     "Requested" : {
       "comment" : "A label indicating that a trace route was requested.",
       "isCommentAutoGenerated" : true,
@@ -117756,6 +117965,9 @@
           }
         }
       }
+    },
+    "Requested %@ from %@. The reply can take a while." : {
+      "comment" : "Alert after asking a node for telemetry: the kind of readings, then the node's name"
     },
     "Required" : {
       "comment" : "A field for entering a Wi-Fi password.",
@@ -139357,6 +139569,9 @@
         }
       }
     },
+    "The bootloader recorded a fault before this boot. Include this line when you report a problem with this radio." : {
+      "comment" : "Bootloader drive sheets: shown above the Last-Fault line the bootloader reported"
+    },
     "The broker closed the connection." : {
       "comment" : "Topic finder: sampler error",
       "localizations" : {
@@ -141767,6 +141982,9 @@
         }
       }
     },
+    "The request for %@ from %@ failed: %@" : {
+      "comment" : "Telemetry request failed: the kind of readings, the node's name, then the reason the mesh gave"
+    },
     "The root topic to use for MQTT." : {
       "localizations" : {
         "da" : {
@@ -143069,6 +143287,9 @@
         }
       }
     },
+    "This channel is no longer on your radio. Its messages are kept here, but you can't send to it. Add the channel again to pick up the conversation." : {
+
+    },
     "This connected device does not support packet signature verification." : {
       "comment" : "Summary shown when the connected radio lacks XEdDSA packet signature verification.",
       "localizations" : {
@@ -144229,27 +144450,8 @@
         }
       }
     },
-    "This tag doesn't hold a Meshtastic contact or channel link." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이 태그에는 Meshtastic 연락처 또는 채널 링크가 포함되어 있지 않습니다."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esta etiqueta no contiene un enlace de contacto o canal de Meshtastic."
-          }
-        },
-        "zh-Hant-TW" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此標籤不包含 Meshtastic 聯絡人或頻道連結。"
-          }
-        }
-      }
+    "This tag doesn't hold a Meshtastic contact, channel or connect link." : {
+
     },
     "This tool scans your local area to find nearby Meshtastic radios on different frequency settings. It switches between settings automatically, listens for a few minutes on each one, and then shows you which setting works best for your location based on how many radios it finds and how busy the airwaves are. On supported devices, local on-device AI will analyze your scan results and recommend the best setting — no internet connection required." : {
       "comment" : "A description of the functionality of the discovery scan tool.",
@@ -144753,6 +144955,9 @@
           }
         }
       }
+    },
+    "Tilde" : {
+      "comment" : "Remote shell key bar: accessibility label"
     },
     "Tile Server" : {
       "comment" : "OverlayType.localized: map overlay kind",
@@ -147361,6 +147566,9 @@
           }
         }
       }
+    },
+    "Traced us" : {
+      "comment" : "Trace route: another node traced a route to our radio"
     },
     "Traceroute Complete" : {
       "comment" : "Notification title when a trace route you sent gets a response",
@@ -154380,6 +154588,9 @@
         }
       }
     },
+    "View" : {
+      "comment" : "Accessibility label for the AR and Object tabs in the AR view"
+    },
     "Via Mqtt" : {
       "localizations" : {
         "da" : {
@@ -154913,6 +155124,12 @@
           }
         }
       }
+    },
+    "Wait" : {
+      "comment" : "Local Stats log: shown with the seconds left before another request can be sent"
+    },
+    "Wait %lld s" : {
+      "comment" : "Telemetry request button: seconds until another request can be sent"
     },
     "waiting" : {
       "localizations" : {

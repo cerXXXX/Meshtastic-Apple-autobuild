@@ -46,7 +46,8 @@ class MeshtasticAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 			TAKServerManager.shared.initializeOnStartup()
 		}
 		// Request Siri authorization so intent donations work and CarPlay messaging is available.
-		#if !targetEnvironment(macCatalyst)
+		// NO_SIRI builds are signed without the Siri entitlement, and the request crashes without it.
+		#if !targetEnvironment(macCatalyst) && !NO_SIRI
 		#if targetEnvironment(simulator)
 		Logger.services.info("Skipping Siri authorization request in simulator benchmark harness")
 		#else
@@ -140,8 +141,8 @@ class MeshtasticAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 				markCarPlayMessagesAsRead(conversationId: threadId)
 			}
 		case "messageNotification.thumbsUpAction":
-			if let channel = userInfo["channel"] as? Int32,
-			   let replyID = userInfo["replyMessageId"] as? Int64 ?? userInfo["messageId"] as? Int64 {
+			if let replyID = userInfo["replyMessageId"] as? Int64 ?? userInfo["messageId"] as? Int64,
+			   let channel = ChannelConversations.replyChannel(forMessageId: replyID, in: PersistenceController.shared.context) {
 				Task {
 					do {
 						try await AccessoryManager.shared.sendMessage(
@@ -158,8 +159,8 @@ class MeshtasticAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 				}
 			}
 		case "messageNotification.thumbsDownAction":
-			if let channel = userInfo["channel"] as? Int32,
-			   let replyID = userInfo["replyMessageId"] as? Int64 ?? userInfo["messageId"] as? Int64 {
+			if let replyID = userInfo["replyMessageId"] as? Int64 ?? userInfo["messageId"] as? Int64,
+			   let channel = ChannelConversations.replyChannel(forMessageId: replyID, in: PersistenceController.shared.context) {
 				Task {
 					do {
 						try await AccessoryManager.shared.sendMessage(
@@ -177,8 +178,8 @@ class MeshtasticAppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificat
 			}
 		case "messageNotification.replyInputAction":
 			if let userInput = (response as? UNTextInputNotificationResponse)?.userText,
-			   let channel = userInfo["channel"] as? Int32,
-			   let replyID = userInfo["replyMessageId"] as? Int64 ?? userInfo["messageId"] as? Int64 {
+			   let replyID = userInfo["replyMessageId"] as? Int64 ?? userInfo["messageId"] as? Int64,
+			   let channel = ChannelConversations.replyChannel(forMessageId: replyID, in: PersistenceController.shared.context) {
 				Task {
 					do {
 						try await AccessoryManager.shared.sendMessage(

@@ -177,6 +177,55 @@ enum Iaq: Int, CaseIterable, Identifiable {
 	}
 }
 
+/// CO2 bands from design#53, the same as Android's `Co2Severity`.
+enum Co2Level: Int, CaseIterable, Identifiable {
+	case good = 0
+	case stuffy = 1
+	case poor = 2
+	case unsafe = 3
+	case evacuate = 4
+
+	var id: Int { self.rawValue }
+	var description: String {
+		switch self {
+		case .good:
+			return String(localized: "Good", comment: "CO2 level under 1000 ppm")
+		case .stuffy:
+			return String(localized: "Stuffy", comment: "CO2 level from 1000 to 2000 ppm")
+		case .poor:
+			return String(localized: "Poor", comment: "CO2 level from 2000 to 5000 ppm")
+		case .unsafe:
+			return String(localized: "Unsafe", comment: "CO2 level from 5000 to 30000 ppm")
+		case .evacuate:
+			return String(localized: "Evacuate", comment: "CO2 level of 30000 ppm or more")
+		}
+	}
+	var color: Color {
+		switch self {
+		case .good:
+			return Color(uiColor: .systemGreen)
+		case .stuffy:
+			return .yellow
+		case .poor:
+			return Color(uiColor: .systemOrange)
+		case .unsafe:
+			return Color(uiColor: .systemRed)
+		case .evacuate:
+			return .magenta
+		}
+	}
+
+	static func level(for ppm: UInt32) -> Co2Level {
+		switch ppm {
+		case ..<1000: .good
+		case ..<2000: .stuffy
+		case ..<5000: .poor
+		case ..<30000: .unsafe
+		default: .evacuate
+		}
+	}
+}
+
 // Default of 0 is Client
 enum MetricsTypes: Int, CaseIterable, Identifiable {
 
@@ -185,6 +234,7 @@ enum MetricsTypes: Int, CaseIterable, Identifiable {
 	case power = 2
 	case airQuality = 3
 	case stats = 4
+	case host = 5
 
 	var id: Int { self.rawValue }
 	var name: String {
@@ -199,6 +249,8 @@ enum MetricsTypes: Int, CaseIterable, Identifiable {
 			return "Air Quality Metrics"
 		case .stats:
 			return "Stats"
+		case .host:
+			return "Host Metrics"
 		}
 	}
 }

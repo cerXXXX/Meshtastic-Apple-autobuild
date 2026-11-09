@@ -5,6 +5,7 @@
 //  Copyright(c) Garth Vander Houwen 10/15/26.
 //
 
+import Combine
 import SwiftUI
 import RealityKit
 import OSLog
@@ -48,6 +49,8 @@ struct DeviceModelView<Placeholder: View>: View {
 	@Environment(\.presentDeviceModelFullScreen) private var presentFullScreen
 	/// The file the model came from, handed to Quick Look for "View in your space".
 	@State private var modelURL: URL?
+	/// The copyright notice embedded in the model's file, shown from the full-screen view.
+	@State private var copyright: String?
 	@State private var quickLookURL: URL?
 	@State private var showsChirpy = false
 	@State private var chirpyTaps = 0
@@ -122,6 +125,7 @@ struct DeviceModelView<Placeholder: View>: View {
 				stage = nil
 				loadedModel = nil
 				modelURL = nil
+				copyright = nil
 				return
 			}
 			let name = shownModelName
@@ -138,6 +142,7 @@ struct DeviceModelView<Placeholder: View>: View {
 				loadedModel = entity.clone(recursive: true)
 				stage = DeviceModelStage(model: entity)
 				modelURL = url
+				copyright = await Task.detached(priority: .utility) { DeviceModelNotice.copyright(inUSDZ: url) }.value
 			} catch {
 				// A different model was picked while this one loaded; its failure says
 				// nothing about the new one, which would stay marked unavailable.
@@ -180,7 +185,7 @@ struct DeviceModelView<Placeholder: View>: View {
 	private var fullScreenButton: some View {
 		Button {
 			guard let loadedModel else { return }
-			let request = DeviceModelFullScreenRequest(model: loadedModel, name: shownName, isChirpy: showsChirpy)
+			let request = DeviceModelFullScreenRequest(model: loadedModel, name: shownName, isChirpy: showsChirpy, copyright: copyright)
 			if let presentFullScreen {
 				presentFullScreen(request)
 			} else {
@@ -224,9 +229,10 @@ struct DeviceModelView<Placeholder: View>: View {
 				_ = PreviewApplication.open(urls: [modelURL])
 			}
 			#else
-			if liveScreen, !showsChirpy, stage?.hasScreen == true, let loadedModel {
-				// Quick Look can't show the live screen, so the connected radio gets its own AR view.
-				let request = DeviceModelFullScreenRequest(model: loadedModel, name: shownName, isChirpy: false, inSpace: true)
+			if let loadedModel {
+				// The app's own AR view rather than Quick Look, which can't show the live screen
+				// or the banana. It has Quick Look's AR and Object views, Record and Share.
+				let request = DeviceModelFullScreenRequest(model: loadedModel, name: shownName, isChirpy: showsChirpy, inSpace: true, fileURL: modelURL, copyright: copyright)
 				if let presentFullScreen {
 					presentFullScreen(request)
 				} else {
@@ -292,6 +298,10 @@ struct DeviceModelFullScreenRequest: Identifiable {
 	let name: String
 	let isChirpy: Bool
 	var inSpace = false
+	/// The model's file, for the AR view's share button.
+	var fileURL: URL?
+	/// The copyright notice from the model's file, behind the full-screen view's info button.
+	var copyright: String?
 }
 
 extension EnvironmentValues {
@@ -315,6 +325,7 @@ struct DeviceModelFullScreen: View {
 	@State private var stage: DeviceModelStage
 	/// How close the model is: the zoom button steps through the stage's levels.
 	@State private var zoomLevel: DeviceModelStage.ZoomLevel = .model
+	@State private var showsCopyright = false
 
 	private var accessoryManager: AccessoryManager { AccessoryManager.shared }
 
@@ -364,6 +375,13 @@ struct DeviceModelFullScreen: View {
 		// Drags turn the model, so they mustn't close the sheet.
 		.interactiveDismissDisabled()
 		.navigationTitle(request.name)
+		// An alert, not a popover on the button: the button sits in the toolbar's overflow menu, which
+		// is gone by the time a popover would anchor to it, and UIKit throws.
+		.alert(copyrightTitle, isPresented: $showsCopyright) {
+			Button("OK", role: .cancel) {}
+		} message: {
+			Text(request.copyright ?? "")
+		}
 		#if !os(macOS)
 		.navigationBarTitleDisplayMode(.inline)
 		#endif
@@ -377,6 +395,15 @@ struct DeviceModelFullScreen: View {
 					}
 				}
 			}
+			if request.copyright != nil {
+				ToolbarItem(placement: .secondaryAction) {
+					Button {
+						showsCopyright = true
+					} label: {
+						Label(copyrightTitle, systemImage: "info.circle")
+					}
+				}
+			}
 			// Zooming in is for reading the radio's live screen; without it the whole model is enough.
 			if liveScreen && stage.zoomLevels.count > 1 {
 				ToolbarItem(placement: .primaryAction) {
@@ -384,6 +411,10 @@ struct DeviceModelFullScreen: View {
 				}
 			}
 		}
+	}
+
+	private var copyrightTitle: String {
+		String(localized: "Model Copyright", comment: "Button in the full-screen 3D model view: show the model's copyright notice")
 	}
 
 	/// Steps in from the whole model to the case without its antenna, then the screen, then back out.
@@ -408,7 +439,7 @@ struct DeviceModelFullScreen: View {
 }
 
 @available(iOS 18.0, macCatalyst 18.0, visionOS 1.0, *)
-private struct DeviceModelRealityView: View {
+struct DeviceModelRealityView: View {
 	let stage: DeviceModelStage
 	let autoRotate: Bool
 	/// Where the radio's live screen comes from. The stage reads it as it draws, so a new picture
@@ -425,6 +456,11 @@ private struct DeviceModelRealityView: View {
 
 	var body: some View {
 		GeometryReader { proxy in
+			#if os(iOS) && !targetEnvironment(macCatalyst)
+			DeviceModelSceneView(stage: stage, autoRotate: autoRotate, screenSource: screenSource, size: proxy.size)
+				// An AR view stops it drawing, so it's made again once one closes.
+				.id(DeviceModelARSessions.shared.closed)
+			#else
 			RealityView { content in
 				content.add(stage.makeScene())
 				#if !os(visionOS)
@@ -452,6 +488,7 @@ private struct DeviceModelRealityView: View {
 				stage.fitRadius = Float(metrics.convert(side, to: .meters)) * 0.42
 				#endif
 			}
+			#endif
 		}
 		.background { backdrop }
 		.contentShape(Rectangle())
@@ -501,6 +538,60 @@ private struct DeviceModelRealityView: View {
 			.onEnded { _ in stage.endZoom() }
 	}
 }
+
+#if os(iOS) && !targetEnvironment(macCatalyst)
+/// Counts the AR views that have closed. A model view that was up while one ran has stopped
+/// drawing, and is made again when this changes.
+@MainActor @Observable
+final class DeviceModelARSessions {
+	static let shared = DeviceModelARSessions()
+	var closed = 0
+}
+
+/// The model drawn by an `ARView` with no camera rather than a `RealityView`. On iOS 27, once a
+/// `RealityView` has drawn in the app, every AR view after it shows a black camera picture; an
+/// `ARView` with no camera leaves the AR view's camera alone.
+@available(iOS 18.0, *)
+private struct DeviceModelSceneView: UIViewRepresentable {
+	let stage: DeviceModelStage
+	let autoRotate: Bool
+	weak var screenSource: DisplayMirrorSession?
+	let size: CGSize
+
+	func makeUIView(context: Context) -> ARView {
+		let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
+		// Clear, so the backdrop behind shows as it did around the RealityView.
+		view.environment.background = .color(.clear)
+		view.backgroundColor = .clear
+		let anchor = AnchorEntity(world: .zero)
+		anchor.addChild(stage.makeScene())
+		view.scene.addAnchor(anchor)
+		context.coordinator.update = view.scene.subscribe(to: SceneEvents.Update.self) { [weak stage] event in
+			stage?.advance(by: Float(event.deltaTime))
+		}
+		return view
+	}
+
+	func updateUIView(_ view: ARView, context: Context) {
+		stage.autoRotate = autoRotate
+		stage.screenSource = screenSource
+		// The camera shows a sphere of radius 1 top to bottom; the width follows the view's shape.
+		let halfHeight: Float = 1.02 / cos(15 * .pi / 180)
+		stage.viewHalfExtents = [halfHeight * Float(size.width / max(size.height, 1)), halfHeight]
+	}
+
+	func makeCoordinator() -> Coordinator { Coordinator() }
+
+	static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
+		coordinator.update?.cancel()
+	}
+
+	/// Keeps the per-frame update running while the view is up.
+	final class Coordinator {
+		var update: Cancellable?
+	}
+}
+#endif
 
 /// The RealityKit side: a pivot that turns, holding the model scaled and centered inside it.
 @available(iOS 18.0, macCatalyst 18.0, visionOS 1.0, *)

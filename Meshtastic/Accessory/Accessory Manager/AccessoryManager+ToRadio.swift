@@ -392,6 +392,12 @@ extension AccessoryManager {
 			return
 		}
 
+		// A negative channel is an archived conversation, whose channel has left the radio.
+		guard toUserNum > 0 || channel >= 0 else {
+			Logger.mesh.error("🚫 Not sending to archived channel conversation \(channel, privacy: .public)")
+			throw AccessoryError.appError("This channel is no longer on the radio")
+		}
+
 			let messageUsers = FetchDescriptor<UserEntity>(predicate: #Predicate { $0.num == fromUserNum || $0.num == toUserNum })
 
 			do {
@@ -577,6 +583,11 @@ extension AccessoryManager {
 
 		let toUserNum = message.toUser?.num ?? 0
 		let messageId = message.messageId
+		// Checked before the row is touched, so a refused retry leaves it exactly as it was.
+		guard toUserNum > 0 || message.channel >= 0 else {
+			Logger.mesh.error("🚫 Cannot resend \(messageId, privacy: .public); its channel is no longer on the radio")
+			throw AccessoryError.appError("This channel is no longer on the radio")
+		}
 
 		// Kept so the row can go back to failed if the transmit never leaves: otherwise the
 		// message sits in "Sending…" with no retry action until the ack timeout turns it into
@@ -1325,6 +1336,9 @@ extension AccessoryManager {
 
 		// Mirror the added channel into local state so it appears immediately (no reboot / re-sync).
 		try applyLocalChannelMutation(channel, fromNum: deviceNum)
+		// No config refresh follows to reconcile, and a replaced slot still holds the previous
+		// channel's conversation.
+		await reconcileChannelConversations()
 
 		Logger.mesh.info("➕ [Beacon] Added advertised channel '\(channelName, privacy: .private)' to secondary slot \(targetIndex, privacy: .public) — no reboot")
 	}
@@ -3199,6 +3213,10 @@ extension AccessoryManager {
 			connectedLoRaRegionCode = config.region.rawValue
 		}
 		await MeshPackets.shared.upsertLoRaConfigPacket(config: config, nodeNum: toUser.num)
+		if toUser.num == activeDeviceNum {
+			// A preset change renames every blank named channel, which makes it a different one.
+			await reconcileChannelConversations(loRaConfig: config)
+		}
 
 		return Int64(meshPacket.id)
 	}
@@ -3258,51 +3276,59 @@ extension AccessoryManager {
 		return Int64(meshPacket.id)
 	}
 
-	func sendLocalStatsRequest(
+	/// Asks a node for one kind of telemetry, and watches for a routing error that answers it,
+	/// reported with `nodeName`. Returns the request's packet id, which a reply or a routing error
+	/// carries as its request id.
+	@discardableResult
+	func sendTelemetryRequest(
+		_ kind: TelemetryRequestKind,
 		destNum: Int64,
-		wantResponse: Bool,
+		nodeName: String,
 		transport: LocalStatsRequestTransport = .sharedChannel,
 		destinationPublicKey: Data? = nil
-	) async throws {
+	) async throws -> UInt32 {
 		guard let fromNodeNum = self.activeConnection?.device.num else {
-			Logger.services.error("Error while sending local stats request.  No active device.")
+			Logger.services.error("Error while sending telemetry request.  No active device.")
 			throw AccessoryError.ioFailed("No active device")
 		}
-
-		var telemetryPacket = Telemetry()
-		telemetryPacket.localStats = LocalStats()
 
 		var meshPacket = MeshPacket()
 		meshPacket.id = UInt32.random(in: UInt32(UInt8.max)..<UInt32.max)
 		meshPacket.to = UInt32(destNum)
 		meshPacket.from = UInt32(fromNodeNum)
 		meshPacket.wantAck = true
-		meshPacket.decoded.wantResponse = wantResponse
 		guard LocalStatsRequestTransport.configure(
 			&meshPacket,
 			transport: transport,
 			destinationPublicKey: destinationPublicKey
 		) else {
-			throw AccessoryError.ioFailed("sendLocalStatsRequest: Remote admin requires the destination public key")
+			throw AccessoryError.ioFailed("sendTelemetryRequest: Remote admin requires the destination public key")
 		}
 
 		var dataMessage = DataMessage()
-		if let serializedData: Data = try? telemetryPacket.serializedData() {
+		if let serializedData: Data = try? kind.telemetry.serializedData() {
 			dataMessage.payload = serializedData
 			dataMessage.portnum = PortNum.telemetryApp
-			dataMessage.wantResponse = wantResponse
+			dataMessage.wantResponse = true
 			meshPacket.decoded = dataMessage
 		} else {
-			throw AccessoryError.ioFailed("sendLocalStatsRequest: Unable to serialize telemetry packet")
+			throw AccessoryError.ioFailed("sendTelemetryRequest: Unable to serialize telemetry packet")
 		}
 
-		var toRadio: ToRadio!
-		toRadio = ToRadio()
+		var toRadio = ToRadio()
 		toRadio.packet = meshPacket
 
-		let logString = String.localizedStringWithFormat("📊 Sent Local Stats Request from: %@ to: %@".localized, String(fromNodeNum), String(destNum))
-		try await send(toRadio, debugDescription: logString)
+		let logString = "📊 Sent \(kind.rawValue) telemetry request from: \(fromNodeNum) to: \(destNum)"
+		// Before the send, so a fast routing error from the connected radio finds its request.
+		TelemetryRequestTracker.shared.sent(id: meshPacket.id, kind: kind, nodeName: nodeName)
+		do {
+			try await send(toRadio, debugDescription: logString)
+		} catch {
+			TelemetryRequestTracker.shared.forget(id: meshPacket.id)
+			throw error
+		}
 
-		Logger.mesh.info("📊 \(logString, privacy: .public)")
+		Logger.mesh.info("\(logString, privacy: .public)")
+		return meshPacket.id
 	}
 }

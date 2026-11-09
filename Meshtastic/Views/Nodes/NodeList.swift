@@ -523,6 +523,16 @@ private struct FilteredNodeList: View {
 		node: NodeInfoEntity,
 		connectedNode: NodeInfoEntity?
 	) -> some View {
+		// Message first: it's the most common reason to open this menu on someone else's node (design#171).
+		if let connectedNode, connectedNode.num != node.num, node.user?.showsDirectMessageAction == true {
+			Button(action: {
+				if let url = URL(string: "meshtastic:///messages?userNum=\(node.num)") {
+					UIApplication.shared.open(url)
+				}
+			}) {
+				Label("Message", systemImage: "message")
+			}
+		}
 		// Local-only rename — never touches the mesh (NodeDisplayNameStore), so unlike the actions
 		// below it doesn't need an active device connection. Available for any node in the local
 		// database regardless of connection state.
@@ -546,15 +556,6 @@ private struct FilteredNodeList: View {
 				NodeAlertsButton(context: context, node: node, user: user)
 			}
 			if connectedNode.num != node.num {
-				if node.user?.showsDirectMessageAction == true {
-					Button(action: {
-						if let url = URL(string: "meshtastic:///messages?userNum=\(node.num)") {
-							UIApplication.shared.open(url)
-						}
-					}) {
-						Label("Message", systemImage: "message")
-					}
-				}
 				TraceRouteButton(
 					node: node
 				)
@@ -682,6 +683,8 @@ fileprivate extension NodeFilterParameters {
 				node.user?.hwModel,
 				node.user?.hwDisplayName,
 				node.user?.longName,
+				// By node number: a node without a user record can still have a display name.
+				NodeDisplayNameStore.displayName(for: node.num),
 				node.user?.shortName
 			].compactMap { $0 }.contains { $0.localizedCaseInsensitiveContains(normalizedSearchText) }
 			if !matchesSearch { return false }

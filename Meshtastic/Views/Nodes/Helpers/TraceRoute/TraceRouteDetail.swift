@@ -38,7 +38,7 @@ struct TraceRouteDetail: View {
 				}
 				actions(state: state)
 				switch state {
-				case .complete, .observed:
+				case .complete, .observed, .tracedBy:
 					Section {
 						TraceRouteHopTimeline(
 							legs: legs,
@@ -68,17 +68,28 @@ struct TraceRouteDetail: View {
 	}
 
 	private var targetName: String {
-		route.node?.user?.longName ?? findNode(route.toNum)?.user?.longName ?? route.toNum.toHex()
+		// A traced-by route's node is the requester; the target is us.
+		if route.tracedBy {
+			return findNode(route.toNum)?.user?.localLongName ?? route.toNum.toHex()
+		}
+		return route.node?.user?.localLongName ?? findNode(route.toNum)?.user?.localLongName ?? route.toNum.toHex()
 	}
 
 	private var title: String {
-		let origin = findNode(route.fromNum)?.user?.longName ?? route.fromNum.toHex()
+		let origin = findNode(route.fromNum)?.user?.localLongName ?? route.fromNum.toHex()
 		return "\(origin) → \(targetName)"
 	}
 
 	private var legs: TraceRouteLegs {
 		TraceRouteLegs(route: route, preset: preset) { num in
-			findNode(num).map(TraceRouteLegs.NodeDetails.init(node:))
+			findNode(num).map { TraceRouteLegs.NodeDetails(node: $0) }
+		}
+	}
+
+	/// The share image leaves the device, so it names nodes by their broadcast names.
+	private var shareLegs: TraceRouteLegs {
+		TraceRouteLegs(route: route, preset: preset) { num in
+			findNode(num).map { TraceRouteLegs.NodeDetails(node: $0, broadcastName: true) }
 		}
 	}
 
@@ -95,7 +106,7 @@ struct TraceRouteDetail: View {
 		}
 		isRenderingShareImage = true
 		defer { isRenderingShareImage = false }
-		let model = TraceRouteShareModel(route: route, legs: legs, mapWidth: TraceRouteShareStyle.mapWidth)
+		let model = TraceRouteShareModel(route: route, legs: shareLegs, mapWidth: TraceRouteShareStyle.mapWidth)
 		shareImage = await TraceRouteShareRenderer.render(model: model)
 	}
 
@@ -145,7 +156,7 @@ struct TraceRouteDetail: View {
 
 	@ViewBuilder
 	private func details(state: TraceRouteState) -> some View {
-		if state == .complete || state == .observed {
+		if state.hasRoute {
 			Section {
 				if let roundTrip = route.roundTrip {
 					LabeledContent(String(localized: "Round trip", comment: "Trace route: time from sending the request to getting the response")) {

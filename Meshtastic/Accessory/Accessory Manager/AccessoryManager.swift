@@ -1108,6 +1108,8 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 						Logger.mesh.error("🕸️ No active connection. Unable to determine connectedNodeNum for routingPacket.")
 						return
 					}
+					RemoteShellSession.deliverRouting(packet)
+					TelemetryRequestTracker.shared.deliverRouting(packet)
 					await MeshPackets.shared.routingPacket(packet: packet, connectedNodeNum: deviceNum)
 				case .adminApp:
 					await MeshPackets.shared.adminAppPacket(packet: packet, connectedNodeNum: self.activeDeviceNum)
@@ -1148,6 +1150,7 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 						Logger.mesh.error("🕸️ No active connection. Unable to determine connectedNodeNum for telemetryApp.")
 						return
 					}
+					TelemetryRequestTracker.shared.deliverReply(packet)
 					await MeshPackets.shared.telemetryPacket(packet: packet, connectedNode: deviceNum)
 				case .textMessageCompressedApp:
 					Logger.mesh.info("[Text Message Compressed] packet received from \(packet.from.toHex(), privacy: .public)")
@@ -1216,7 +1219,7 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 				case .loraOtaApp:
 					Logger.mesh.info("[LoRa OTA] packet received from \(packet.from.toHex(), privacy: .public)")
 				case .remoteShellApp:
-					Logger.mesh.info("[Remote Shell] packet received from \(packet.from.toHex(), privacy: .public)")
+					RemoteShellSession.deliver(packet)
 				case .pagingApp:
 					Logger.mesh.info("[Paging] packet received from \(packet.from.toHex(), privacy: .public)")
 				case .unknownApp:
@@ -1292,6 +1295,8 @@ class AccessoryManager: ObservableObject, MqttClientProxyManagerDelegate {
 				lastConfigRefresh = Date()
 				if let completedNodeNum = refresh.nodeNum {
 					await MeshPackets.shared.commitChannelRefreshStage(for: completedNodeNum, owner: refresh.owner)
+					// The first point where both the whole channel set and the LoRa config are in.
+					await reconcileChannelConversations()
 					MeshShareSnapshotBuilder.refresh(nodeNum: completedNodeNum, context: context)
 					WidgetDataBroker.shared.refresh(.config)
 				}

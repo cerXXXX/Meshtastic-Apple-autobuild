@@ -1670,6 +1670,10 @@ actor MeshPackets {
 			if m.hasPm25Standard { parts.append("PM2.5 \(m.pm25Standard)") }
 			if m.hasPm10Standard { parts.append("PM1.0 \(m.pm10Standard)") }
 			if m.hasPm100Standard { parts.append("PM10 \(m.pm100Standard)") }
+		case .hostMetrics(let m)?:
+			parts.append("host")
+			parts.append(String(format: "load %.2f", Double(m.load1) / 100))
+			parts.append("free \(m.freememBytes / 1_048_576)MB")
 		default:
 			return ""
 		}
@@ -1695,7 +1699,8 @@ actor MeshPackets {
 				.environmentMetrics(telemetryMessage.environmentMetrics),
 				.localStats(telemetryMessage.localStats),
 				.powerMetrics(telemetryMessage.powerMetrics),
-				.airQualityMetrics(telemetryMessage.airQualityMetrics)
+				.airQualityMetrics(telemetryMessage.airQualityMetrics),
+				.hostMetrics(telemetryMessage.hostMetrics)
 			]
 			if !handledVariants.contains(where: { $0 == telemetryMessage.variant }) {
 				/// Other unhandled telemetry packets
@@ -1786,6 +1791,16 @@ actor MeshPackets {
 				telemetry.powerCh2Current = telemetryMessage.powerMetrics.hasCh2Current.then(telemetryMessage.powerMetrics.ch2Current)
 				telemetry.powerCh3Voltage = telemetryMessage.powerMetrics.hasCh3Voltage.then(telemetryMessage.powerMetrics.ch3Voltage)
 				telemetry.powerCh3Current = telemetryMessage.powerMetrics.hasCh3Current.then(telemetryMessage.powerMetrics.ch3Current)
+				telemetry.powerCh4Voltage = telemetryMessage.powerMetrics.hasCh4Voltage.then(telemetryMessage.powerMetrics.ch4Voltage)
+				telemetry.powerCh4Current = telemetryMessage.powerMetrics.hasCh4Current.then(telemetryMessage.powerMetrics.ch4Current)
+				telemetry.powerCh5Voltage = telemetryMessage.powerMetrics.hasCh5Voltage.then(telemetryMessage.powerMetrics.ch5Voltage)
+				telemetry.powerCh5Current = telemetryMessage.powerMetrics.hasCh5Current.then(telemetryMessage.powerMetrics.ch5Current)
+				telemetry.powerCh6Voltage = telemetryMessage.powerMetrics.hasCh6Voltage.then(telemetryMessage.powerMetrics.ch6Voltage)
+				telemetry.powerCh6Current = telemetryMessage.powerMetrics.hasCh6Current.then(telemetryMessage.powerMetrics.ch6Current)
+				telemetry.powerCh7Voltage = telemetryMessage.powerMetrics.hasCh7Voltage.then(telemetryMessage.powerMetrics.ch7Voltage)
+				telemetry.powerCh7Current = telemetryMessage.powerMetrics.hasCh7Current.then(telemetryMessage.powerMetrics.ch7Current)
+				telemetry.powerCh8Voltage = telemetryMessage.powerMetrics.hasCh8Voltage.then(telemetryMessage.powerMetrics.ch8Voltage)
+				telemetry.powerCh8Current = telemetryMessage.powerMetrics.hasCh8Current.then(telemetryMessage.powerMetrics.ch8Current)
 				telemetry.metricsType = 2
 			} else if telemetryMessage.variant == Telemetry.OneOf_Variant.airQualityMetrics(telemetryMessage.airQualityMetrics) {
 				// Air Quality Metrics — particulate matter (µg/m³). Issue #2040 / design#54.
@@ -1796,7 +1811,22 @@ actor MeshPackets {
 				telemetry.pm10Environmental = telemetryMessage.airQualityMetrics.hasPm10Environmental.then(telemetryMessage.airQualityMetrics.pm10Environmental)
 				telemetry.pm25Environmental = telemetryMessage.airQualityMetrics.hasPm25Environmental.then(telemetryMessage.airQualityMetrics.pm25Environmental)
 				telemetry.pm100Environmental = telemetryMessage.airQualityMetrics.hasPm100Environmental.then(telemetryMessage.airQualityMetrics.pm100Environmental)
+				telemetry.co2 = telemetryMessage.airQualityMetrics.hasCo2.then(telemetryMessage.airQualityMetrics.co2)
 				telemetry.metricsType = 3
+			} else if telemetryMessage.variant == Telemetry.OneOf_Variant.hostMetrics(telemetryMessage.hostMetrics) {
+				// Host Metrics, from Linux meshtasticd nodes
+				Logger.data.debug("📈 [Telemetry] Host Metrics Received for Node: \(packet.from.toHex(), privacy: .public)")
+				let host = telemetryMessage.hostMetrics
+				telemetry.uptimeSeconds = Int32(truncatingIfNeeded: host.uptimeSeconds)
+				telemetry.hostFreeMemoryBytes = Int64(clamping: host.freememBytes)
+				telemetry.hostDiskFree1Bytes = Int64(clamping: host.diskfree1Bytes)
+				telemetry.hostDiskFree2Bytes = host.hasDiskfree2Bytes.then(Int64(clamping: host.diskfree2Bytes))
+				telemetry.hostDiskFree3Bytes = host.hasDiskfree3Bytes.then(Int64(clamping: host.diskfree3Bytes))
+				telemetry.hostLoad1 = Int32(clamping: host.load1)
+				telemetry.hostLoad5 = Int32(clamping: host.load5)
+				telemetry.hostLoad15 = Int32(clamping: host.load15)
+				telemetry.hostUserString = host.hasUserString.then(host.userString)
+				telemetry.metricsType = 5
 			}
 			telemetry.snr = packet.rxSnr
 			telemetry.rssi = packet.rxRssi
@@ -1956,7 +1986,7 @@ actor MeshPackets {
 	) -> Notification {
 		var notification = Notification(
 			id: ("notification.id.\(message.messageId)"),
-			title: "\(message.fromUser?.longName ?? "Unknown".localized)",
+			title: "\(message.fromUser?.displayLongName ?? "Unknown".localized)",
 			subtitle: "AKA \(message.fromUser?.shortName ?? "?")",
 			content: content,
 			target: "messages",
@@ -2249,7 +2279,7 @@ actor MeshPackets {
 								// and capture only the resulting value — a deferred Task must not hold `newMessage`
 								// (a context-bound model), since a device switch can reset this context first
 								// ("destroyed by ModelContext.reset").
-								let senderName = newMessage.fromUser?.longName ?? "Unknown".localized
+								let senderName = newMessage.fromUser?.displayLongName ?? "Unknown".localized
 								let dmUserNum = Int64(packet.from)
 								var dmNotification: Notification?
 								if newMessage.isEmoji == false {
@@ -2281,7 +2311,7 @@ actor MeshPackets {
 									let scheduler = notificationScheduler
 									Task {@MainActor in
 										scheduler([notification])
-										Logger.services.debug("iOS Notification Scheduled for direct message from \(senderName, privacy: .public)")
+										Logger.services.debug("iOS Notification Scheduled for direct message from \(newMessage.fromUser?.num.toHex() ?? "?", privacy: .public)")
 									}
 								}
 							}
@@ -2307,7 +2337,7 @@ actor MeshPackets {
 									// notifications are off or the channel is muted; a muted sender still wins.
 									let isSelfMentioned = !(newMessage.fromUser?.mute ?? false)
 										&& MentionParser.containsMention(of: connectedNode, in: messageText ?? "")
-									let senderName = newMessage.fromUser?.longName ?? "Unknown".localized
+									let senderName = newMessage.fromUser?.displayLongName ?? "Unknown".localized
 									let channelUserNum = Int64(newMessage.fromUser?.userId ?? "0")
 									var channelNotification: Notification?
 									if channelNotificationsEnabled || isSelfMentioned {

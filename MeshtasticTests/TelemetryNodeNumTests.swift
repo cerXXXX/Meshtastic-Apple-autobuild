@@ -125,6 +125,86 @@ struct TelemetryNodeNumTests {
 		#expect(node.telemetries.isEmpty)
 	}
 
+	@Test("Host metrics are stored as their own kind, with their readings")
+	func hostMetricsStored() async throws {
+		let container = try makeContainer()
+		let nodeNum: UInt32 = 0x7E1E_0002
+		let mesh = MeshPackets(modelContainer: container)
+		await mesh.telemetryPacket(
+			packet: try makeTelemetryPacket(from: nodeNum) {
+				var host = HostMetrics()
+				host.uptimeSeconds = 86_400
+				host.freememBytes = 512 * 1_048_576
+				host.diskfree1Bytes = 8_000_000_000
+				host.load1 = 25
+				host.load5 = 50
+				host.load15 = 75
+				host.userString = "rack 2"
+				$0.hostMetrics = host
+			},
+			connectedNode: Self.connectedNode
+		)
+		await mesh.flushDebouncedSaves()
+
+		let context = ModelContext(container)
+		let row = try #require(try context.fetch(FetchDescriptor<TelemetryEntity>()).first)
+		#expect(row.metricsType == 5)
+		#expect(row.uptimeSeconds == 86_400)
+		#expect(row.hostFreeMemoryBytes == Int64(512 * 1_048_576))
+		#expect(row.hostDiskFree1Bytes == 8_000_000_000)
+		#expect(row.hostDiskFree2Bytes == nil)
+		#expect(row.hostLoad1 == 25)
+		#expect(row.hostLoad15 == 75)
+		#expect(row.hostUserString == "rack 2")
+		let node = try #require(try context.fetch(FetchDescriptor<NodeInfoEntity>()).first)
+		#expect(node.latestHostMetrics?.hostLoad5 == 50)
+	}
+
+	@Test("CO2 is stored with the particulate readings")
+	func co2Stored() async throws {
+		let container = try makeContainer()
+		let mesh = MeshPackets(modelContainer: container)
+		await mesh.telemetryPacket(
+			packet: try makeTelemetryPacket(from: 0x7E1E_0003) {
+				var airQuality = AirQualityMetrics()
+				airQuality.pm25Standard = 12
+				airQuality.co2 = 1_240
+				$0.airQualityMetrics = airQuality
+			},
+			connectedNode: Self.connectedNode
+		)
+		await mesh.flushDebouncedSaves()
+
+		let row = try #require(try ModelContext(container).fetch(FetchDescriptor<TelemetryEntity>()).first)
+		#expect(row.metricsType == 3)
+		#expect(row.pm25Standard == 12)
+		#expect(row.co2 == 1_240)
+	}
+
+	@Test("Power channels 4 to 8 are stored, and a missing half stays nil")
+	func upperPowerChannelsStored() async throws {
+		let container = try makeContainer()
+		let mesh = MeshPackets(modelContainer: container)
+		await mesh.telemetryPacket(
+			packet: try makeTelemetryPacket(from: 0x7E1E_0004) {
+				var power = MeshtasticProtobufs.PowerMetrics()
+				power.ch4Voltage = 12.6
+				power.ch8Current = 350
+				$0.powerMetrics = power
+			},
+			connectedNode: Self.connectedNode
+		)
+		await mesh.flushDebouncedSaves()
+
+		let row = try #require(try ModelContext(container).fetch(FetchDescriptor<TelemetryEntity>()).first)
+		#expect(row.metricsType == 2)
+		#expect(row.powerVoltage(channel: 3) == 12.6)
+		#expect(row.powerCurrent(channel: 3) == nil)
+		#expect(row.powerCurrent(channel: 7) == 350)
+		#expect(row.powerVoltage(channel: 0) == nil)
+		#expect([row].reportedPowerChannels == [3, 7])
+	}
+
 	@Test("Device metrics carried in a node info packet store the node number")
 	func nodeInfoDeviceMetricsStoreNodeNum() async throws {
 		let container = try makeContainer()

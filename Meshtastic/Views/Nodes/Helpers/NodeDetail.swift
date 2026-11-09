@@ -55,6 +55,7 @@ struct NodeDetail: View {
 	@EnvironmentObject var router: Router
 	@State private var showingShutdownConfirm: Bool = false
 	@State private var showingRebootConfirm: Bool = false
+	@State private var showingRemoteShell = false
 	@State private var dateFormatRelative: Bool = true
 	@Bindable	var node: NodeInfoEntity
 	private let nodeNum: Int64
@@ -66,6 +67,7 @@ struct NodeDetail: View {
 	@State private var latestAirQualityMetrics: TelemetryEntity?
 	@State private var airQualityNowCastAQI: Int?
 	@State private var latestPowerMetrics: TelemetryEntity?
+	@State private var latestHostMetrics: TelemetryEntity?
 	@State private var logAvailability = NodeDetailLogAvailability()
 	@State private var showingShareContactQR = false
 	@State private var deviceModelFullScreen: DeviceModelFullScreenRequest?
@@ -194,6 +196,7 @@ struct NodeDetail: View {
 			environmentSection
 			airQualitySection
 			powerSection
+			hostSection
 			logsSection
 			actionsSection
 			administrationSection
@@ -213,6 +216,15 @@ struct NodeDetail: View {
 			if #available(iOS 18.0, macCatalyst 18.0, *) {
 				DeviceModelFullScreen(request: request, liveScreen: liveScreen)
 			}
+		}
+		// Here rather than on the Remote Shell row, so a reconnect that hides the row doesn't
+		// close the shell.
+		.hostedFullScreenCover(isPresented: $showingRemoteShell) {
+			RemoteShellView(
+				nodeNum: nodeNum,
+				nodeName: currentUser?.displayLongName ?? nodeNum.toHex(),
+				accessoryManager: accessoryManager
+			)
 		}
 		#if os(iOS) && !targetEnvironment(macCatalyst)
 		.fullScreenCover(item: $deviceModelInSpace) { request in
@@ -599,17 +611,18 @@ struct NodeDetail: View {
 								if let temperature = metrics.temperature?.shortFormattedTemperature() {
 									WeatherConditionsCompactWidget(temperature: String(temperature), symbolName: "cloud.sun", description: "TEMP")
 								}
-								if let humidity = metrics.relativeHumidity {
+								// Int(exactly:) skips a NaN or out-of-range value from the radio instead of trapping.
+								if let humidity = metrics.relativeHumidity, let humidityPercent = Int(exactly: humidity.rounded()) {
 									if let temperature = metrics.temperature {
 										let dewPoint = calculateDewPoint(temp: temperature, relativeHumidity: humidity)
 											.formatted(.number.precision(.fractionLength(0))) + "°"
-										HumidityCompactWidget(humidity: Int(humidity), dewPoint: dewPoint)
+										HumidityCompactWidget(humidity: humidityPercent, dewPoint: dewPoint)
 									} else {
-										HumidityCompactWidget(humidity: Int(humidity), dewPoint: nil)
+										HumidityCompactWidget(humidity: humidityPercent, dewPoint: nil)
 									}
 								}
 								if let pressure = metrics.barometricPressure {
-									PressureCompactWidget(pressure: pressure.formatted(.number.precision(.fractionLength(2))), unit: "hPA", low: pressure <= 1009.144)
+									PressureCompactWidget(pressure: pressure.formatted(.number.grouping(.never).precision(.fractionLength(0))), unit: "hPa", low: pressure <= 1009.144)
 								}
 								if let windSpeed = metrics.windSpeed {
 									let windSpeedMeasurement = Measurement(value: Double(windSpeed), unit: UnitSpeed.metersPerSecond)
@@ -641,20 +654,13 @@ struct NodeDetail: View {
 								if let radiation = metrics.radiation {
 									RadiationCompactWidget(radiation: radiation.formatted(.number.precision(.fractionLength(1))), unit: "µR/hr")
 								}
+								// The same units as the charts and tables, so the UK sees kg and mm here too.
 								if let weight = metrics.weight {
-									let weightMeasurement = Measurement(value: Double(weight), unit: UnitMass.kilograms)
-									let usesMetric = Locale.current.measurementSystem == .metric
-									let weightUnit = usesMetric ? UnitMass.kilograms : UnitMass.pounds
-									let weightLabel = usesMetric ? "kg" : "lbs"
-									WeightCompactWidget(weight: weightMeasurement.converted(to: weightUnit).value.formatted(.number.precision(.fractionLength(1))), unit: weightLabel)
+									WeightCompactWidget(weight: MetricsLocaleUnits.mass(fromKilograms: weight).formatted(.number.precision(.fractionLength(1))), unit: MetricsLocaleUnits.massLabel)
 								}
 								if let distance = metrics.distance {
-									let distMeasurement = Measurement(value: Double(distance), unit: UnitLength.millimeters)
-									let usesMetric = Locale.current.measurementSystem == .metric
-									let distUnit = usesMetric ? UnitLength.millimeters : UnitLength.inches
-									let distLabel = usesMetric ? "mm" : "in"
-									let distDecimals = usesMetric ? 0 : 1
-									DistanceCompactWidget(distance: distMeasurement.converted(to: distUnit).value.formatted(.number.precision(.fractionLength(distDecimals))), unit: distLabel)
+									let distDecimals = MetricsLocaleUnits.length == .millimeters ? 0 : 1
+									DistanceCompactWidget(distance: MetricsLocaleUnits.length(fromMillimeters: distance).formatted(.number.precision(.fractionLength(distDecimals))), unit: MetricsLocaleUnits.lengthLabel)
 								}
 								if let soilTemperature = metrics.soilTemperature {
 									let locale = NSLocale.current as NSLocale
@@ -682,7 +688,7 @@ struct NodeDetail: View {
 	@ViewBuilder
 	private var airQualitySection: some View {
 		if let metrics = latestAirQualityMetrics,
-		   metrics.pm25Standard != nil || metrics.pm10Standard != nil || metrics.pm100Standard != nil {
+		   metrics.pm25Standard != nil || metrics.pm10Standard != nil || metrics.pm100Standard != nil || metrics.co2 != nil {
 			Section("Air Quality") {
 				VStack {
 					// design#54: once ~12h of PM2.5 history exists, headline the NowCast-derived EPA AQI
@@ -702,6 +708,9 @@ struct NodeDetail: View {
 						if let pm100 = metrics.pm100Standard {
 							ParticulateMatterCompactWidget(label: "PM10", value: pm100)
 						}
+						if let co2 = metrics.co2 {
+							Co2CompactWidget(ppm: co2)
+						}
 					}
 					.padding(.bottom)
 				}
@@ -717,9 +726,20 @@ struct NodeDetail: View {
 		if let powerMetrics = latestPowerMetrics {
 			Section("Power") {
 				VStack {
-					PowerMetrics(metric: powerMetrics)
+					PowerMetrics(metric: powerMetrics, labels: node.powerChannelLabels)
 				}
 				.accessibilityElement(children: .combine)
+			}
+		}
+	}
+
+	// MARK: - Host Section
+
+	@ViewBuilder
+	private var hostSection: some View {
+		if let hostMetrics = latestHostMetrics {
+			Section("Host") {
+				HostMetricsReading(metrics: hostMetrics)
 			}
 		}
 	}
@@ -738,17 +758,20 @@ struct NodeDetail: View {
 		let hasPax = logAvailability.hasPax
 
 		Section("Logs") {
-			NavigationLink {
-				DeviceMetricsLog(node: node)
-			} label: {
-				Label {
-					Text("Device Metrics Log")
-				} icon: {
-					Image(systemName: "flipphone")
-						.symbolRenderingMode(.multicolor)
+			HStack {
+				NavigationLink {
+					DeviceMetricsLog(node: node)
+				} label: {
+					Label {
+						Text("Device Metrics Log")
+					} icon: {
+						Image(systemName: "flipphone")
+							.symbolRenderingMode(.multicolor)
+					}
 				}
+				.disabled(!hasDeviceMetrics)
+				telemetryRequest(.device)
 			}
-			.disabled(!hasDeviceMetrics)
 			if showMapLink {
 				NavigationLink {
 					NodeMapSwiftUI(node: node, showUserLocation: accessoryManager.activeDeviceNum == nodeNum)
@@ -785,28 +808,34 @@ struct NodeDetail: View {
 				}
 			}
 			.disabled(!hasPositions)
-			NavigationLink {
-				EnvironmentMetricsLog(node: node)
-			} label: {
-				Label {
-					Text("Environment Metrics Log")
-				} icon: {
-					Image(systemName: "cloud.sun.rain")
-						.symbolRenderingMode(.multicolor)
+			HStack {
+				NavigationLink {
+					EnvironmentMetricsLog(node: node)
+				} label: {
+					Label {
+						Text("Environment Metrics Log")
+					} icon: {
+						Image(systemName: "cloud.sun.rain")
+							.symbolRenderingMode(.multicolor)
+					}
 				}
+				.disabled(!hasEnvironmentMetrics)
+				telemetryRequest(.environment)
 			}
-			.disabled(!hasEnvironmentMetrics)
-			NavigationLink {
-				AirQualityMetricsLog(node: node)
-			} label: {
-				Label {
-					Text("Air Quality Metrics Log")
-				} icon: {
-					Image(systemName: "aqi.medium")
-						.symbolRenderingMode(.multicolor)
+			HStack {
+				NavigationLink {
+					AirQualityMetricsLog(node: node)
+				} label: {
+					Label {
+						Text("Air Quality Metrics Log")
+					} icon: {
+						Image(systemName: "aqi.medium")
+							.symbolRenderingMode(.multicolor)
+					}
 				}
+				.disabled(!hasAirQualityMetrics)
+				telemetryRequest(.airQuality)
 			}
-			.disabled(!hasAirQualityMetrics)
 			NavigationLink {
 				TraceRouteLog(node: node)
 			} label: {
@@ -818,17 +847,20 @@ struct NodeDetail: View {
 				}
 			}
 			.disabled(!hasTraceRoutes)
-			NavigationLink {
-				PowerMetricsLog(node: node)
-			} label: {
-				Label {
-					Text("Power Metrics Log")
-				} icon: {
-					Image(systemName: "bolt")
-						.symbolRenderingMode(.multicolor)
+			HStack {
+				NavigationLink {
+					PowerMetricsLog(node: node)
+				} label: {
+					Label {
+						Text("Power Metrics Log")
+					} icon: {
+						Image(systemName: "bolt")
+							.symbolRenderingMode(.multicolor)
+					}
 				}
+				.disabled(!hasPowerMetrics)
+				telemetryRequest(.power)
 			}
-			.disabled(!hasPowerMetrics)
 			NavigationLink {
 				DetectionSensorLog(node: node)
 			} label: {
@@ -840,17 +872,38 @@ struct NodeDetail: View {
 				}
 			}
 			.disabled(!hasDetectionSensorMetrics)
-			NavigationLink {
-				LocalStatsLog(node: node)
-			} label: {
-				Label {
-					Text("Local Stats Log")
-				} icon: {
-					Image(systemName: "chart.bar")
-						.symbolRenderingMode(.multicolor)
+			HStack {
+				NavigationLink {
+					LocalStatsLog(node: node)
+				} label: {
+					Label {
+						Text("Local Stats Log")
+					} icon: {
+						Image(systemName: "chart.bar")
+							.symbolRenderingMode(.multicolor)
+					}
+				}
+				.disabled(!node.hasLocalStats)
+				telemetryRequest(.localStats)
+			}
+			if node.isLinuxNative || latestHostMetrics != nil {
+				HStack {
+					NavigationLink {
+						HostMetricsLog(node: node)
+					} label: {
+						Label {
+							Text("Host Metrics Log")
+						} icon: {
+							Image(systemName: "server.rack")
+								.symbolRenderingMode(.multicolor)
+						}
+					}
+					.disabled(latestHostMetrics == nil)
+					if node.isLinuxNative {
+						telemetryRequest(.host)
+					}
 				}
 			}
-			.disabled(!node.hasLocalStats)
 			if hasPax {
 				NavigationLink {
 					PaxCounterLog(node: node)
@@ -864,6 +917,15 @@ struct NodeDetail: View {
 				}
 				.disabled(!hasPax)
 			}
+		}
+	}
+
+	/// The request for a log's telemetry, beside its row: for another node, while connected.
+	@ViewBuilder
+	private func telemetryRequest(_ kind: TelemetryRequestKind) -> some View {
+		// activeDeviceNum, not connectedNode, which fetches; this runs for every log row.
+		if accessoryManager.isConnected, let active = accessoryManager.activeDeviceNum, active != nodeNum {
+			TelemetryRequestButton(node: node, kind: kind)
 		}
 	}
 
@@ -904,7 +966,6 @@ struct NodeDetail: View {
 						node: node,
 						connectedNode: connectedNode
 					)
-					RequestLocalStatsButton(node: node)
 					ExchangeUserInfoButton(
 						node: node,
 						connectedNode: connectedNode
@@ -970,14 +1031,40 @@ struct NodeDetail: View {
 
 	// MARK: - Administration Section
 
+	/// Linux `meshtasticd` nodes on 2.8.2 or later, or whose version isn't known yet, offer a
+	/// remote shell. It runs over remote admin, so never for the connected radio.
+	private var showsRemoteShell: Bool {
+		UserDefaults.enableAdministration
+			&& nodeNum != accessoryManager.activeDeviceNum
+			&& node.isLinuxNative
+			&& node.firmwareSupportsRemoteShell
+	}
+
 	@ViewBuilder
 	private var administrationSection: some View {
-		if let metadata = node.metadata,
+		if node.metadata != nil || showsRemoteShell,
 		   connectedNode != nil,
 		   accessoryManager.isConnected {
-			Section("Administration") {
+			let metadata = node.metadata
+			Section {
+				if showsRemoteShell {
+					Button {
+						showingRemoteShell = true
+					} label: {
+						Label {
+							VStack(alignment: .leading, spacing: 2) {
+								Text("Remote Shell")
+								Text("Opens a shell on this node, starting a remote admin session first if needed")
+									.font(.caption)
+									.foregroundStyle(.secondary)
+							}
+						} icon: {
+							Image(systemName: "apple.terminal")
+						}
+					}
+				}
 				// Screen mirroring only works over the local connection, so only for the connected radio.
-				if nodeNum == accessoryManager.activeDeviceNum, metadata.hasDisplay {
+				if let metadata, nodeNum == accessoryManager.activeDeviceNum, metadata.hasDisplay {
 					NavigationLink {
 						DeviceScreenView(metadata: metadata)
 					} label: {
@@ -1012,7 +1099,7 @@ struct NodeDetail: View {
 					}
 					.disabled(administrationUserPair == nil)
 				}
-				if metadata.canShutdown {
+				if metadata?.canShutdown == true {
 					Button {
 						showingShutdownConfirm = true
 					} label: {
@@ -1037,32 +1124,40 @@ struct NodeDetail: View {
 					}
 					.disabled(administrationUserPair == nil)
 				}
-				Button {
-					showingRebootConfirm = true
-				} label: {
-					Label(
-						"Reboot",
-						systemImage: "arrow.triangle.2.circlepath"
-					)
-				}.hostedConfirmation(
-					"Are you sure?",
-					isPresented: $showingRebootConfirm
-				) {
-					Button("Reboot node?", role: .destructive) {
-						Task {
-							guard let administrationUserPair else { return }
-							do {
-								try await accessoryManager.sendReboot(
-									fromUser: administrationUserPair.fromUser,
-									toUser: administrationUserPair.toUser
-								)
-							} catch {
-								Logger.mesh.warning("Reboot Failed")
+				if metadata != nil {
+					Button {
+						showingRebootConfirm = true
+					} label: {
+						Label(
+							"Reboot",
+							systemImage: "arrow.triangle.2.circlepath"
+						)
+					}.hostedConfirmation(
+						"Are you sure?",
+						isPresented: $showingRebootConfirm
+					) {
+						Button("Reboot node?", role: .destructive) {
+							Task {
+								guard let administrationUserPair else { return }
+								do {
+									try await accessoryManager.sendReboot(
+										fromUser: administrationUserPair.fromUser,
+										toUser: administrationUserPair.toUser
+									)
+								} catch {
+									Logger.mesh.warning("Reboot Failed")
+								}
 							}
 						}
 					}
+					.disabled(administrationUserPair == nil)
 				}
-				.disabled(administrationUserPair == nil)
+			} header: {
+				Text("Administration")
+			} footer: {
+				if showsRemoteShell, RemoteShellSession.adminSessionIsActive(node) {
+					Text("Remote admin session active")
+				}
 			}
 		}
 	}
@@ -1079,6 +1174,7 @@ struct NodeDetail: View {
 		latestAirQualityMetrics = airQualityMetrics
 		airQualityNowCastAQI = airQualityAQI
 		latestPowerMetrics = powerMetrics
+		latestHostMetrics = node.latestHostMetrics
 		latestPosition = position
 		logAvailability = NodeDetailLogAvailability(
 			hasDeviceMetrics: deviceMetrics != nil,

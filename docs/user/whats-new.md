@@ -14,9 +14,13 @@ Recent user-facing changes from roughly the last 12 months. Newest at the top.
 Show roughly the last 12 months of changes; archive entries older than a year by removing them.
 -->
 
+**Nov 2026** — [Cinema](cinema.md#castle-tower) — On Apple Vision Pro, the cinema can be set on top of a medieval castle tower, in gray or pink stone, on the same summits as the fire lookout, with its boards as scrolls you can roll up to see the view behind them.
+
 **Nov 2026** — [Cinema](cinema.md#fire-lookout) — On Apple Vision Pro, the fire lookout's real terrain has conifers on its forested ground, near and far, like the painted view's forest.
 
 **Nov 2026** — [Cinema](cinema.md#boards) — On Apple Vision Pro, the Team Favorites board scrolls: pinch and drag it to see favorites past the first eight.
+
+**Nov 2026** — [Nodes](nodes.md#3d-model) — On iPhone and iPad, the AR button opens every node's model in the app's own AR view, with **Banana for Scale**, which stands a real-size banana beside it. It has **AR** and **Object** views, a record button and a share button, like the view it replaces.
 
 **Nov 2026** — [Cinema](cinema.md#radio-models) — On Apple Vision Pro, **Banana for Scale** on the card beside a radio's model in the cinema stands a real-size banana next to it.
 

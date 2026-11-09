@@ -51,7 +51,7 @@ If an nRF52 Bluetooth update loses the radio partway, the app starts it over and
 Radios with an nRF52 processor can install the [Meshtastic nRF52 Bootloader](https://github.com/meshtastic/nRF52_Bootloader) , which makes Bluetooth firmware updates faster and more reliable. When your connected radio supports it, a **Bootloader** section appears on the Firmware Updates screen.
 
 1. Tap **Upgrade Bootloader** and follow the steps: reboot the radio into DFU mode (or double-press its reset button) and connect it to this device with a USB cable. The radio appears as a USB drive. On the T1000-E and MeshTracker X1, hold the button for about 3 seconds while the radio powers on.
-2. Choose the radio's drive in the file picker. The app reads the drive's `INFO_UF2.TXT` file to identify the board — the board on the drive decides which image is installed, so the wrong file can never be written to your hardware.
+2. Choose the radio's drive in the file picker. The app reads the drive's `INFO_UF2.TXT` file to identify the board, and the board on the drive decides which image is installed. A few boards ship a bootloader that reports another board's name, such as a Wio Tracker L1 Pro 1W reporting the plain L1. For those the app also uses the connected radio's model, so pick the drive of the radio you are connected to. The image's file name, shown before you install, names the board it was built for.
 3. Tap **Install Bootloader Update**. The app downloads the image for your board, checks it against the checksum published for that board, and writes it to the drive. The radio installs the bootloader and reboots itself.
 
 If the drive is not a bootloader drive, the board is not one the bootloader supports, or the download does not match its checksum, nothing is written.
@@ -78,6 +78,7 @@ With the Meshtastic nRF52 Bootloader 2.6.0 and later, the radio's drive works li
 - **Interrupted copy.** If the cable is pulled mid-copy, the radio has no firmware. Plug it in again and copy the firmware once more.
 - **Idle.** A radio with firmware boots it after 6 minutes in DFU mode with no activity. A radio with no firmware keeps waiting.
 - **Single-button boards.** On the T1000-E and MeshTracker X1, eject the drive to leave DFU mode without copying a file.
+- **Last fault.** After a Bluetooth stack fault, the next time the radio shows as a drive its `INFO_UF2.TXT` has a `Last-Fault` line, once. **Upgrade Bootloader** and **Factory Erase** show it when you choose the drive, and the app log keeps it. Include it when you report a problem with the radio.
 
 ## During the Transfer
 

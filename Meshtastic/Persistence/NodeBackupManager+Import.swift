@@ -215,6 +215,14 @@ extension NodeBackupManager {
 			dst.current = src.current
 			dst.distance = src.distance
 			dst.gasResistance = src.gasResistance
+			dst.hostDiskFree1Bytes = src.hostDiskFree1Bytes
+			dst.hostDiskFree2Bytes = src.hostDiskFree2Bytes
+			dst.hostDiskFree3Bytes = src.hostDiskFree3Bytes
+			dst.hostFreeMemoryBytes = src.hostFreeMemoryBytes
+			dst.hostLoad1 = src.hostLoad1
+			dst.hostLoad5 = src.hostLoad5
+			dst.hostLoad15 = src.hostLoad15
+			dst.hostUserString = src.hostUserString
 			dst.iaq = src.iaq
 			dst.irLux = src.irLux
 			dst.lux = src.lux
@@ -231,6 +239,7 @@ extension NodeBackupManager {
 			dst.pm10Standard = src.pm10Standard
 			dst.pm25Environmental = src.pm25Environmental
 			dst.pm25Standard = src.pm25Standard
+			dst.co2 = src.co2
 			dst.pm100Environmental = src.pm100Environmental
 			dst.pm100Standard = src.pm100Standard
 			dst.powerCh1Current = src.powerCh1Current
@@ -239,6 +248,16 @@ extension NodeBackupManager {
 			dst.powerCh2Voltage = src.powerCh2Voltage
 			dst.powerCh3Current = src.powerCh3Current
 			dst.powerCh3Voltage = src.powerCh3Voltage
+			dst.powerCh4Current = src.powerCh4Current
+			dst.powerCh4Voltage = src.powerCh4Voltage
+			dst.powerCh5Current = src.powerCh5Current
+			dst.powerCh5Voltage = src.powerCh5Voltage
+			dst.powerCh6Current = src.powerCh6Current
+			dst.powerCh6Voltage = src.powerCh6Voltage
+			dst.powerCh7Current = src.powerCh7Current
+			dst.powerCh7Voltage = src.powerCh7Voltage
+			dst.powerCh8Current = src.powerCh8Current
+			dst.powerCh8Voltage = src.powerCh8Voltage
 			dst.radiation = src.radiation
 			dst.rainfall1H = src.rainfall1H
 			dst.rainfall24H = src.rainfall24H
@@ -348,6 +367,7 @@ extension NodeBackupManager {
 			dst.routeBackText = src.routeBackText
 			dst.routeText = src.routeText
 			dst.sent = src.sent
+			dst.tracedBy = src.tracedBy
 			dst.snr = src.snr
 			dst.time = src.time
 			dst.sentAt = src.sentAt
