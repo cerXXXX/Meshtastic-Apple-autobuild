@@ -7,6 +7,7 @@
 #if os(visionOS)
 import CoreLocation
 import Foundation
+import OSLog
 import RealityKit
 import SwiftUI
 
@@ -157,6 +158,15 @@ final class SpatialSceneController {
 	private var lookoutCoordinate: CLLocationCoordinate2D?
 	private var lookoutPlacementRevision = -1
 	private var lookoutHeading = SpatialLookout.frontHeading
+	/// The space station floating over the mesh while the cinema's room is the station: the entity
+	/// placed over the map's middle, the one turning round it, what they were last set up for, and
+	/// the highest ground under the map for the placement it was found for.
+	private var station: Entity?
+	private var stationOrbit: Entity?
+	private var stationSetup: StationSetup?
+	private var stationGround: (revision: Int, top: Float)?
+	/// The sky deck's tower height in meters, its box hung at that roof.
+	private var lookoutTowerHeight: Double?
 
 	init() {
 		// A flat disk of radius 0.5, scaled to the map once there is one.
@@ -805,6 +815,8 @@ extension SpatialSceneController {
 		if self.roofs?.id != roofs?.id {
 			self.roofs = roofs
 			roofsApplied = false
+			// The rooftop's model stands on the roof, which these may raise or take away.
+			placeLookout()
 		}
 		if buildingsContainer.parent == nil { terrainAnchor.addChild(buildingsContainer) }
 		let current = buildingsContainer.children.first
@@ -830,15 +842,23 @@ extension SpatialSceneController {
 
 // MARK: Fire lookout
 
-/// What stands on the cinema's summit on the map: the fire lookout, or the castle tower in its stone.
+/// What stands on the cinema's site on the map: the fire lookout or the castle tower in its stone
+/// on a summit, the lighthouse on its headland, the city rooftop's water tower and mast on a roof,
+/// or the sky deck hung off its tower.
 enum SpatialSummitModel: Equatable {
 	case fireLookout
 	case castleTower(CastleStone)
+	case lighthouse
+	case cityRooftop
+	case skyDeck
 
 	var entityName: String {
 		switch self {
 		case .fireLookout: "fireLookout"
 		case let .castleTower(stone): "castleTower-\(stone.rawValue)"
+		case .lighthouse: "lighthouse"
+		case .cityRooftop: "cityRooftop"
+		case .skyDeck: "skyDeck"
 		}
 	}
 
@@ -847,6 +867,9 @@ enum SpatialSummitModel: Equatable {
 		let made = switch self {
 		case .fireLookout: SpatialLookoutParts.make(heading: heading)
 		case let .castleTower(stone): SpatialLookoutParts.makeCastle(heading: heading, stone: stone)
+		case .lighthouse: SpatialLookoutParts.makeLighthouse(heading: heading)
+		case .cityRooftop: SpatialLookoutParts.makeRooftop(heading: heading)
+		case .skyDeck: SpatialLookoutParts.makeSkyDeck(heading: heading)
 		}
 		made?.name = entityName
 		return made
@@ -854,16 +877,19 @@ enum SpatialSummitModel: Equatable {
 }
 
 extension SpatialSceneController {
-	/// Stands `model`, the fire lookout or the castle tower, on `coordinate`, the summit the cinema's
-	/// room is on, with its front facing `heading`, or takes it away for nil. Moved onto the new
-	/// ground whenever the terrain is rebuilt.
-	func apply(lookout coordinate: CLLocationCoordinate2D?, heading: Double = SpatialLookout.frontHeading, model: SpatialSummitModel = .fireLookout) {
+	/// Stands `model`, the fire lookout, the castle tower or the lighthouse, on `coordinate`, the
+	/// summit or headland the cinema's room is on, or the rooftop's water tower and mast on the roof
+	/// there, with its front facing `heading`, or takes it away for nil. Moved onto the new ground
+	/// whenever the terrain is rebuilt, and onto the roof whenever the buildings are. The sky deck
+	/// hangs at `towerHeight`, its tower's height in meters.
+	func apply(lookout coordinate: CLLocationCoordinate2D?, heading: Double = SpatialLookout.frontHeading, model: SpatialSummitModel = .fireLookout, towerHeight: Double? = nil) {
 		guard let placement else { return }
 		let same = coordinate?.latitude == lookoutCoordinate?.latitude && coordinate?.longitude == lookoutCoordinate?.longitude
 		// The model up is told by its entity's name.
 		let modelChanged = lookout.map { $0.name != model.entityName } ?? false
-		guard !same || placement.revision != lookoutPlacementRevision || heading != lookoutHeading || modelChanged else { return }
+		guard !same || placement.revision != lookoutPlacementRevision || heading != lookoutHeading || modelChanged || towerHeight != lookoutTowerHeight else { return }
 		lookoutCoordinate = coordinate
+		lookoutTowerHeight = towerHeight
 		lookoutPlacementRevision = placement.revision
 		if heading != lookoutHeading || modelChanged {
 			lookoutHeading = heading
@@ -888,17 +914,33 @@ extension SpatialSceneController {
 	private static let lookoutClearance: Float = 0.022
 
 	/// On the summit, or stepped aside when nodes stand there, so a repeater on the same peak keeps
-	/// its place and both can be seen.
+	/// its place and both can be seen. The rooftop's model stays on its roof, which a step aside
+	/// could leave, standing on the top of the building drawn there.
 	func placeLookout() {
 		guard let lookout, let placement, let coordinate = lookoutCoordinate else { return }
 		var position = placement.position(coordinate)
-		let clearance = Self.lookoutClearance * counterScale
 		let summit = SIMD2(position.x, position.z)
-		let nearby = pins.values
-			.map { SIMD2($0.holder.position.x, $0.holder.position.z) }
-			.filter { simd_distance($0, summit) < clearance * 2 }
-		if let spot = SpatialLookoutSpot.spot(summit: summit, pins: nearby, clearance: clearance, heading: lookoutHeading) {
-			position = placement.position(placement.transform.coordinate(x: spot.x, z: spot.y))
+		if lookout.name == SpatialSummitModel.cityRooftop.entityName {
+			if let roofs, roofs.revision == placement.revision {
+				position.y = roofs.standHeight(at: summit, ground: position.y)
+			}
+		} else if lookout.name == SpatialSummitModel.skyDeck.entityName {
+			// Back against the tower's face, its top at the roof: the tower's height over the ground
+			// inside the face, scaled as the buildings drawn on the map are.
+			position = placement.position(RooftopSites.face(behind: coordinate, facing: lookoutHeading))
+			if let towerHeight = lookoutTowerHeight {
+				let ground = placement.position(RooftopSites.tower(behind: coordinate, facing: lookoutHeading)).y
+				let roof = ground + Float(towerHeight * placement.transform.verticalExaggeration * placement.transform.scale)
+				position.y = max(position.y, roof - SpatialSkyDeck.height * counterScale)
+			}
+		} else {
+			let clearance = Self.lookoutClearance * counterScale
+			let nearby = pins.values
+				.map { SIMD2($0.holder.position.x, $0.holder.position.z) }
+				.filter { simd_distance($0, summit) < clearance * 2 }
+			if let spot = SpatialLookoutSpot.spot(summit: summit, pins: nearby, clearance: clearance, heading: lookoutHeading) {
+				position = placement.position(placement.transform.coordinate(x: spot.x, z: spot.y))
+			}
 		}
 		lookout.position = position
 		lookout.scale = SIMD3(repeating: counterScale)
@@ -910,6 +952,80 @@ extension SpatialSceneController {
 		guard let lookout, let placement else { return }
 		let p = preview.apply(x: lookout.position.x, z: lookout.position.z)
 		lookout.isEnabled = SpatialZoom.isOnDisk(x: p.x, z: p.y, diskRadius: placement.diskRadius)
+	}
+}
+
+// MARK: Space station
+
+/// Where the station floats and how it turns, so it's only set up again when one of them changes.
+private struct StationSetup: Equatable {
+	let height: Float
+	let scale: Float
+	/// How far out from the map's middle it turns, in the station's own room meters.
+	let radius: Float
+	let still: Bool
+}
+
+extension SpatialSceneController {
+	/// Floats the space station high over the middle of the mesh, turning slowly round it, or takes
+	/// it away when `show` is false. It grows with `zoom`, the map's zoom including a pinch in
+	/// progress. With `reduceMotion` it holds still. The turn is one animation
+	/// on the station's transform, played by RealityKit; nothing is rebuilt as it goes round.
+	func apply(station show: Bool, zoom: Double, reduceMotion: Bool) {
+		guard show, let placement else {
+			station?.removeFromParent()
+			station = nil
+			stationOrbit = nil
+			stationSetup = nil
+			return
+		}
+		if station == nil, let made = SpatialLookoutParts.makeStation() {
+			let holder = Entity()
+			holder.name = "spaceStation"
+			holder.addChild(made)
+			applyLight(to: holder)
+			nodesContainer.addChild(holder)
+			station = holder
+			stationOrbit = made
+		}
+		guard let station, let stationOrbit else { return }
+		if stationGround?.revision != placement.revision {
+			stationGround = (placement.revision, placement.geometry?.groundHeights.max() ?? 0)
+		}
+		let ceiling = volume.map { ($0.extents.y - 0.03) * counterScale }
+		let scale = counterScale * SpatialStation.growth(zoom: zoom)
+		let setup = StationSetup(
+			height: SpatialStation.height(terrainTop: stationGround?.top ?? 0, roofTop: roofs?.roofs.map(\.top).max(), counterScale: scale, ceiling: ceiling),
+			scale: scale,
+			radius: SpatialStation.orbitShare * placement.diskRadius / scale,
+			still: reduceMotion
+		)
+		guard setup != stationSetup else { return }
+		let previous = stationSetup
+		let turning = previous.map { $0.radius != setup.radius || $0.still != setup.still } ?? true
+		stationSetup = setup
+		station.position = [0, setup.height, 0]
+		station.scale = SIMD3(repeating: setup.scale)
+		guard turning else { return }
+		// A zoom only changes the radius: carry on from where the station is on its orbit.
+		let current = stationOrbit.transform
+		let flat = SIMD3<Float>(current.translation.x, 0, current.translation.z)
+		stationOrbit.stopAllAnimations()
+		if let previous, !previous.still, !setup.still, simd_length(flat) > 0 {
+			stationOrbit.transform = Transform(rotation: current.rotation, translation: simd_normalize(flat) * setup.radius)
+		} else {
+			stationOrbit.transform = Transform(translation: [setup.radius, 0, 0])
+		}
+		guard !setup.still else { return }
+		let orbit = OrbitAnimation(duration: SpatialStation.orbitPeriod, axis: [0, 1, 0], startTransform: stationOrbit.transform,
+		                           spinClockwise: false, orientToPath: true, rotationCount: 1, bindTarget: .transform, repeatMode: .repeat)
+		do {
+			stationOrbit.playAnimation(try AnimationResource.generate(with: orbit))
+		} catch {
+			Logger.services.error("🛰️ [3D Map] Couldn't make the space station's orbit: \(error.localizedDescription, privacy: .public)")
+			// Tried again on the next update.
+			stationSetup = nil
+		}
 	}
 }
 

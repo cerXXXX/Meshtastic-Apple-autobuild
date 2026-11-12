@@ -5,7 +5,7 @@
 #  Copyright(c) Garth Vander Houwen 10/29/26.
 #
 #  What every cinema environment shares, whatever room it is: the seated camera, the sky and
-#  light from an HDRI, the render settings, the anchors file the app places its live panels from,
+#  light from an HDRI (or none, for a room lit only by its own lights), the render settings, the anchors file the app places its live panels from,
 #  and small helpers for building the scene. An environment script builds its room and calls
 #  render_room(); tent_base.py builds the tent on top of this. See README.md.
 #
@@ -19,6 +19,7 @@ import sys
 
 import bmesh
 import bpy
+import numpy
 from mathutils import Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -207,6 +208,59 @@ def rounded(v):
     return [round(v.x, 4) + 0.0, round(v.y, 4) + 0.0, round(v.z, 4) + 0.0]
 
 
+# MARK: - Views
+
+# For the landscapes a cutout environment shows behind its glass when there is no real terrain:
+# forest_view.py and sea_view.py.
+
+def horizon_color(hdri, rotation):
+    """The sky's average color just above the horizon, for the haze that fades far ground into it."""
+    image = bpy.data.images.load(os.path.join(CACHE, hdri), check_existing=True)
+    width, rows = image.size
+    pixels = numpy.empty(width * rows * 4, dtype=numpy.float32)
+    image.pixels.foreach_get(pixels)
+    pixels = pixels.reshape(rows, width, 4)
+    # Rows run bottom to top; one degree above the horizon.
+    row = int(rows / 2 + rows / 180)
+    color = pixels[row, :, :3].mean(axis=0)
+    # Half of it cooled to a blue gray of the same brightness: distant ridges go blue, not the
+    # sunset's pink.
+    luminance = float(color @ numpy.array([0.2126, 0.7152, 0.0722]))
+    cool = numpy.array([0.82, 0.95, 1.2]) * luminance
+    return tuple(float(c) for c in (color + cool) / 2)
+
+
+def hazed(name, surface, haze, distance):
+    """A material whose `surface` (a function adding a BSDF to the tree) fades into `haze` with
+    distance from the camera, as far ground does into the sky."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nodes, links = mat.node_tree.nodes, mat.node_tree.links
+    nodes.clear()
+    output = nodes.new("ShaderNodeOutputMaterial")
+    bsdf = surface(nodes, links)
+    glow = nodes.new("ShaderNodeEmission")
+    glow.inputs["Color"].default_value = (*haze, 1)
+    camera = nodes.new("ShaderNodeCameraData")
+    fade = nodes.new("ShaderNodeMath")
+    fade.operation = "MULTIPLY"
+    fade.inputs[1].default_value = -1 / distance
+    links.new(camera.outputs["View Distance"], fade.inputs[0])
+    power = nodes.new("ShaderNodeMath")
+    power.operation = "EXPONENT"
+    links.new(fade.outputs[0], power.inputs[0])
+    amount = nodes.new("ShaderNodeMath")
+    amount.operation = "SUBTRACT"
+    amount.inputs[0].default_value = 1
+    links.new(power.outputs[0], amount.inputs[1])
+    mix = nodes.new("ShaderNodeMixShader")
+    links.new(amount.outputs[0], mix.inputs["Fac"])
+    links.new(bsdf.outputs[0], mix.inputs[1])
+    links.new(glow.outputs[0], mix.inputs[2])
+    links.new(mix.outputs[0], output.inputs["Surface"])
+    return mat
+
+
 # MARK: - World, camera and render
 
 def build_world(hdri, rotation=0.0, strength=0.4):
@@ -229,6 +283,15 @@ def build_world(hdri, rotation=0.0, strength=0.4):
     links.new(mapping.outputs["Vector"], environment.inputs["Vector"])
     links.new(environment.outputs["Color"], background.inputs["Color"])
     background.inputs["Strength"].default_value = strength
+    bpy.context.scene.world = world
+
+
+def build_dark_world():
+    """A black world that gives no light, for a room lit only by its own lights."""
+    world = bpy.data.worlds.new("World")
+    world.use_nodes = True
+    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0, 0, 0, 1)
+    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0
     bpy.context.scene.world = world
 
 
@@ -276,14 +339,18 @@ def render_room(build, hdri, hdri_rotation=0.0, hdri_strength=0.4, cutout=False)
     renders the panorama and writes its anchors. `build()` must place the screen with
     screen_anchor(). With `cutout`, the HDRI lights the room but isn't painted: the image is
     transparent wherever the camera sees past the room's geometry, through glass included, so the
-    app can put its own sky and terrain behind it."""
+    app can put its own sky and terrain behind it. With `hdri` None the world is black and gives
+    no light, so the room is lit only by the lights `build()` adds."""
     options = arguments()
     bpy.ops.wm.read_factory_settings(use_empty=True)
     ANCHORS.clear()
     build()
     if "screen" not in ANCHORS:
         raise SystemExit("no screen: the environment must call screen_anchor()")
-    build_world(hdri, hdri_rotation, hdri_strength)
+    if hdri is None:
+        build_dark_world()
+    else:
+        build_world(hdri, hdri_rotation, hdri_strength)
     camera = build_camera()
     configure_render(options)
     if cutout:

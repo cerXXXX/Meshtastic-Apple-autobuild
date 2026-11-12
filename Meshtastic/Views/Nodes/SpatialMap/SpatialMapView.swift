@@ -29,11 +29,25 @@ struct SpatialMapView: View {
 	@GestureState private var isPinching = false
 	/// The volume's size, so a resize runs the update closure and refits the map.
 	@State private var volumeSize: Size3D = .zero
-	/// The cinema's room and the summit its lookout stands on, so the map can show the lookout there.
+	/// The cinema's room and the summit its lookout stands on, or the headland its lighthouse does,
+	/// so the map can show the lookout or the lighthouse there.
 	@AppStorage("cinemaEnvironment") private var cinemaEnvironment: CinemaEnvironment = .sarTent
-	@AppStorage("cinemaLookoutSite") private var lookoutSiteID = ""
-	@AppStorage(SpatialLookout.turnsKey) private var lookoutTurns = 0
+	@AppStorage(LookoutSiteKind.summit.siteKey) private var summitSiteID = ""
+	@AppStorage(LookoutSiteKind.coast.siteKey) private var coastSiteID = ""
+	@AppStorage(LookoutSiteKind.rooftop.siteKey) private var rooftopSiteID = ""
+	@AppStorage(LookoutSiteKind.skyDeck.siteKey) private var skyDeckSiteID = ""
+	@AppStorage(SpatialSkyDeck.towerKey) private var skyDeckTower = ""
+	@AppStorage(LookoutSiteKind.summit.turnsKey) private var summitTurns = 0
+	@AppStorage(LookoutSiteKind.coast.turnsKey) private var coastTurns = 0
+	@AppStorage(LookoutSiteKind.rooftop.turnsKey) private var rooftopTurns = 0
 	@AppStorage(CastleStone.key) private var castleStone: CastleStone = .gray
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+	/// The sky deck's tower, when the room is the sky deck: its box hangs at that roof and faces
+	/// out from the face it hangs off, whichever way the room is turned.
+	private var skyDeck: (height: Double, facing: Double)? {
+		cinemaEnvironment == .skyDeck ? SpatialSkyDeck.tower(skyDeckTower) : nil
+	}
 
 	var body: some View {
 		GeometryReader3D { proxy in
@@ -55,10 +69,12 @@ struct SpatialMapView: View {
 				scene.apply(buildings: model.buildingsEntity, roofs: model.buildingRoofs)
 				scene.apply(coverage: model.coverageEntity, revision: model.coverageRevision, opacity: model.coverageOpacity)
 				scene.apply(nodes: model.nodes)
-				scene.apply(lookout: cinemaEnvironment.standsOnSummit
+				scene.apply(lookout: cinemaEnvironment.standsOnSite
 					? SpatialLookout.coordinate(siteID: lookoutSiteID).flatMap { model.lookoutStands(on: $0) ? $0 : nil }
-					: nil, heading: SpatialLookout.heading(turns: lookoutTurns), model: cinemaEnvironment == .castleTower ? .castleTower(castleStone) : .fireLookout)
+					: nil, heading: skyDeck?.facing ?? SpatialLookout.heading(turns: lookoutTurns), model: summitModel, towerHeight: skyDeck?.height)
+				// The pinch's preview first: it sets the scale the station is sized by.
 				scene.apply(target: liveZoom.flatMap { model.circle(forZoom: $0) } ?? model.targetCircle)
+				scene.apply(station: cinemaEnvironment == .spaceStation, zoom: liveZoom ?? model.zoom, reduceMotion: reduceMotion)
 				traffic.applyBaseGlow()
 				// Hidden while a trace route is shown, as on the 2D map, so the two sets of colored
 				// lines and pills can't be mixed up.
@@ -121,6 +137,36 @@ struct SpatialMapView: View {
 			.onChange(of: isPinching) { _, pinching in
 				if !pinching { endPinch() }
 			}
+		}
+	}
+
+	/// The site the cinema's room stands on, for its kind of site.
+	private var lookoutSiteID: String {
+		switch cinemaEnvironment.siteKind {
+		case .coast: coastSiteID
+		case .rooftop: rooftopSiteID
+		case .skyDeck: skyDeckSiteID
+		default: summitSiteID
+		}
+	}
+
+	private var lookoutTurns: Int {
+		switch cinemaEnvironment.siteKind {
+		case .coast: coastTurns
+		case .rooftop: rooftopTurns
+		default: summitTurns
+		}
+	}
+
+	/// What stands on the site: the lookout, the castle in its stone, the lighthouse, the rooftop's
+	/// water tower and mast, or the sky deck.
+	private var summitModel: SpatialSummitModel {
+		switch cinemaEnvironment {
+		case .castleTower: .castleTower(castleStone)
+		case .lighthouse: .lighthouse
+		case .cityRooftop: .cityRooftop
+		case .skyDeck: .skyDeck
+		default: .fireLookout
 		}
 	}
 

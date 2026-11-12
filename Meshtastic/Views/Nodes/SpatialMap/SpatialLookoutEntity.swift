@@ -10,8 +10,8 @@ import OSLog
 import RealityKit
 import UIKit
 
-/// The fire lookout, and the castle tower, as an entity: one model per material, built once and
-/// reused.
+/// The fire lookout, the castle tower, the lighthouse, the city rooftop's water tower and mast,
+/// the space station and the sky deck, as entities: one model per material, built once and reused.
 @MainActor
 enum SpatialLookoutParts {
 	private static var meshes: [SpatialLookout.Part: MeshResource]?
@@ -73,7 +73,237 @@ enum SpatialLookoutParts {
 		return castle
 	}
 
+	/// The sky deck's glass box, opening out along `heading`, for the sky deck room.
+	static func makeSkyDeck(heading: Double = SpatialLookout.frontHeading) -> Entity? {
+		if skyDeckMeshes == nil {
+			var built: [SpatialSkyDeck.Part: MeshResource] = [:]
+			for (part, data) in SpatialSkyDeck.geometry() where data.triangleCount > 0 {
+				guard let mesh = try? data.meshResource() else { return nil }
+				built[part] = mesh
+			}
+			skyDeckMeshes = built
+		}
+		guard let skyDeckMeshes else { return nil }
+		let deck = Entity()
+		deck.name = "skyDeck"
+		let body = Entity()
+		body.orientation = simd_quatf(angle: SpatialLookout.yaw(heading: heading), axis: [0, 1, 0])
+		for part in SpatialSkyDeck.Part.allCases {
+			guard let mesh = skyDeckMeshes[part] else { continue }
+			body.addChild(ModelEntity(mesh: mesh, materials: [skyDeckMaterial(part)]))
+		}
+		deck.addChild(body)
+		return deck
+	}
+
+	private static var skyDeckMeshes: [SpatialSkyDeck.Part: MeshResource]?
+
+	private static func skyDeckMaterial(_ part: SpatialSkyDeck.Part) -> PhysicallyBasedMaterial {
+		var material = PhysicallyBasedMaterial()
+		switch part {
+		case .glass:
+			// Pale blue and see-through, a little lit from inside, so it reads against the gray tower.
+			material.baseColor = .init(tint: UIColor(red: 0.62, green: 0.82, blue: 0.95, alpha: 1))
+			material.emissiveColor = .init(color: UIColor(red: 0.6, green: 0.85, blue: 1, alpha: 1))
+			material.emissiveIntensity = 0.25
+			material.roughness = 0.1
+			material.metallic = 0.2
+			material.blending = .transparent(opacity: 0.5)
+		case .frame:
+			material.baseColor = .init(tint: UIColor(red: 0.2, green: 0.21, blue: 0.23, alpha: 1))
+			material.metallic = 0.6
+			material.roughness = 0.4
+		case .ceiling:
+			// The ceiling's downlights.
+			material.baseColor = .init(tint: UIColor(red: 1, green: 0.93, blue: 0.8, alpha: 1))
+			material.emissiveColor = .init(color: UIColor(red: 1, green: 0.9, blue: 0.7, alpha: 1))
+			material.emissiveIntensity = 0.8
+		}
+		return material
+	}
+
+	/// The city rooftop's water tower and mast, their front facing `heading`, for the rooftop room.
+	static func makeRooftop(heading: Double = SpatialLookout.frontHeading) -> Entity? {
+		if rooftopMeshes == nil {
+			var built: [SpatialRooftop.Part: MeshResource] = [:]
+			for (part, data) in SpatialRooftop.geometry() where data.triangleCount > 0 {
+				guard let mesh = try? data.meshResource() else { return nil }
+				built[part] = mesh
+			}
+			rooftopMeshes = built
+		}
+		guard let rooftopMeshes else { return nil }
+		let rooftop = Entity()
+		rooftop.name = "cityRooftop"
+		let body = Entity()
+		body.orientation = simd_quatf(angle: SpatialLookout.yaw(heading: heading), axis: [0, 1, 0])
+		for part in SpatialRooftop.Part.allCases {
+			guard let mesh = rooftopMeshes[part] else { continue }
+			body.addChild(ModelEntity(mesh: mesh, materials: [rooftopMaterial(part)]))
+		}
+		rooftop.addChild(body)
+		return rooftop
+	}
+
+	private static var rooftopMeshes: [SpatialRooftop.Part: MeshResource]?
+
+	private static func rooftopMaterial(_ part: SpatialRooftop.Part) -> PhysicallyBasedMaterial {
+		var material = PhysicallyBasedMaterial()
+		switch part {
+		// Light, like the water tower on the cinema's deck, so it reads against the gray buildings.
+		case .staves:
+			material.baseColor = .init(tint: UIColor(red: 0.72, green: 0.56, blue: 0.4, alpha: 1))
+			material.roughness = 0.8
+		case .roof:
+			material.baseColor = .init(tint: UIColor(red: 0.55, green: 0.55, blue: 0.57, alpha: 1))
+			material.metallic = 0.3
+			material.roughness = 0.5
+		case .steel:
+			material.baseColor = .init(tint: UIColor(red: 0.68, green: 0.69, blue: 0.7, alpha: 1))
+			material.metallic = 0.5
+			material.roughness = 0.4
+		}
+		return material
+	}
+
+	/// The lighthouse with its lantern's front facing `heading`, for the lighthouse room.
+	static func makeLighthouse(heading: Double = SpatialLookout.frontHeading) -> Entity? {
+		if lighthouseMeshes == nil {
+			var built: [SpatialLighthouse.Part: MeshResource] = [:]
+			for (part, data) in SpatialLighthouse.geometry() where data.triangleCount > 0 {
+				do {
+					built[part] = try data.meshResource()
+				} catch {
+					Logger.services.error("🗼 [SpatialMap] Couldn't make the lighthouse's \(String(describing: part), privacy: .public) mesh: \(error.localizedDescription, privacy: .public)")
+					return nil
+				}
+			}
+			lighthouseMeshes = built
+		}
+		guard let lighthouseMeshes else { return nil }
+		let lighthouse = Entity()
+		lighthouse.name = "lighthouse"
+		let body = Entity()
+		body.orientation = simd_quatf(angle: SpatialLookout.yaw(heading: heading), axis: [0, 1, 0])
+		for part in SpatialLighthouse.Part.allCases {
+			guard let mesh = lighthouseMeshes[part] else { continue }
+			body.addChild(ModelEntity(mesh: mesh, materials: [lighthouseMaterial(part)]))
+		}
+		lighthouse.addChild(body)
+		return lighthouse
+	}
+
+	private static var lighthouseMeshes: [SpatialLighthouse.Part: MeshResource]?
+
+	private static func lighthouseMaterial(_ part: SpatialLighthouse.Part) -> PhysicallyBasedMaterial {
+		var material = PhysicallyBasedMaterial()
+		switch part {
+		case .tower:
+			material.baseColor = .init(tint: UIColor(white: 0.95, alpha: 1))
+			material.roughness = 0.75
+		case .stone:
+			material.baseColor = .init(tint: UIColor(red: 0.55, green: 0.53, blue: 0.5, alpha: 1))
+			material.roughness = 0.9
+		case .opening:
+			material.baseColor = .init(tint: UIColor(white: 0.08, alpha: 1))
+			material.roughness = 1.0
+		case .iron:
+			material.baseColor = .init(tint: UIColor(red: 0.08, green: 0.1, blue: 0.09, alpha: 1))
+			material.roughness = 0.5
+		case .glass:
+			// The lamp lit behind the lantern's glass.
+			material.baseColor = .init(tint: UIColor(red: 0.2, green: 0.2, blue: 0.18, alpha: 1))
+			material.emissiveColor = .init(color: UIColor(red: 1, green: 0.85, blue: 0.55, alpha: 1))
+			material.emissiveIntensity = 0.9
+			material.roughness = 0.1
+			material.metallic = 0.3
+		case .dome:
+			material.baseColor = .init(tint: UIColor(red: 0.62, green: 0.08, blue: 0.06, alpha: 1))
+			material.roughness = 0.45
+		case .metal:
+			material.baseColor = .init(tint: UIColor(white: 0.8, alpha: 1))
+			material.metallic = 0.8
+			material.roughness = 0.3
+		}
+		return material
+	}
+
 	private static var castleMeshes: [SpatialCastle.Part: MeshResource]?
+	private static var stationMeshes: [SpatialStation.Part: MeshResource]?
+
+	/// The space station that floats over the map while the cinema's room is the station.
+	static func makeStation() -> Entity? {
+		if stationMeshes == nil {
+			var built: [SpatialStation.Part: MeshResource] = [:]
+			for (part, data) in SpatialStation.geometry() where data.triangleCount > 0 {
+				var descriptor = MeshDescriptor()
+				descriptor.positions = MeshBuffers.Positions(data.positions)
+				descriptor.normals = MeshBuffers.Normals(data.normals)
+				descriptor.primitives = .triangles(data.indices)
+				do {
+					built[part] = try MeshResource.generate(from: [descriptor])
+				} catch {
+					Logger.services.error("🛰️ [SpatialMap] Couldn't make the space station's \(String(describing: part), privacy: .public) mesh: \(error.localizedDescription, privacy: .public)")
+					return nil
+				}
+			}
+			stationMeshes = built
+		}
+		guard let stationMeshes else { return nil }
+		let station = Entity()
+		station.name = "spaceStationBody"
+		for part in SpatialStation.Part.allCases {
+			guard let mesh = stationMeshes[part] else { continue }
+			station.addChild(ModelEntity(mesh: mesh, materials: [stationMaterial(part)]))
+		}
+		return station
+	}
+
+	private static func stationMaterial(_ part: SpatialStation.Part) -> PhysicallyBasedMaterial {
+		var material = PhysicallyBasedMaterial()
+		switch part {
+		case .truss:
+			material.baseColor = .init(tint: UIColor(white: 0.72, alpha: 1))
+			material.metallic = 0.6
+			material.roughness = 0.45
+		case .solar:
+			// The wings' amber, as they look in sunlight.
+			material.baseColor = .init(tint: UIColor(red: 0.62, green: 0.43, blue: 0.17, alpha: 1))
+			material.metallic = 0.35
+			material.roughness = 0.35
+		case .rollout:
+			// The newer cells' deep blue, with the sheen of glass over them.
+			material.baseColor = .init(tint: UIColor(red: 0.1, green: 0.13, blue: 0.27, alpha: 1))
+			material.metallic = 0.4
+			material.roughness = 0.25
+		case .radiator:
+			material.baseColor = .init(tint: UIColor(white: 0.95, alpha: 1))
+			material.roughness = 0.7
+		case .arm:
+			material.baseColor = .init(tint: UIColor(white: 0.93, alpha: 1))
+			material.roughness = 0.5
+		case .dark:
+			material.baseColor = .init(tint: UIColor(white: 0.22, alpha: 1))
+			material.metallic = 0.5
+			material.roughness = 0.5
+		case .logo:
+			// Meshtastic green, glowing a little so it reads in the station's shade.
+			material.baseColor = .init(tint: UIColor(red: 103 / 255, green: 234 / 255, blue: 148 / 255, alpha: 1))
+			material.emissiveColor = .init(color: UIColor(red: 103 / 255, green: 234 / 255, blue: 148 / 255, alpha: 1))
+			material.emissiveIntensity = 0.3
+			material.roughness = 0.4
+		case .module:
+			material.baseColor = .init(tint: UIColor(red: 0.9, green: 0.9, blue: 0.87, alpha: 1))
+			material.roughness = 0.6
+		case .window:
+			// Dark glass with the module's light behind it.
+			material.baseColor = .init(tint: UIColor(red: 0.08, green: 0.1, blue: 0.14, alpha: 1))
+			material.emissiveColor = .init(color: UIColor(red: 1, green: 0.95, blue: 0.85, alpha: 1))
+			material.emissiveIntensity = 0.5
+			material.roughness = 0.1
+		}
+		return material
+	}
 	private static var blockTexture: TextureResource?
 
 	/// Dressed stone blocks in running bond, `SpatialCastle.tileBlocks` across and up, with pale

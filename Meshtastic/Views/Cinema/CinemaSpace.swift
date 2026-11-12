@@ -29,6 +29,10 @@ struct CinemaSpace: View {
 	@Environment(\.dismissWindow) private var dismissWindow
 	@AppStorage("cinemaEnvironment") private var environment: CinemaEnvironment = .sarTent
 	@AppStorage(CastleStone.key) private var stone: CastleStone = .gray
+	/// Which side of Earth is under the space station's cupola, and how fast it goes by.
+	@AppStorage(CinemaEarthSide.key) private var earthSide: CinemaEarthSide = .day
+	@AppStorage(CinemaOrbit.speedKey) private var earthSpeed = 1
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var world = Entity()
 	@State private var backdrop: Entity?
 	/// The stone and the sky the backdrop up now was made with, so a change of stone keeps the sky.
@@ -48,15 +52,27 @@ struct CinemaSpace: View {
 	@State private var modelHasDisplay = false
 	/// The front screen's section and navigation, kept here so they outlive its attachment.
 	@StateObject private var screen = CinemaScreenModel()
-	/// The fire lookout's summits, and the terrain and node labels for the chosen one.
+	/// The fire lookout's summits, the lighthouse's headlands or the rooftop's buildings, and the
+	/// terrain and node labels for the chosen one.
 	@State private var lookout = LookoutScene()
 	@ObservedObject private var offlineMaps = OfflineMapManager.shared
-	@AppStorage("cinemaLookoutSite") private var lookoutSiteID = ""
-	/// Eighth turns clockwise the lookout is turned from the panel.
-	@AppStorage(SpatialLookout.turnsKey) private var lookoutTurns = 0
+	@AppStorage(LookoutSiteKind.summit.siteKey) private var summitSiteID = ""
+	@AppStorage(LookoutSiteKind.coast.siteKey) private var coastSiteID = ""
+	@AppStorage(LookoutSiteKind.rooftop.siteKey) private var rooftopSiteID = ""
+	@AppStorage(LookoutSiteKind.skyDeck.siteKey) private var skyDeckSiteID = ""
+	/// The sky deck's tower's height and the way the deck faces, for the 3D map.
+	@AppStorage(SpatialSkyDeck.towerKey) private var skyDeckTower = ""
+	/// Sixteenth turns clockwise the lookout, the lighthouse, the rooftop and the sky deck are turned
+	/// from the panel.
+	@AppStorage(LookoutSiteKind.summit.turnsKey) private var summitTurns = 0
+	@AppStorage(LookoutSiteKind.coast.turnsKey) private var coastTurns = 0
+	@AppStorage(LookoutSiteKind.rooftop.turnsKey) private var rooftopTurns = 0
+	@AppStorage(LookoutSiteKind.skyDeck.turnsKey) private var skyDeckTurns = 0
 	@State private var terrain: ModelEntity?
 	/// The site the terrain and labels are built for; nil for the painted sunset.
 	@State private var terrainSiteID: String?
+	/// Whether that site is a summit, a headland or a rooftop.
+	@State private var terrainKind: LookoutSiteKind?
 	/// The bearing the cab faced when the terrain was built; the labels are placed from it too.
 	@State private var terrainHeading = SpatialLookout.frontHeading
 	/// The terrain being built, and the site and facing it's for. The cinema opening refreshes the
@@ -111,7 +127,10 @@ struct CinemaSpace: View {
 			Attachment(id: Attachments.panel) {
 				// The map counts as open while the cinema is reopening it, so the button doesn't
 				// show for the second in between.
-				CinemaPanel(environment: $environment, stone: $stone, sites: lookout.sites, siteID: $lookoutSiteID, turns: $lookoutTurns, radioCoordinate: radioCoordinate, lookoutNote: lookoutNote, spatialMapOpen: appState.spatialMapWindowCount > 0 || appState.spatialMapReopening) {
+				CinemaPanel(environment: $environment, stone: $stone, sites: lookout.kind == environment.siteKind ? lookout.sites : [], siteID: Binding { lookoutSiteID } set: { lookoutSiteID = $0 }, turns: Binding { lookoutTurns } set: { lookoutTurns = $0 }, radioCoordinate: radioCoordinate, lookoutNote: lookoutNote, spatialMapOpen: appState.spatialMapWindowCount > 0 || appState.spatialMapReopening) {
+					openWindow(id: SpatialMapScene.id, value: SpatialMapSceneKey.shared)
+				} onShowRooftop: {
+					appState.spatialMapRooftop = SpatialMapRooftopRequest(siteKey: environment.siteKind == .skyDeck ? SpatialSkyDeck.siteKey : "cinemaRooftopSite")
 					openWindow(id: SpatialMapScene.id, value: SpatialMapSceneKey.shared)
 				} onLeave: {
 					Task { await dismissImmersiveSpace() }
@@ -186,16 +205,59 @@ struct CinemaSpace: View {
 			stage.position = [0, anchors?.eyeHeight ?? CinemaAnchors.seatedEyeHeight, 0]
 			stage.orientation = simd_quatf(angle: environment.frontRotation, axis: [0, 1, 0])
 			boards.unfitAll()
-			// Real terrain already up for the summit stays when the lookout and the castle swap.
-			await replaceBackdrop(clearSky: terrain != nil && environment.standsOnSummit)
+			// Real terrain already up for the summit stays when the lookout and the castle swap. A
+			// summit's isn't the lighthouse's or the rooftop's, and so on.
+			if terrainKind != environment.siteKind {
+				lookoutBuild?.task.cancel()
+				lookoutBuild = nil
+				terrain?.removeFromParent()
+				terrain = nil
+				terrainSiteID = nil
+				terrainKind = nil
+			}
+			await replaceBackdrop(clearSky: terrain != nil && environment.standsOnSite)
 			await refreshLookout()
 		}
 		.task(id: stone) {
 			guard environment.hasStone, backdrop != nil, backdropStone != stone else { return }
 			await replaceBackdrop(clearSky: backdropClearSky)
 		}
+		// Day and night move the sun, so the globe is made again; the speed only changes its turn.
+		.task(id: earthSide) {
+			guard environment == .spaceStation, backdrop != nil else { return }
+			await replaceBackdrop(clearSky: false)
+		}
+		.onChange(of: earthSpin) { _, spin in
+			if let backdrop { CinemaEarth.setSpin(spin, in: backdrop) }
+		}
 		.task(id: lookoutSiteID) {
 			await refreshLookout()
+		}
+		.onChange(of: coastSiteID) { old, new in
+			// A headland is chosen for its open water: the lantern turns to face it, as near as
+			// its turns allow. Not when it's the same headland found again a few meters off, so the
+			// turn the viewer set stays.
+			guard let site = lookout.site(for: new), let facing = site.facing else { return }
+			if let was = SpatialLookout.coordinate(siteID: old), was.distance(from: site.coordinate) < SpatialLookout.sameSiteDistance { return }
+			coastTurns = SpatialLookout.turns(nearest: facing)
+		}
+		// A sky deck looks out from its tower's face: the screen turns to face out with it when a
+		// tower is picked, when the sky deck is entered with one already picked, and when its tower
+		// is first found. Dial turns after that stay.
+		.onChange(of: skyDeckSiteID) {
+			alignSkyDeckTurn()
+		}
+		.onChange(of: environment) {
+			alignSkyDeckTurn()
+		}
+		.onChange(of: lookout.site(for: skyDeckSiteID) != nil) { _, found in
+			if found { alignSkyDeckTurn() }
+		}
+		.onChange(of: lookout.site(for: skyDeckSiteID), initial: true) { _, site in
+			// The map hangs its deck at this tower's roof, against the face it looks out from.
+			if let site, let height = site.rooftop, let facing = site.facing {
+				skyDeckTower = SpatialSkyDeck.tower(height: Double(height), facing: facing)
+			}
 		}
 		// A map deleted or downloaded changes the summits and the terrain around them, so both are
 		// found and built again.
@@ -207,6 +269,7 @@ struct CinemaSpace: View {
 				terrain?.removeFromParent()
 				terrain = nil
 				terrainSiteID = nil
+				terrainKind = nil
 			}
 			lookoutMapsSeen = lookoutMaps
 			await refreshLookout()
@@ -393,28 +456,130 @@ struct CinemaSpace: View {
 		static let modelTag = "modelTag"
 	}
 
-	/// What the panel says in the lookout while there is no summit to pick.
+	/// The chosen site's id for the environment's kind of site, or empty for the painted view.
+	private var lookoutSiteID: String {
+		get {
+			switch environment.siteKind {
+			case .coast: coastSiteID
+			case .rooftop: rooftopSiteID
+			case .skyDeck: skyDeckSiteID
+			default: summitSiteID
+			}
+		}
+		nonmutating set {
+			switch environment.siteKind {
+			case .coast: coastSiteID = newValue
+			case .rooftop: rooftopSiteID = newValue
+			case .skyDeck: skyDeckSiteID = newValue
+			default: summitSiteID = newValue
+			}
+		}
+	}
+
+	/// How far the lookout, the lighthouse, the rooftop or the sky deck is turned.
+	private var lookoutTurns: Int {
+		get {
+			switch environment.siteKind {
+			case .coast: coastTurns
+			case .rooftop: rooftopTurns
+			case .skyDeck: skyDeckTurns
+			default: summitTurns
+			}
+		}
+		nonmutating set {
+			switch environment.siteKind {
+			case .coast: coastTurns = newValue
+			case .rooftop: rooftopTurns = newValue
+			case .skyDeck: skyDeckTurns = newValue
+			default: summitTurns = newValue
+			}
+		}
+	}
+
+	/// What the panel says while there is no summit, headland, building or tower to pick.
 	private var lookoutNote: String? {
+		switch environment.siteKind {
+		case .coast: lighthouseNote
+		case .rooftop: rooftopNote
+		case .skyDeck: skyDeckNote
+		default: summitNote
+		}
+	}
+
+	/// What the panel says in the lookout while there is no summit to pick.
+	private var summitNote: String? {
 		switch lookout.status {
 		case .searching:
 			String(localized: "Looking for summits in the downloaded terrain…", comment: "Cinema lookout: shown on the panel while the summits are being found")
 		case .noTerrain:
 			String(localized: "Download terrain for the 3D map to stand the lookout on a real summit.", comment: "Cinema lookout: shown on the panel when no terrain has been downloaded")
-		case .noSummits:
+		case .noSummits, .noBuildings:
 			String(localized: "No summits found in the downloaded terrain.", comment: "Cinema lookout: shown on the panel when the downloaded terrain gave no summits")
 		case .idle, .ready:
 			nil
 		}
 	}
 
+	/// What the panel says in the lighthouse while there is no headland to pick.
+	private var lighthouseNote: String? {
+		switch lookout.status {
+		case .searching:
+			String(localized: "Looking for coastline in the downloaded terrain…", comment: "Cinema lighthouse: shown on the panel while the headlands are being found")
+		case .noTerrain:
+			String(localized: "Download terrain for the 3D map to stand the lighthouse on a real coast.", comment: "Cinema lighthouse: shown on the panel when no terrain has been downloaded")
+		case .noSummits, .noBuildings:
+			String(localized: "No coastline found in the downloaded terrain.", comment: "Cinema lighthouse: shown on the panel when the downloaded terrain has no coast")
+		case .idle, .ready:
+			nil
+		}
+	}
+
+	/// What the panel says on the sky deck while there is no tower to pick.
+	private var skyDeckNote: String? {
+		switch lookout.status {
+		case .noTerrain:
+			String(localized: "Download a map with terrain for the 3D map to hang the sky deck on a real tower.", comment: "Cinema sky deck: shown on the panel when no terrain has been downloaded")
+		default:
+			rooftopNote
+		}
+	}
+
+	/// What the panel says on the rooftop while there is no building to pick.
+	private var rooftopNote: String? {
+		switch lookout.status {
+		case .searching:
+			String(localized: "Looking for the tallest buildings in the downloaded maps…", comment: "Cinema rooftop: shown on the panel while the tallest buildings are being found")
+		case .noTerrain:
+			String(localized: "Download a map with terrain for the 3D map to stand the rooftop on a real building.", comment: "Cinema rooftop: shown on the panel when no terrain has been downloaded")
+		case .noSummits, .noBuildings:
+			String(localized: "No buildings with heights found in the downloaded maps.", comment: "Cinema rooftop: shown on the panel when the downloaded basemaps gave no buildings with a height")
+		case .idle, .ready:
+			nil
+		}
+	}
+
+	/// How fast the space station's globe turns, from the panel's speed and Reduce Motion.
+	private var earthSpin: Float {
+		CinemaOrbit.radiansPerSecond(speed: earthSpeed, reduceMotion: reduceMotion)
+	}
+
 	/// The backdrop for the environment: its image, and for a cutout, the sky behind it.
 	/// Dropped if the task is cancelled or the environment or stone changed while it loaded, so a
-	/// slower, older call can't replace the newer backdrop.
-	private func replaceBackdrop(clearSky: Bool) async {
+	/// slower, older call can't replace the newer backdrop, and also when `stillWanted` says no.
+	private func replaceBackdrop(clearSky: Bool, stillWanted: () -> Bool = { true }) async {
 		let environment = environment
 		let stone = stone
-		let next = await CinemaBackdrop.make(environment, stone: stone, clearSky: clearSky)
-		guard !Task.isCancelled, environment == self.environment, stone == self.stone else { return }
+		var side = earthSide
+		var next = await CinemaBackdrop.make(environment, stone: stone, clearSky: clearSky, earthSide: side, earthSpin: earthSpin)
+		// Day or night changed while the first backdrop was made: its own task skips a change
+		// before there's a backdrop, so make it again here for the side now chosen.
+		while !Task.isCancelled, environment == self.environment, stone == self.stone, side != earthSide {
+			side = earthSide
+			next = await CinemaBackdrop.make(environment, stone: stone, clearSky: clearSky, earthSide: side, earthSpin: earthSpin)
+		}
+		guard !Task.isCancelled, environment == self.environment, stone == self.stone, side == earthSide, stillWanted() else { return }
+		// The speed may have changed while the globe was made.
+		CinemaEarth.setSpin(earthSpin, in: next)
 		backdrop?.removeFromParent()
 		stage.addChild(next)
 		backdrop = next
@@ -440,27 +605,54 @@ struct CinemaSpace: View {
 		offlineMaps.regions.map { "\($0.id)|\($0.terrain?.downloadedAt.timeIntervalSince1970 ?? 0)" }
 	}
 
+	private func alignSkyDeckTurn() {
+		if environment.siteKind == .skyDeck, let facing = lookout.site(for: skyDeckSiteID)?.facing {
+			lookoutTurns = SpatialLookout.turns(nearest: facing)
+		}
+	}
+
 	private func refreshLookout() async {
-		guard environment.standsOnSummit else {
+		guard let kind = environment.siteKind else {
 			terrain?.removeFromParent()
 			terrain = nil
 			terrainSiteID = nil
+			terrainKind = nil
 			return
 		}
 		let maps = lookoutMaps
-		await lookout.prepare(area: await lookoutArea())
+		await lookout.prepare(area: await lookoutArea(), kind: kind)
+		guard environment.siteKind == kind else { return }
 		// The maps changing or the view going away while the summits were found makes this refresh stale.
-		guard !Task.isCancelled, lookoutMaps == maps else { return }
+		guard !Task.isCancelled, lookoutMaps == maps, environment.siteKind == kind else { return }
+		// The chosen site moved a little in a new search: keep it chosen under its new id. Setting
+		// the id refreshes again.
+		if lookout.site(for: lookoutSiteID) == nil, let moved = lookout.site(near: lookoutSiteID, kind: kind) {
+			lookoutSiteID = moved.id
+			return
+		}
+		// The search is done and the sky deck's tower isn't in it: forget the tower, so the 3D map
+		// stops hanging a deck on it. Setting the id refreshes again, to the painted view.
+		if kind == .skyDeck, !skyDeckSiteID.isEmpty, lookout.site(for: skyDeckSiteID) == nil {
+			skyDeckSiteID = ""
+			skyDeckTower = ""
+			return
+		}
 		let site = lookout.site(for: lookoutSiteID)
 		let heading = SpatialLookout.heading(turns: lookoutTurns)
-		guard site?.id != terrainSiteID || heading != terrainHeading || (site != nil && terrain == nil) else { return }
+		// Also when the site has gone (a new search after the maps changed doesn't find it) but the
+		// clear sky put up for its terrain is still showing, so the painted view comes back. The kind
+		// is only compared with a site chosen: with none, the painted view is already up and would be
+		// loaded again on every refresh.
+		guard site?.id != terrainSiteID || heading != terrainHeading || (site != nil && (kind != terrainKind || terrain == nil)) || (site == nil && backdropClearSky) else { return }
 		terrain?.removeFromParent()
 		terrain = nil
 		terrainSiteID = nil
+		terrainKind = nil
 		guard let site else {
 			lookoutBuild?.task.cancel()
 			lookoutBuild = nil
-			await replaceBackdrop(clearSky: false)
+			// Not put up if a summit was chosen meanwhile, whose own refresh puts up its terrain.
+			await replaceBackdrop(clearSky: false) { lookoutMaps == maps && lookout.site(for: lookoutSiteID) == nil }
 			return
 		}
 		let build: Task<ModelEntity?, Never>
@@ -481,7 +673,7 @@ struct CinemaSpace: View {
 		// changes, since either can change while it does.
 		func stillWanted() -> Bool {
 			!Task.isCancelled && lookoutMaps == maps
-				&& lookoutSiteID == site.id && SpatialLookout.heading(turns: lookoutTurns) == heading && environment.standsOnSummit
+				&& lookoutSiteID == site.id && SpatialLookout.heading(turns: lookoutTurns) == heading && environment.siteKind == kind
 				&& !(terrain != nil && terrainSiteID == site.id && terrainHeading == heading)
 		}
 		guard let entity = built, stillWanted() else { return }
@@ -491,6 +683,7 @@ struct CinemaSpace: View {
 		stage.addChild(entity)
 		terrain = entity
 		terrainSiteID = site.id
+		terrainKind = kind
 		terrainHeading = heading
 	}
 
