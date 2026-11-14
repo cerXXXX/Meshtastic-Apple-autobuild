@@ -6,6 +6,7 @@
 //
 #if os(visionOS)
 import CoreLocation
+import OSLog
 import RealityKit
 import SwiftData
 import SwiftUI
@@ -33,6 +34,10 @@ struct CinemaSpace: View {
 	@AppStorage(CinemaEarthSide.key) private var earthSide: CinemaEarthSide = .day
 	@AppStorage(CinemaOrbit.speedKey) private var earthSpeed = 1
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	/// Shared with the maps' Weather Radar setting: the rain shows as cloud out the windows too.
+	@AppStorage("meshMapShowWeatherRadar") private var showWeatherRadar = false
+	@ObservedObject private var weatherRadar = WeatherRadarAvailability.shared
+	@ObservedObject private var connectivity = OfflineMapConnectivityMonitor.shared
 	@State private var world = Entity()
 	@State private var backdrop: Entity?
 	/// The stone and the sky the backdrop up now was made with, so a change of stone keeps the sky.
@@ -69,6 +74,8 @@ struct CinemaSpace: View {
 	@AppStorage(LookoutSiteKind.rooftop.turnsKey) private var rooftopTurns = 0
 	@AppStorage(LookoutSiteKind.skyDeck.turnsKey) private var skyDeckTurns = 0
 	@State private var terrain: ModelEntity?
+	/// Terrain fading in and out of the windows, stepped each frame.
+	@State private var fades = EntityFades()
 	/// The site the terrain and labels are built for; nil for the painted sunset.
 	@State private var terrainSiteID: String?
 	/// Whether that site is a summit, a headland or a rooftop.
@@ -81,6 +88,9 @@ struct CinemaSpace: View {
 	@State private var lookoutBuild: LookoutBuild?
 	/// The downloads the summits and terrain were last found for, so a change can be told from the first run.
 	@State private var lookoutMapsSeen: [String]?
+	/// The nodes' area being read, or read in the last few seconds: opening the cinema refreshes
+	/// the lookout from several tasks at once, and they share one read.
+	@State private var lookoutAreaRead: (started: Date, task: Task<SpatialCircle?, Never>)?
 	@State private var markerPanels = LookoutMarkerPanels()
 	/// Where the viewer's head is, so a marker's card opens beside the marker as they see it.
 	@State private var headTracker = CinemaHeadTracker()
@@ -103,7 +113,8 @@ struct CinemaSpace: View {
 			}
 			// A panel's size is only known once SwiftUI has laid it out, so boards are fitted on
 			// the first frame that has it.
-			fitBoards = content.subscribe(to: SceneEvents.Update.self) { _ in
+			fitBoards = content.subscribe(to: SceneEvents.Update.self) { event in
+				fades.step(deltaTime: event.deltaTime)
 				placeBoards()
 				modelStand.refreshScreen()
 				// A marker's size is only known once it has laid out, like a board's.
@@ -123,7 +134,15 @@ struct CinemaSpace: View {
 			modelStand.setTag(attachments.entity(for: Attachments.modelTag))
 			placeBoards()
 			placeMarkers { attachments.entity(for: $0) }
+			placeTerrainCard(attachments.entity(for: Attachments.terrainCard), over: attachments.entity(for: Attachments.panel))
 		} attachments: {
+			// While the sites are looked for or the view out the windows is built. The card reads the
+			// progress itself, so it moving doesn't redraw the whole space.
+			if environment.standsOnSite, lookout.isBuildingTerrain || lookout.status == .searching {
+				Attachment(id: Attachments.terrainCard) {
+					LookoutTerrainLoadingAttachment(lookout: lookout, searching: lookoutNote)
+				}
+			}
 			Attachment(id: Attachments.panel) {
 				// The map counts as open while the cinema is reopening it, so the button doesn't
 				// show for the second in between.
@@ -206,17 +225,25 @@ struct CinemaSpace: View {
 			stage.orientation = simd_quatf(angle: environment.frontRotation, axis: [0, 1, 0])
 			boards.unfitAll()
 			// Real terrain already up for the summit stays when the lookout and the castle swap. A
-			// summit's isn't the lighthouse's or the rooftop's, and so on.
-			if terrainKind != environment.siteKind {
+			// summit's isn't the lighthouse's or the rooftop's, and so on: that fades out once the new
+			// room is up, so the windows never show sky with no ground.
+			// The chosen site's ground starts being read now, while the room's backdrop loads. A child
+			// of this task, so leaving the room stops it. A room off any site drops what was read.
+			async let warming: Void = prewarmLookout()
+			if !environment.standsOnSite {
+				lookout.cancelGround()
+			}
+			let keepsTerrain = terrain != nil && terrainKind == environment.siteKind
+			if !keepsTerrain {
 				lookoutBuild?.task.cancel()
 				lookoutBuild = nil
-				terrain?.removeFromParent()
-				terrain = nil
-				terrainSiteID = nil
-				terrainKind = nil
 			}
-			await replaceBackdrop(clearSky: terrain != nil && environment.standsOnSite)
+			await replaceBackdrop(clearSky: keepsTerrain && environment.standsOnSite)
+			// Left again while the room loaded: the room now chosen decides what stays.
+			guard !Task.isCancelled else { return }
+			if !keepsTerrain { takeDownTerrain() }
 			await refreshLookout()
+			await warming
 		}
 		.task(id: stone) {
 			guard environment.hasStone, backdrop != nil, backdropStone != stone else { return }
@@ -264,12 +291,13 @@ struct CinemaSpace: View {
 		.task(id: lookoutMaps) {
 			if let seen = lookoutMapsSeen, seen != lookoutMaps {
 				lookout.forgetSites()
+				// The area may have come from a map that's gone.
+				lookoutAreaRead = nil
 				lookoutBuild?.task.cancel()
 				lookoutBuild = nil
-				terrain?.removeFromParent()
-				terrain = nil
+				// Built again from the new maps. The old view stays until then, or until its site
+				// turns out to be gone and the painted view comes back.
 				terrainSiteID = nil
-				terrainKind = nil
 			}
 			lookoutMapsSeen = lookoutMaps
 			await refreshLookout()
@@ -291,6 +319,9 @@ struct CinemaSpace: View {
 				}
 				try? await Task.sleep(for: .seconds(60))
 			}
+		}
+		.task(id: RainCloudsKey(terrain: terrain.map(ObjectIdentifier.init), show: showWeatherRadar, offered: weatherRadar.isOffered, online: connectivity.isNetworkAvailable)) {
+			await showRainClouds()
 		}
 		.task(id: accessoryManager.isConnected ? accessoryManager.activeDeviceNum : nil) {
 			// Where the radio is, for each summit's distance and direction in the picker.
@@ -376,6 +407,7 @@ struct CinemaSpace: View {
 			fitBoards?.cancel()
 			fitBoards = nil
 			headTracker.stop()
+			lookout.cancelGround()
 			CinemaScene.showModel = nil
 			modelRequest = nil
 			modelStand.screenSource = nil
@@ -454,6 +486,25 @@ struct CinemaSpace: View {
 		static let panel = "panel"
 		static let tabStrip = "screenTabs"
 		static let modelTag = "modelTag"
+		static let terrainCard = "terrainCard"
+	}
+
+	/// The terrain card stands on the panel, moving and turning with it. Below the screen it would be
+	/// behind the 3D map, which opens there.
+	private func placeTerrainCard(_ card: Entity?, over panel: Entity?) {
+		guard let card else { return }
+		if card.parent !== panelGrabber { panelGrabber.addChild(card) }
+		let panelTop = panel.map { $0.position.y + $0.visualBounds(relativeTo: $0).extents.y / 2 } ?? 0.3
+		let halfHeight = max(card.visualBounds(relativeTo: card).extents.y / 2, 0.05)
+		card.position = [0, panelTop + 0.02 + halfHeight, 0]
+	}
+
+	/// Takes the terrain out of the windows, fading it out.
+	private func takeDownTerrain() {
+		if let terrain { fades.fade(terrain, to: 0, then: .remove) }
+		terrain = nil
+		terrainSiteID = nil
+		terrainKind = nil
 	}
 
 	/// The chosen site's id for the environment's kind of site, or empty for the painted view.
@@ -592,6 +643,15 @@ struct CinemaSpace: View {
 	/// The circle the 3D map shows around the mesh, before any zoom; with no node positions, the
 	/// newest map the user downloaded, as the 3D map does. The lookout's summits are found in it.
 	private func lookoutArea() async -> SpatialCircle? {
+		if let lookoutAreaRead, Date().timeIntervalSince(lookoutAreaRead.started) < 10 {
+			return await lookoutAreaRead.task.value
+		}
+		let read = Task { await readLookoutArea() }
+		lookoutAreaRead = (Date(), read)
+		return await read.value
+	}
+
+	private func readLookoutArea() async -> SpatialCircle? {
 		if let container, !appState.isDatabaseResetting {
 			let preciseOnly = UserDefaults.standard.bool(forKey: SpatialTerrainKeeper.preciseOnlyKey)
 			let nodes = (try? await SpatialMeshAreaReader.nodes(container: container, preciseOnly: preciseOnly, connectedNodeNum: accessoryManager.activeDeviceNum)) ?? []
@@ -611,16 +671,27 @@ struct CinemaSpace: View {
 		}
 	}
 
+	/// Finds the sites and starts reading the chosen one's ground, ahead of `refreshLookout`.
+	private func prewarmLookout() async {
+		guard let kind = environment.siteKind else { return }
+		let area = await lookoutArea()
+		// The room changed while the area was read: its own search mustn't be undone by this one.
+		guard !Task.isCancelled, environment.siteKind == kind else { return }
+		await lookout.prepare(area: area, kind: kind)
+		guard !Task.isCancelled, environment.siteKind == kind, let site = lookout.site(for: lookoutSiteID) else { return }
+		lookout.prewarm(site)
+	}
+
 	private func refreshLookout() async {
 		guard let kind = environment.siteKind else {
-			terrain?.removeFromParent()
-			terrain = nil
-			terrainSiteID = nil
-			terrainKind = nil
+			takeDownTerrain()
 			return
 		}
 		let maps = lookoutMaps
-		await lookout.prepare(area: await lookoutArea(), kind: kind)
+		let area = await lookoutArea()
+		// As in the prewarm: a room changed meanwhile has its own search.
+		guard !Task.isCancelled, environment.siteKind == kind else { return }
+		await lookout.prepare(area: area, kind: kind)
 		guard environment.siteKind == kind else { return }
 		// The maps changing or the view going away while the summits were found makes this refresh stale.
 		guard !Task.isCancelled, lookoutMaps == maps, environment.siteKind == kind else { return }
@@ -643,16 +714,18 @@ struct CinemaSpace: View {
 		// clear sky put up for its terrain is still showing, so the painted view comes back. The kind
 		// is only compared with a site chosen: with none, the painted view is already up and would be
 		// loaded again on every refresh.
-		guard site?.id != terrainSiteID || heading != terrainHeading || (site != nil && (kind != terrainKind || terrain == nil)) || (site == nil && backdropClearSky) else { return }
-		terrain?.removeFromParent()
-		terrain = nil
-		terrainSiteID = nil
-		terrainKind = nil
+		// Also with no site but terrain still up, kept while the maps changed, so it comes down.
+		guard site?.id != terrainSiteID || heading != terrainHeading || (site != nil && (kind != terrainKind || terrain == nil)) || (site == nil && (backdropClearSky || terrain != nil)) else { return }
+		// The view up now stays until what replaces it is ready.
 		guard let site else {
 			lookoutBuild?.task.cancel()
 			lookoutBuild = nil
 			// Not put up if a summit was chosen meanwhile, whose own refresh puts up its terrain.
-			await replaceBackdrop(clearSky: false) { lookoutMaps == maps && lookout.site(for: lookoutSiteID) == nil }
+			func painted() -> Bool { lookoutMaps == maps && lookout.site(for: lookoutSiteID) == nil }
+			if backdropClearSky {
+				await replaceBackdrop(clearSky: false, stillWanted: painted)
+			}
+			if !Task.isCancelled, painted(), !backdropClearSky { takeDownTerrain() }
 			return
 		}
 		let build: Task<ModelEntity?, Never>
@@ -677,14 +750,77 @@ struct CinemaSpace: View {
 				&& !(terrain != nil && terrainSiteID == site.id && terrainHeading == heading)
 		}
 		guard let entity = built, stillWanted() else { return }
-		await replaceBackdrop(clearSky: true)
-		guard stillWanted() else { return }
-		terrain?.removeFromParent()
+		// The new view fades in over the old one, which fades out.
+		let old = terrain
 		stage.addChild(entity)
+		fades.fadeIn(entity)
+		if let old { fades.fade(old, to: 0, then: .remove) }
 		terrain = entity
 		terrainSiteID = site.id
 		terrainKind = kind
 		terrainHeading = heading
+		// The painted view's sky has painted ground below the horizon. Once the terrain is in front
+		// of it, the clear sky takes its place behind, unseen.
+		if !backdropClearSky {
+			try? await Task.sleep(for: .milliseconds(500))
+			await replaceBackdrop(clearSky: true) { terrain === entity }
+		}
+	}
+
+	/// What the rain clouds out the windows follow: the terrain up, and whether the radar is
+	/// wanted, offered where the device is, and reachable.
+	private struct RainCloudsKey: Equatable {
+		let terrain: ObjectIdentifier?
+		let show: Bool
+		let offered: Bool
+		let online: Bool
+	}
+
+	/// Puts the weather radar over the terrain out the windows as cloud, and keeps it current each
+	/// five-minute period while the terrain is up. The clouds hang from the terrain, so they go
+	/// with it. A failed fetch leaves the last rain up for one more period.
+	private func showRainClouds() async {
+		guard let terrain, let siteID = terrainSiteID, let site = lookout.site(for: siteID) else { return }
+		let heading = terrainHeading
+		// Where the radar is offered follows the device, as on the maps; a change restarts this.
+		if showWeatherRadar { await weatherRadar.refresh() }
+		guard !Task.isCancelled else { return }
+		guard SpatialWeatherRadar.shouldFetch(show: showWeatherRadar, offered: weatherRadar.isOffered, networkAvailable: connectivity.isNetworkAvailable, center: site.coordinate) else {
+			terrain.findEntity(named: LookoutRainClouds.entityName)?.removeFromParent()
+			return
+		}
+		let frame = SpatialFrame(bounds: LookoutRainClouds.bounds(around: site))
+		var failures = 0
+		while !Task.isCancelled {
+			let period = WeatherRadar.refreshPeriod()
+			do {
+				let radar = try await SpatialWeatherRadar.fetch(SpatialWeatherRadar.plan(for: frame, refreshPeriod: period))
+				let current = terrain.findEntity(named: LookoutRainClouds.entityName)
+				let build = current == nil
+				let made = await Task.detached(priority: .utility) {
+					LookoutRainClouds.sheets(for: radar.image, site: site, heading: heading, frame: frame, withMeshes: build)
+				}.value
+				guard !Task.isCancelled else { return }
+				guard let made else { throw URLError(.cannotDecodeContentData) }
+				if let current {
+					try await LookoutRainClouds.setImages(made.images, on: current)
+				} else {
+					let clouds = try await LookoutRainClouds.entity(meshes: made.meshes, images: made.images)
+					guard !Task.isCancelled else { return }
+					terrain.addChild(clouds)
+				}
+				failures = 0
+			} catch is CancellationError {
+				return
+			} catch {
+				failures += 1
+				Logger.services.info("🎬 [Cinema] Weather radar for the windows failed: \(error.localizedDescription, privacy: .public)")
+				// Rain more than a period old has moved on.
+				if failures > 1 { terrain.findEntity(named: LookoutRainClouds.entityName)?.removeFromParent() }
+			}
+			let next = Double(period + 1) * WeatherRadar.refreshInterval
+			guard (try? await Task.sleep(for: .seconds(max(1, next - Date.now.timeIntervalSince1970)))) != nil else { return }
+		}
 	}
 
 	/// Show the connected radio's screen live on the model on the stand: the model is of the
@@ -804,6 +940,21 @@ struct CinemaSpace: View {
 		accessibility.label = LocalizedStringResource("Move the cinema panel", comment: "Cinema: VoiceOver label for the bar under the panel that moves it")
 		bar.components.set(accessibility)
 		return bar
+	}
+}
+
+/// The terrain card as the cinema's attachment: it alone reads the build's progress.
+private struct LookoutTerrainLoadingAttachment: View {
+	let lookout: LookoutScene
+	/// What the panel says while the sites are looked for.
+	let searching: String?
+
+	var body: some View {
+		if let progress = lookout.terrainProgress {
+			SpatialTerrainLoadingCard(status: .building(progress), onRetry: {}, onClose: {})
+		} else if lookout.status == .searching {
+			SpatialTerrainLoadingCard(status: .searching(searching ?? ""), onRetry: {}, onClose: {})
+		}
 	}
 }
 #endif

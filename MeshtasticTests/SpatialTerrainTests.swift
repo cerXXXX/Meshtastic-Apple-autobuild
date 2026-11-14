@@ -6,6 +6,7 @@
 //
 import CoreLocation
 import Foundation
+import os
 import simd
 import Testing
 import UIKit
@@ -75,6 +76,57 @@ struct SpatialTerrainTests {
 		#expect(abs(grid.heights[0] - 1100) < 2)
 		#expect(abs(grid.heights[(plan.rows - 1) * plan.columns] - 100) < 2)
 		#expect(abs(grid.heights[15 * plan.columns + 10] - 600) < 2)
+	}
+
+	@Test func samplingCountsEveryTileItReads() async throws {
+		let bounds = seattle
+		let source = SyntheticElevationSource(coverage: bounds) { _, _ in 100 }
+		let frame = SpatialFrame(bounds: bounds)
+		let plan = SpatialHeightGrid.Plan(columns: 21, rows: 31, samplingZoom: 12)
+		let counts = OSAllocatedUnfairLock<[(done: Int, total: Int)]>(initialState: [])
+		_ = try await SpatialHeightGrid.sample(frame: frame, plan: plan, source: source) { done, total in
+			counts.withLock { $0.append((done, total)) }
+		}
+		let heard = counts.withLock { $0 }
+		#expect(!heard.isEmpty)
+		#expect(heard.map(\.done) == Array(1...heard.count), "one call per tile, in order")
+		#expect(heard.allSatisfy { $0.total == heard.count }, "the total is the tiles it reads")
+	}
+
+	@Test func aRedrawKeepsTheGroundAndChangesTheImage() async throws {
+		let bounds = seattle
+		let source = SyntheticElevationSource(coverage: bounds) { latitude, longitude in
+			Float(100 + (latitude - bounds.minLat) * 4000 + (longitude - bounds.minLon) * 2000)
+		}
+		let builder = SpatialTerrainBuilder(elevation: source)
+		var options = SpatialTerrainOptions()
+		// No network: the image is the terrain shading drawn here, not an Apple snapshot.
+		options.allowNetwork = false
+		options.maxTriangles = 20_000
+		options.textureEdge = 256
+		let built = try await builder.build(bounds: bounds, options: options)
+		options.dark = true
+		let redrawn = try await builder.redraw(built, options: options)
+		#expect(redrawn.geometry.positions == built.geometry.positions, "the surface is the same")
+		#expect(redrawn.grid == built.grid)
+		#expect(redrawn.texture.width == built.texture.width && redrawn.texture.height == built.texture.height)
+		let before = try #require(built.texture.dataProvider?.data as Data?)
+		let after = try #require(redrawn.texture.dataProvider?.data as Data?)
+		#expect(before != after, "the dark map draws a different image")
+	}
+
+	@Test func progressOnlyMovesForward() {
+		let start = SpatialTerrainProgress(phase: .elevation(done: 0, total: 40))
+		let oneTile = SpatialTerrainProgress(phase: .elevation(done: 1, total: 40))
+		let fiveTiles = SpatialTerrainProgress(phase: .elevation(done: 5, total: 40))
+		let drawing = SpatialTerrainProgress(phase: .drawing)
+		let surface = SpatialTerrainProgress(phase: .surface)
+		#expect(!start.isWorthShowing(oneTile), "under two percent isn't drawn again")
+		#expect(start.isWorthShowing(fiveTiles))
+		#expect(fiveTiles.isWorthShowing(drawing))
+		#expect(drawing.isWorthShowing(surface))
+		#expect(!surface.isWorthShowing(drawing), "a late height callback can't take it back")
+		#expect(surface.fraction < 1)
 	}
 
 	@Test func uncoveredGroundSitsAtTheLowestCoveredHeight() async throws {

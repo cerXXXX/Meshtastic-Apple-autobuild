@@ -66,6 +66,22 @@ struct LookoutSite: Identifiable, Hashable, Codable, Sendable {
 }
 
 /// The terrain around a lookout site as a mesh and its shading, built off the main actor.
+/// The ground round a site as read from the tiles and the land cover: everything about the view
+/// that doesn't change as the room turns, so a turn draws it again without reading them.
+struct LookoutGround: Sendable {
+	let site: LookoutSite
+	/// The seated eye's height above sea level.
+	let eye: Double
+	/// Each sample's height, ring by ring out from the site, spoke by spoke round it.
+	let elevations: [Float]
+	let covers: [OfflineLandCover?]
+	/// Each ring's distance from the site.
+	let distances: [Double]
+	let lowest: Float
+	let highest: Float
+	let landCover: OfflineLandCoverMap?
+}
+
 struct LookoutTerrainModel: Sendable {
 	let site: LookoutSite
 	let positions: [SIMD3<Float>]
@@ -396,11 +412,23 @@ enum LookoutTerrain {
 	/// Builds the terrain around `site`, out to `bounds` and at most `maxRadius`, seen from a room
 	/// whose floor is `standHeight` above it. `sun` is where the painted sky's sun is, degrees
 	/// clockwise from the cab's front and above the horizon. The ground is colored from `landCover`
-	/// where it has the point, else by height.
+	/// where it has the point, else by height. `progress` hears each ring read, then the drawing.
 	static func build(
 		site: LookoutSite, bounds: GeoBounds, source: any ElevationTileSource, landCover: OfflineLandCoverMap? = nil,
-		heading: Double = frontHeading, standHeight: Double? = nil, sun: (azimuth: Float, elevation: Float)
+		heading: Double = frontHeading, standHeight: Double? = nil, sun: (azimuth: Float, elevation: Float),
+		progress: @escaping @Sendable (SpatialTerrainProgress) -> Void = { _ in }
 	) async -> LookoutTerrainModel? {
+		guard let ground = await ground(site: site, bounds: bounds, source: source, landCover: landCover, standHeight: standHeight, progress: progress) else { return nil }
+		progress(SpatialTerrainProgress(phase: .drawing))
+		return model(from: ground, heading: heading, sun: sun)
+	}
+
+	/// Reads the ground round `site` from the tiles, ring by ring, and its cover from `landCover`.
+	/// `progress` hears each ring read. Nil when no tile has data, or the task is cancelled.
+	static func ground(
+		site: LookoutSite, bounds: GeoBounds, source: any ElevationTileSource, landCover: OfflineLandCoverMap? = nil,
+		standHeight: Double? = nil, progress: @escaping @Sendable (SpatialTerrainProgress) -> Void = { _ in }
+	) async -> LookoutGround? {
 		let sampler = Sampler(source: source)
 		let floor = Double(site.elevation) + (standHeight ?? site.standHeight)
 		let eye = floor + eyeHeight
@@ -438,6 +466,7 @@ enum LookoutTerrain {
 				}
 			}
 			if Task.isCancelled { return nil }
+			progress(SpatialTerrainProgress(phase: .elevation(done: ring + 1, total: rings)))
 		}
 		guard lowest < .greatestFiniteMagnitude else { return nil }
 		// Ground with no data takes the lowest level there is, which the haze mostly hides.
@@ -445,6 +474,21 @@ enum LookoutTerrain {
 			elevations[index] = lowest
 		}
 		let highest = elevations.max() ?? lowest
+		return LookoutGround(site: site, eye: eye, elevations: elevations, covers: covers, distances: distances, lowest: lowest, highest: highest, landCover: landCover)
+	}
+
+	/// The terrain drawn from `ground` for the cab facing `heading`, lit from `sun`. Nil if the task
+	/// is cancelled.
+	static func model(from sampled: LookoutGround, heading: Double, sun: (azimuth: Float, elevation: Float)) -> LookoutTerrainModel? {
+		let site = sampled.site
+		let eye = sampled.eye
+		let elevations = sampled.elevations
+		let covers = sampled.covers
+		let distances = sampled.distances
+		let lowest = sampled.lowest
+		let highest = sampled.highest
+		let landCover = sampled.landCover
+		let columns = spokes + 1
 
 		var positions = [SIMD3<Float>](repeating: .zero, count: rings * columns)
 		var uvs = [SIMD2<Float>](repeating: .zero, count: rings * columns)
@@ -712,7 +756,8 @@ enum LookoutTerrain {
 		descriptor.positions = MeshBuffer(model.positions)
 		descriptor.textureCoordinates = MeshBuffer(model.textureCoordinates)
 		descriptor.primitives = .triangles(model.indices)
-		let mesh = try MeshResource.generate(from: [descriptor])
+		// Made off the main thread, so the immersive space keeps its frame rate while it's made.
+		let mesh = try await MeshResource(from: [descriptor])
 		let texture = try await TextureResource(image: model.texture, options: .init(semantic: .color))
 		var material = UnlitMaterial()
 		material.color = .init(tint: .white, texture: .init(texture))
@@ -752,7 +797,7 @@ enum LookoutTerrain {
 			material.blending = .transparent(opacity: .init(floatLiteral: 1))
 			material.opacityThreshold = 0.5
 		}
-		let entity = ModelEntity(mesh: try MeshResource.generate(from: [descriptor]), materials: [material])
+		let entity = ModelEntity(mesh: try await MeshResource(from: [descriptor]), materials: [material])
 		entity.name = name
 		return entity
 	}
