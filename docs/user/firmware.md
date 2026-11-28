@@ -6,45 +6,52 @@ nav_order: 5
 
 # Firmware Updates
 
-The app can check for and install Meshtastic firmware updates directly on your connected radio over Bluetooth.
+The app can check for and install Meshtastic firmware updates directly on your connected radio, over Bluetooth or, for ESP32 radios, Wi-Fi.
 
 ## Checking for Updates
 
 1. Connect to your radio.
 2. Go to **Settings → Firmware Updates**.
-3. The app shows the firmware version currently running on your radio and the latest stable release available from GitHub.
+3. The card at the top shows your radio's picture and name and the firmware it's running. If a newer stable release is out, it says so and offers **Update**, which downloads it and opens the update screen. Otherwise it says the radio is up to date.
 
 Opening the screen fetches the release list and the hardware catalog. Previously the list was only fetched at launch, so if that fetch failed the screen stayed empty until you pulled to refresh; now it fills in on its own. Refreshing the catalog means a board added since your build of the app shipped is recognized by its exact firmware target instead of falling back to another board that shares its hardware model.
 
 Neither fetch is rate limited, because both are cached: opening the screen repeatedly is served from the cache or answered with an empty "not modified" reply rather than downloading the lists again.
 
-The screen shows a picture of your radio above the details. Images for supported hardware ship with the app, so the picture appears even without an internet connection. A radio reporting a specialized firmware target with its own artwork gets that artwork; otherwise the app shows the base hardware image. If no image is available for your hardware, the screen leaves the picture out instead of showing an empty space.
+**Advanced**, under the card, opens to show the radio's PlatformIO target, processor architecture and intended LoRa region. A warning about the region shows under it even while it's closed.
+
+Images for supported hardware ship with the app, so the picture appears even without an internet connection. A radio reporting a specialized firmware target with its own artwork gets that artwork; otherwise the app shows the base hardware image. If no image is available for your hardware, the screen leaves the picture out instead of showing an empty space.
 
 When you connect to a node running firmware older than the latest stable release, the app can send a firmware update notification. For hardware the app can update directly, tapping the notification opens **Firmware Updates** so you can review and start the OTA update. For hardware that needs an external updater, the notification tells you to use **Meshtastic Flasher** instead.
 
 The app remembers each node, hardware target, and stable version it has already notified you about, so it will not keep sending the same reminder.
 
-Some radios report a specialized firmware target that is not a separate entry in the hardware catalog. In that case, the app uses the base hardware entry for details such as the device name and processor architecture, but it keeps the radio's exact target when choosing downloads and local files. The suggested filename on the Firmware Updates screen uses that exact target, such as `firmware-thinknode_m1-inkhud-<version>.uf2`.
+The Connect screen also shows **Firmware update available** while the connected radio is behind the latest stable release. For a radio the app can update, **Update** downloads the stable firmware and opens the update screen, and **Other Versions** opens **Firmware Updates**. For other hardware, tapping it opens **Meshtastic Flasher**.
+
+Some radios report a specialized firmware target that is not a separate entry in the hardware catalog. In that case, the app uses the base hardware entry for details such as the device name and processor architecture, but it keeps the radio's exact target when choosing downloads and local files.
 
 ## Installing an Update
 
-1. Tap **Update Firmware** when a newer version is available.
-2. The app downloads the correct firmware binary for your hardware.
-3. The radio enters update mode (DFU) and the new firmware is transferred over BLE.
-4. The radio reboots automatically when the update completes.
+1. Tap **Install** next to a release, or open a firmware file you downloaded.
+2. The update screen shows your radio's picture and name, the firmware version going on, and a short checklist: the radio is charged or plugged in, your phone stays close to it, and the app stays open. Tap **Update**.
+3. The screen goes through each stage with a progress bar: **Getting Your Radio Ready** while the radio restarts into update mode, **Sending Firmware** during the transfer, then **Restarting Your Radio**.
+4. **Update Complete** means the transfer finished and the radio is restarting into the new firmware. The app reconnects on its own once it's back.
 
-For ESP32 BLE updates, the app waits for the radio's final verification response before showing success. If the radio reports an error or does not send the final success response, the app keeps the update in a failed state instead of treating the upload as complete.
+The same screen is used whatever the radio. nRF52 radios update over Bluetooth, and ESP32 radios over Bluetooth or Wi-Fi, matching how the app is connected to the radio. The phone's screen stays on while the update screen is open.
 
-If an nRF52 Bluetooth update loses the radio partway, the app starts it over and shows **Reconnecting...**, up to three times. Bootloader 2.6.0 and later accept the fresh start.
+Radios that update from a USB drive (RP2040, and nRF52 radios installing a `.uf2` file) use the same card with numbered steps: put the radio in update mode, then tap **Save Firmware** and save the file onto the radio's drive. The radio restarts as soon as the file is written, so the file picker may say the file couldn't be saved. That's expected. The bootloader update and factory erase use the same layout.
 
-| Icon | Progress | Description |
-|------|----------|-------------|
-| ![0%](../assets/screenshots/progressZero.png) | Starting | Update initiating — firmware binary downloading. |
-| ![50%](../assets/screenshots/progressHalf.png) | In Progress | Firmware transfer in progress over BLE. |
-| ![Complete](../assets/screenshots/progressComplete.png) | Complete | Transfer finished — radio is rebooting. |
-| ![Error](../assets/screenshots/progressError.png) | Error | Update failed — see Troubleshooting below. |
+**Details**, under the card, lists every step the update reported with its time. Include it when you report a problem.
 
-**Do not close the app or move out of Bluetooth range during a firmware update.**
+For ESP32 updates, the app waits for the radio's final verification response before showing success. If the radio reports an error or doesn't send the final success response, the update shows **The Update Didn't Finish** instead of treating the upload as complete.
+
+On an nRF52 radio still on its factory bootloader, or one older than 2.6.0, a Bluetooth update can fail to start: the radio restarts back into its old firmware without going into update mode. The firmware update is still tried first, since it's the less risky step, and firmware 2.8.3 and later tells the app which bootloader the radio has. If an update fails before any firmware has gone across and the bootloader isn't known to be current, the screen says the radio didn't go into update mode and offers **Update Bootloader**, which installs the Meshtastic bootloader over USB.
+
+If an nRF52 Bluetooth update loses the radio partway, the app starts it over, up to three times. Bootloader 2.6.0 and later accept the fresh start. If it still fails, **Try Again** goes back to the radio in its bootloader.
+
+The screen offers the **Web Flasher** instead of an update when the phone can't do it: an ESP32 radio running firmware older than 2.7.18, or a radio the app isn't connected to over Bluetooth or Wi-Fi.
+
+**Do not close the app or move out of range during a firmware update.** Closing the update screen while it's running asks you to confirm, and the radio stays in update mode until an update finishes or you power it off and on again.
 
 ## Upgrading the Bootloader (nRF52)
 
@@ -52,9 +59,9 @@ Radios with an nRF52 processor can install the [Meshtastic nRF52 Bootloader](htt
 
 When the radio's firmware reports its bootloader version, the section shows it next to the latest release. A bootloader older than 2.6.0 shows as **Older than 2.6.0**, because releases before 2.6.0 all report the same number. When the radio already has the latest release, **Upgrade Bootloader** isn't shown. Radios on firmware that doesn't report the version show the section as before.
 
-1. Tap **Upgrade Bootloader** and follow the steps: reboot the radio into DFU mode (or double-press its reset button) and connect it to this device with a USB cable. The radio appears as a USB drive. On the T1000-E and MeshTracker X1, hold the button for about 3 seconds while the radio powers on.
-2. Choose the radio's drive in the file picker. The app reads the drive's `INFO_UF2.TXT` file to identify the board, and the board on the drive decides which image is installed. A few boards ship a bootloader that reports another board's name, such as a Wio Tracker L1 Pro 1W reporting the plain L1. For those the app also uses the connected radio's model, so pick the drive of the radio you are connected to. The image's file name, shown before you install, names the board it was built for.
-3. Tap **Install Bootloader Update**. The app downloads the image for your board, checks it against the checksum published for that board, and writes it to the drive. The radio installs the bootloader and reboots itself.
+1. Tap **Upgrade Bootloader** and follow the numbered steps. Connect the radio to this device with a USB cable and put it in update mode: tap **Restart Into Update Mode** if the app is connected to it, or double-press its reset button. The radio appears as a USB drive. On the T1000-E and MeshTracker X1, hold the button for about 3 seconds while the radio powers on.
+2. Tap **Choose Drive** and pick the radio's drive in the file picker. The app reads the drive's `INFO_UF2.TXT` file to identify the board, and the board on the drive decides which image is installed. A few boards ship a bootloader that reports another board's name, such as a Wio Tracker L1 Pro 1W reporting the plain L1. For those the app also uses the connected radio's model, so pick the drive of the radio you are connected to. The image's file name, shown before you install, names the board it was built for.
+3. Tap **Install Bootloader**. The app downloads the image for your board, checks it against the checksum published for that board, and writes it to the drive. The radio installs the bootloader and reboots itself.
 
 If the drive is not a bootloader drive, the board is not one the bootloader supports, or the download does not match its checksum, nothing is written.
 
@@ -64,9 +71,9 @@ The list of supported boards and the checksums it is verified against are refres
 
 Factory erase wipes an nRF52 radio from its bootloader drive — the owner, channels, identity keys, settings, Bluetooth bonds, and node database are permanently removed. Because it runs from the bootloader, it works on a radio whose firmware cannot boot, and it is the right way to wipe a radio before selling or handing it off.
 
-1. Tap **Factory Erase** in the Maintenance section, put the radio in DFU mode (double-press its reset button if the app cannot reach it), and connect it by USB.
-2. Choose the radio's drive in the file picker. The app reads the drive's `INFO_UF2.TXT` to choose the erase file, so the wrong file can never be written.
-3. Confirm the erase. The app downloads the file, checks it against its published checksum and against what the drive reported, and writes it to the drive. The radio erases itself.
+1. Tap **Factory Erase** in the Maintenance section, connect the radio by USB, and put it in update mode: tap **Restart Into Update Mode**, or double-press its reset button if the app can't reach it.
+2. Tap **Choose Drive** and pick the radio's drive in the file picker. The app reads the drive's `INFO_UF2.TXT` to choose the erase file, so the wrong file can never be written.
+3. Tap **Erase This Radio** and confirm. The app downloads the file, checks it against its published checksum and against what the drive reported, and writes it to the drive. The radio erases itself.
 
 What happens next depends on the bootloader. A recent bootloader erases its own settings and keeps the installed firmware: the radio comes back as a bootloader drive for a few seconds, and unplugging it starts the firmware as a brand-new device. On older bootloaders only the SoftDevice and bootloader remain, so install firmware next from the Firmware Updates screen. Nothing is restored automatically either way.
 
@@ -84,7 +91,7 @@ With the Meshtastic nRF52 Bootloader 2.6.0 and later, the radio's drive works li
 
 ## During the Transfer
 
-While a supported OTA transfer is active, the update screen rotates short tips, and you can tap **Play Chirpy Hop** to play without leaving the updater. Firmware progress remains visible above the game, and the back button returns to the normal update screen at any time. Keep the Meshtastic app in the foreground until the update finishes.
+While a transfer is under way, you can tap **Play Chirpy Hop** under the card to play without leaving the updater. Firmware progress remains visible above the game, and the back button returns to the normal update screen at any time. Keep the Meshtastic app in the foreground until the update finishes.
 
 ## Update Channels
 
